@@ -3,7 +3,7 @@ import { getRandom } from "../../shared/utils";
 import { searchGiphy } from "../../shared/giphy";
 import { sakariNames, randomQuote } from "../../config/phrases";
 import { fun as MSG } from "../../config/messages";
-import { heckle, llmHeckle, recordMessage } from "../llmHeckler";
+import { heckle, llmHeckle, recordMessage, getRecentMessages } from "../llmHeckler";
 import { llmAnswer } from "../llmAsker";
 import { sendMorningGreeting } from "../../scheduler/morningGreeter";
 
@@ -101,7 +101,7 @@ fun.on("message:text", async ctx => {
   if (sakariNames.find(name => text.toLowerCase().includes(name.toLowerCase()))) {
     if (process.env.LLM_ENABLED === "true") {
       const senderName = ctx.from?.first_name ?? ctx.from?.username;
-      const answer = await llmAnswer(text, senderName);
+      const answer = await llmAnswer(text, senderName, getRecentMessages(ctx.chat.id));
       if (answer) {
         await ctx.reply(answer);
         said = true;

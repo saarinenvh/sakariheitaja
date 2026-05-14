@@ -6,9 +6,11 @@ let systemPrompt: string | null = null;
 
 function getSystemPrompt(): string {
   if (!systemPrompt) {
+    const persona = loadPrompt("persona.md");
     const base = loadPrompt("asker.md");
     const context = loadContext(["seura_context.md", "sankaritour_context.md", "matchplay_context.md"]);
-    systemPrompt = context ? `${base}\n\n---\n\n${context}` : base;
+    const combined = `${persona}\n\n---\n\n${base}`;
+    systemPrompt = context ? `${combined}\n\n---\n\n${context}` : combined;
   }
   return systemPrompt;
 }
@@ -19,9 +21,12 @@ function isMatchPlayQuestion(text: string): boolean {
   return MATCH_PLAY_KEYWORDS.some(kw => text.toLowerCase().includes(kw));
 }
 
-export async function llmAnswer(question: string, senderName?: string): Promise<string | null> {
+export async function llmAnswer(question: string, senderName?: string, recentMessages?: string[]): Promise<string | null> {
   try {
-    let userContent = senderName ? `[Kysyjä: ${senderName}]\n${question}` : question;
+    const contextBlock = recentMessages?.length
+      ? `[Viimeisimmät viestit chatissa]\n${recentMessages.map((m, i) => `${i + 1}. "${m}"`).join("\n")}\n\n`
+      : "";
+    let userContent = `${contextBlock}${senderName ? `[Kysyjä: ${senderName}]\n` : ""}${question}`;
 
     if (isMatchPlayQuestion(question)) {
       try {

@@ -3,20 +3,28 @@ import { getRandom } from "../shared/utils";
 import { sakariResponses } from "../config/phrases";
 import Logger from "js-logger";
 
-// In-memory ring buffer: last 5 messages per chat
+// In-memory ring buffer: last 10 messages per chat
 const messageBuffer = new Map<number, string[]>();
 
 export function recordMessage(chatId: number, text: string): void {
   const buf = messageBuffer.get(chatId) ?? [];
   buf.push(text);
-  if (buf.length > 5) buf.shift();
+  if (buf.length > 10) buf.shift();
   messageBuffer.set(chatId, buf);
+}
+
+export function getRecentMessages(chatId: number): string[] {
+  return messageBuffer.get(chatId) ?? [];
 }
 
 let systemPrompt: string | null = null;
 
 function getSystemPrompt(): string {
-  if (!systemPrompt) systemPrompt = loadPrompt("heckler.md");
+  if (!systemPrompt) {
+    const persona = loadPrompt("persona.md");
+    const base = loadPrompt("heckler.md");
+    systemPrompt = `${persona}\n\n---\n\n${base}`;
+  }
   return systemPrompt;
 }
 

@@ -12,9 +12,10 @@ const conversations = new Map<string, OllamaMessage[]>();
 
 function getSystemPrompt(): string {
   if (!systemPrompt) {
+    const persona = loadPrompt("persona.md");
     const base = loadPrompt("commentator.md");
     const vocabulary = loadPrompt("disc_golf_vocabulary.md");
-    systemPrompt = `${base}\n\n---\n\n${vocabulary}`;
+    systemPrompt = `${persona}\n\n---\n\n${base}\n\n---\n\n${vocabulary}`;
   }
   return systemPrompt;
 }
