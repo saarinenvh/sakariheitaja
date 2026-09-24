@@ -1,4 +1,5 @@
-import { Composer } from "grammy";
+import { Composer, Context } from "grammy";
+import Logger from "js-logger";
 import { getRandom } from "../../shared/utils";
 import { searchGiphy } from "../../shared/giphy";
 import { sakariNames, randomQuote } from "../../config/phrases";
@@ -8,7 +9,18 @@ import { llmAnswer } from "../llmAsker";
 import { sendMorningGreeting } from "../../scheduler/morningGreeter";
 
 let games: Record<string, string> = {};
-let date = new Date().toLocaleDateString();
+let gamesDate = new Date().toLocaleDateString();
+
+// The rollover check used to live inside /hep only, and /pelei read `games`
+// directly - so until somebody posted a new plan, /pelei presented yesterday's
+// as today's. Both commands go through here now.
+function expireIfNewDay(): void {
+  const today = new Date().toLocaleDateString();
+  if (today !== gamesDate) {
+    games = {};
+    gamesDate = today;
+  }
+}
 
 export const fun = new Composer();
 
@@ -51,10 +63,7 @@ fun.command("gifplz", async ctx => {
 // Plans are stored per username and reset each day at midnight.
 fun.command("hep", async ctx => {
   if (!ctx.match) return ctx.reply(MSG.hepUsage);
-  if (new Date().toLocaleDateString() !== date) {
-    games = {};
-    date = new Date().toLocaleDateString();
-  }
+  expireIfNewDay();
   const username = ctx.from?.username ?? ctx.from?.first_name ?? "tuntematon";
   games[username] = ctx.match;
   await ctx.reply(_todaysGames());
@@ -87,43 +96,59 @@ if (process.env.LLM_ENABLED === "true") {
   });
 }
 
+// Answers a name mention without holding up the update queue. grammY's
+// bot.start() processes updates one at a time, so awaiting a gemma3:12b
+// generation here stalled every other message in every chat - /follow, /top5,
+// /tulokset and the rest - for as long as it took, on a GPU that is also
+// serving sakke-gateway. Nothing downstream needs the answer, so it is
+// dispatched and forgotten.
+async function answerMention(ctx: Context, text: string): Promise<void> {
+  if (process.env.LLM_ENABLED === "true") {
+    const senderName = ctx.from?.first_name ?? ctx.from?.username;
+    const answer = await llmAnswer(text, senderName, getRecentMessages(ctx.chat!.id));
+    if (answer) {
+      await ctx.reply(answer);
+      return;
+    }
+  }
+  if (getRandom(2) === 1) {
+    await ctx.reply(await heckle(ctx.chat!.id, text));
+  }
+}
+
 // Passive listener — must stay last in middleware registration.
 // Reacts to regular text messages (not commands) with random bot personality:
-// - Responds to messages containing Sakari's name (~50% chance)
+// - Responds to messages containing Sakari's name
 // - Responds to "jallu" mentions (~50% chance)
 // - Sends a random quote to any message (~1 in 40 chance)
 // Does not call next(), so it must be registered after all command handlers.
 fun.on("message:text", async ctx => {
   const text = ctx.message.text;
   recordMessage(ctx.chat.id, text);
-  let said = false;
 
   if (sakariNames.find(name => text.toLowerCase().includes(name.toLowerCase()))) {
-    if (process.env.LLM_ENABLED === "true") {
-      const senderName = ctx.from?.first_name ?? ctx.from?.username;
-      const answer = await llmAnswer(text, senderName, getRecentMessages(ctx.chat.id));
-      if (answer) {
-        await ctx.reply(answer);
-        said = true;
-      }
-    }
-    if (!said && getRandom(2) === 1) {
-      await ctx.reply(await heckle(ctx.chat.id, text));
-      said = true;
-    }
+    // Decided here rather than after the reply lands, since the handler no
+    // longer waits to find out whether anything was said. The one behavioural
+    // difference: with the LLM enabled but failing AND the fallback coin flip
+    // lost, this no longer falls through to the jallu/random-quote branches.
+    void answerMention(ctx, text).catch(err =>
+      Logger.warn(`Mention reply failed: ${err.message}`),
+    );
+    return;
   }
 
-  if (text.includes("jallu") && getRandom(2) === 1 && !said) {
+  if (text.includes("jallu") && getRandom(2) === 1) {
     await ctx.reply(MSG.jallu);
-    said = true;
+    return;
   }
 
-  if (getRandom(40) === 1 && !said) {
+  if (getRandom(40) === 1) {
     await ctx.reply(randomQuote[getRandom(randomQuote.length)]);
   }
 });
 
 function _todaysGames(): string {
+  expireIfNewDay();
   if (Object.keys(games).length === 0) return MSG.peleiNone;
   let message = MSG.peleiHeader;
   for (const [user, plan] of Object.entries(games)) {

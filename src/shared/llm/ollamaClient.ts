@@ -29,6 +29,14 @@ export type ToolHandler = (name: string, args: Record<string, unknown>) => Promi
 const baseUrl = process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434";
 const model   = process.env.BOT_OLLAMA_MODEL ?? process.env.OLLAMA_MODEL ?? "llama3";
 
+// Generous on purpose: gemma3:12b doesn't fit the 3070 alone and runs part on
+// CPU, and Ollama swaps models between this bot and sakke-gateway, so a cold
+// load plus a slow generation is normal rather than a fault. This is only here
+// to stop a call that will never return - which used to stall a competition's
+// commentary permanently, because orchestrator chains every comment onto one
+// serial promise queue and nothing downstream had a deadline either.
+const timeoutMs = Number(process.env.BOT_OLLAMA_TIMEOUT_MS ?? "120000");
+
 async function callOllama(
   messages: OllamaMessage[],
   options: OllamaOptions,
@@ -54,6 +62,7 @@ async function callOllama(
     method:  "POST",
     headers: { "Content-Type": "application/json" },
     body:    JSON.stringify(body),
+    signal:  AbortSignal.timeout(timeoutMs),
   });
 
   if (!res.ok) throw new Error(`Ollama HTTP ${res.status}: ${res.statusText}`);

@@ -1,5 +1,5 @@
-import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
+import { createJsonStore } from "../../shared/jsonStore";
 import { MetrixPlayerResult, TrackedPlayer } from "../../types/metrix";
 import Logger from "js-logger";
 
@@ -18,18 +18,14 @@ export interface PlayerProfile {
 
 type ProfileStore = Record<string, Record<string, PlayerProfile>>;
 
+const profileStore = createJsonStore<ProfileStore>(PROFILES_PATH, () => ({}));
+
 function load(): ProfileStore {
-  if (!existsSync(PROFILES_PATH)) return {};
-  try {
-    return JSON.parse(readFileSync(PROFILES_PATH, "utf-8"));
-  } catch {
-    Logger.warn("player_profiles.json is corrupted, starting fresh");
-    return {};
-  }
+  return profileStore.load();
 }
 
 function save(store: ProfileStore): void {
-  writeFileSync(PROFILES_PATH, JSON.stringify(store, null, 2), "utf-8");
+  profileStore.save(store);
 }
 
 export function getProfile(chatId: number, name: string): PlayerProfile | undefined {

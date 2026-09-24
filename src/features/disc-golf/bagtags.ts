@@ -1,5 +1,5 @@
-import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
+import { createJsonStore } from "../../shared/jsonStore";
 import { MetrixPlayerResult, TrackedPlayer } from "../../types/metrix";
 import Logger from "js-logger";
 
@@ -9,18 +9,14 @@ const BAGTAGS_PATH = process.env.DATA_DIR
 
 type BagtagStore = Record<string, Record<string, number>>; // chatId → name → tagNumber
 
+const bagtagStore = createJsonStore<BagtagStore>(BAGTAGS_PATH, () => ({}));
+
 function load(): BagtagStore {
-  if (!existsSync(BAGTAGS_PATH)) return {};
-  try {
-    return JSON.parse(readFileSync(BAGTAGS_PATH, "utf-8"));
-  } catch {
-    Logger.warn("bagtags.json is corrupted, starting fresh");
-    return {};
-  }
+  return bagtagStore.load();
 }
 
 function save(store: BagtagStore): void {
-  writeFileSync(BAGTAGS_PATH, JSON.stringify(store, null, 2), "utf-8");
+  bagtagStore.save(store);
 }
 
 export function getBagtag(chatId: number, name: string): number | null {

@@ -15,7 +15,7 @@ interface WeatherResponse {
 }
 
 export async function sendWeatherMessage(city: string, chatId: number, api: Api): Promise<void> {
-  const url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=fi&appid=${process.env.OPENWEATHERMAP_APIKEY}`;
+  const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=fi&appid=${process.env.OPENWEATHERMAP_APIKEY}`;
   const response = await getData<WeatherResponse>(url);
   if (!response || !response.weather?.length) {
     await api.sendMessage(chatId, MSG.notFound(city));
