@@ -96,7 +96,10 @@ export class Orchestrator {
     if (!this.following) return;
 
     try {
-      if (!this.snapshot || this.snapshot === freshSnapshot) {
+      // `this.snapshot === freshSnapshot` used to be part of this condition.
+      // freshSnapshot is always a newly parsed JSON object, so it could never
+      // be reference-equal to the stored one - the check never fired.
+      if (!this.snapshot) {
         this.poller!.reportChanges(false);
         return;
       }
@@ -107,8 +110,13 @@ export class Orchestrator {
       if (hadChanges) {
         const capturedChanges = changes;
         const capturedResults = freshSnapshot.Competition.Results;
+        // Captured alongside the changes rather than read inside the queued
+        // callback. Commentary runs later, by which point `this.snapshot` has
+        // already been replaced with a newer poll - the changes were captured
+        // but the course name they were labelled with was not.
+        const capturedCourseName = freshSnapshot.Competition.CourseName;
         this.commentaryQueue = this.commentaryQueue
-          .then(() => this._sendCommentary(capturedChanges, capturedResults))
+          .then(() => this._sendCommentary(capturedChanges, capturedResults, capturedCourseName))
           .catch(err => Logger.error(`${this.metrixId}: commentary queue error: ${err.message}`));
       } else {
         Logger.debug(`${this.snapshot.Competition.Name} ${this.metrixId}: no changes`);
@@ -131,15 +139,15 @@ export class Orchestrator {
     }
   }
 
-  private async _sendCommentary(changes: Change[], freshResults: MetrixPlayerResult[]): Promise<void> {
-    const message = await formatCommentaryMessage(changes, this.metrixId, this.snapshot!.Competition.CourseName, freshResults, this.chatId);
-    
+  private async _sendCommentary(changes: Change[], freshResults: MetrixPlayerResult[], courseName: string): Promise<void> {
+    const message = await formatCommentaryMessage(changes, this.metrixId, courseName, freshResults, this.chatId);
+
     await bot.api.sendMessage(this.chatId, message, HTML_NO_PREVIEW);
 
-    Logger.debug(`Changes in ${this.snapshot!.Competition.Name}, ${this.metrixId}`);
+    Logger.debug(`Changes in ${courseName}, ${this.metrixId}`);
 
     for (const change of changes) {
-      await scoreService.saveSuperScore(change, this.chatId, this.id, this.snapshot!.Competition.CourseName);
+      await scoreService.saveSuperScore(change, this.chatId, this.id, courseName);
     }
   }
 

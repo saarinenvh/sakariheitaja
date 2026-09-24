@@ -26,8 +26,15 @@ export interface OllamaTool {
 
 export type ToolHandler = (name: string, args: Record<string, unknown>) => Promise<string>;
 
-const baseUrl = process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434";
-const model   = process.env.BOT_OLLAMA_MODEL ?? process.env.OLLAMA_MODEL ?? "llama3";
+// Blank is not the same as unset - docker-compose substitutes an unset variable
+// as "", and Number("") is 0, which would mean an instantly-aborting timeout.
+function env(name: string): string | undefined {
+  const value = process.env[name];
+  return value === undefined || value.trim() === "" ? undefined : value;
+}
+
+const baseUrl = env("OLLAMA_BASE_URL") ?? "http://127.0.0.1:11434";
+const model   = env("BOT_OLLAMA_MODEL") ?? env("OLLAMA_MODEL") ?? "llama3";
 
 // Generous on purpose: gemma3:12b doesn't fit the 3070 alone and runs part on
 // CPU, and Ollama swaps models between this bot and sakke-gateway, so a cold
@@ -35,7 +42,7 @@ const model   = process.env.BOT_OLLAMA_MODEL ?? process.env.OLLAMA_MODEL ?? "lla
 // to stop a call that will never return - which used to stall a competition's
 // commentary permanently, because orchestrator chains every comment onto one
 // serial promise queue and nothing downstream had a deadline either.
-const timeoutMs = Number(process.env.BOT_OLLAMA_TIMEOUT_MS ?? "120000");
+const timeoutMs = Number(env("BOT_OLLAMA_TIMEOUT_MS") ?? "120000");
 
 async function callOllama(
   messages: OllamaMessage[],

@@ -145,7 +145,12 @@ export function formatBagtagAnnouncement(result: BagtagRoundResult): string {
     return "🏷️ Tägit tarkistettu — ei vaihtoja tällä kertaa.";
   }
 
-  let msg = "🏷️ <b>Bag Tag vaihdettu!</b>\n\n";
+  // The early return above only fires when there are no swaps AND nobody is
+  // missing a tag - so a round where nothing changed but someone had no tag
+  // still announced "Bag Tag vaihdettu!" under a list of unchanged tags.
+  let msg = result.swaps.length > 0
+    ? "🏷️ <b>Bag Tag vaihdettu!</b>\n\n"
+    : "🏷️ <b>Tägit tarkistettu</b> — ei vaihtoja tällä kertaa.\n\n";
 
   for (const swap of result.swaps) {
     msg += `${swap.playerName}: #${swap.from} → <b>#${swap.to}</b>\n`;
