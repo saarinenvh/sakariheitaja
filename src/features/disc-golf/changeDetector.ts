@@ -1,4 +1,4 @@
-import { MetrixApiResponse, MetrixHoleResult, TrackedPlayer, Change, HoleEntry } from "../../types/metrix";
+import { MetrixApiResponse, MetrixHoleResult, TrackedPlayer, Change, HoleEntry, PlayedHole } from "../../types/metrix";
 
 interface NormalizedHole {
   Result: string;
@@ -8,7 +8,15 @@ interface NormalizedHole {
   Index: number;
 }
 
-function getChangedHole(prevResults: HoleEntry[], newResults: HoleEntry[]): number {
+// Returns EVERY hole whose result changed, ascending. This used to return just
+// the first one and stop: because the fresh snapshot then became the baseline,
+// any further holes in the same batch could never differ again and were gone
+// for good - not only unmentioned, but never passed to saveSuperScore, so an
+// ace or eagle among them was silently missing from the stats tables forever.
+// Rare at the 30s active poll interval, but the poller widens to 60s and 120s
+// when nothing is changing and backs off exponentially to 600s after fetch
+// errors, and a group gets through several holes in ten minutes.
+function getChangedHoles(prevResults: HoleEntry[], newResults: HoleEntry[]): number[] {
   const normalize = (results: HoleEntry[]): NormalizedHole[] =>
     results.map((item, index) =>
       Array.isArray(item)
@@ -19,10 +27,11 @@ function getChangedHole(prevResults: HoleEntry[], newResults: HoleEntry[]): numb
   const oldHoles = normalize(prevResults);
   const newHoles = normalize(newResults);
 
+  const changed: number[] = [];
   for (let i = 0; i < newHoles.length; i++) {
-    if (newHoles[i].Result !== oldHoles[i]?.Result) return i;
+    if (newHoles[i].Result !== oldHoles[i]?.Result) changed.push(i);
   }
-  return -1;
+  return changed;
 }
 
 export function detectChanges(
@@ -40,23 +49,36 @@ export function detectChanges(
     if (!("Sum" in prevPlayer)) continue;
     if (prevPlayer.Sum === newPlayer.Sum) continue;
 
-    const hole = getChangedHole(
+    const changedHoles = getChangedHoles(
       prevPlayer.PlayerResults ?? [],
       newPlayer.PlayerResults ?? []
     );
 
-    if (hole === -1) continue;
+    // A hole can also change by being cleared or re-entered, which leaves no
+    // result to report on. Dropping those individually (rather than abandoning
+    // the whole player, as before) means a correction to an early hole no
+    // longer suppresses commentary for a genuinely new one later in the card.
+    const played: PlayedHole[] = [];
+    for (const hole of changedHoles) {
+      const holeResult = newPlayer.PlayerResults?.[hole];
+      if (!holeResult || Array.isArray(holeResult)) continue;
+      played.push({ hole, holeResult });
+    }
 
-    const holeResult = newPlayer.PlayerResults?.[hole];
-    if (!holeResult || Array.isArray(holeResult)) continue;
+    if (played.length === 0) continue;
+
+    // Commentary covers the latest hole - one message per player per update,
+    // about where they actually are now. The rest ride along for scoring.
+    const latest = played[played.length - 1];
 
     changes.push({
       playerName: tracked.Name,
       playerId: tracked.id,
       prevPlayer,
       newPlayer,
-      hole,
-      holeResult,
+      hole: latest.hole,
+      holeResult: latest.holeResult,
+      earlierHoles: played.slice(0, -1),
     });
   }
 

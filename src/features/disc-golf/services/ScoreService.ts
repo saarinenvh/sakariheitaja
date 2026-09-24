@@ -14,21 +14,32 @@ export async function saveResults(
   }
 }
 
+// Covers every hole in the change, not just the one being commentated. Only the
+// latest hole gets a message, but a scorekeeper entering three holes at once
+// still played all three - and an ace in the first of them is exactly the kind
+// of thing these tables exist to remember. Previously anything but the single
+// reported hole never reached here at all.
 export async function saveSuperScore(change: Change, chatId: number, competitionId: number, courseName: string): Promise<void> {
-  const { holeResult, playerId } = change;
-  if (holeResult.Diff > -2) return;
+  const { playerId } = change;
+
+  const notable = [...(change.earlierHoles ?? []), { hole: change.hole, holeResult: change.holeResult }]
+    .filter(h => h.holeResult.Diff <= -2 || parseInt(h.holeResult.Result) === 1);
+
+  if (notable.length === 0) return;
 
   const course = await courseRepo.findByName(courseName);
   if (!course) return;
 
   const date = new Date().toISOString().slice(0, 10);
 
-  if (parseInt(holeResult.Result) === 1) {
-    await scoreRepo.addAce(date, playerId, chatId, course.id, competitionId);
-  } else if (holeResult.Diff === -3) {
-    await scoreRepo.addAlbatross(date, playerId, chatId, course.id, competitionId);
-  } else if (holeResult.Diff === -2) {
-    await scoreRepo.addEagle(date, playerId, chatId, course.id, competitionId);
+  for (const { holeResult } of notable) {
+    if (parseInt(holeResult.Result) === 1) {
+      await scoreRepo.addAce(date, playerId, chatId, course.id, competitionId);
+    } else if (holeResult.Diff === -3) {
+      await scoreRepo.addAlbatross(date, playerId, chatId, course.id, competitionId);
+    } else if (holeResult.Diff === -2) {
+      await scoreRepo.addEagle(date, playerId, chatId, course.id, competitionId);
+    }
   }
 }
 

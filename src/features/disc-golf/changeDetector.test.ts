@@ -105,6 +105,52 @@ describe("detectChanges", () => {
     const changes = detectChanges(prev, next, [makeTracked("Matti", 42)]);
     expect(changes[0].playerId).toBe(42);
   });
+
+  it("reports only the latest hole when several appear in one poll window", () => {
+    const H = (Result: string, Diff: number) => ({ Result, Diff, PEN: 0 });
+    const prev = makeResponse([{ name: "Matti", sum: 3, holes: [H("3", 0), [], [], []] }]);
+    const next = makeResponse([{
+      name: "Matti", sum: 11,
+      holes: [H("3", 0), H("2", -1), H("1", -2), H("5", 2)],
+    }]);
+
+    const changes = detectChanges(prev, next, [makeTracked("Matti", 1)]);
+
+    // One message per player per update - about where they are now, not where
+    // they were two holes ago.
+    expect(changes).toHaveLength(1);
+    expect(changes[0].hole).toBe(3);
+    expect(changes[0].holeResult).toEqual(H("5", 2));
+
+    // ...but the holes in between are still carried, so their scores count.
+    // Hole 3 here is an ace; it used to vanish entirely.
+    expect(changes[0].earlierHoles).toEqual([
+      { hole: 1, holeResult: H("2", -1) },
+      { hole: 2, holeResult: H("1", -2) },
+    ]);
+  });
+
+  it("still reports a new hole when an earlier hole was corrected in the same window", () => {
+    const H = (Result: string, Diff: number) => ({ Result, Diff, PEN: 0 });
+    const prev = makeResponse([{ name: "Matti", sum: 7, holes: [H("4", 1), H("3", 0), []] }]);
+    const next = makeResponse([{ name: "Matti", sum: 9, holes: [H("3", 0), H("3", 0), H("3", 0)] }]);
+
+    const changes = detectChanges(prev, next, [makeTracked("Matti", 1)]);
+
+    // The correction on hole 1 is the first difference. Previously that alone
+    // decided the outcome; now the newly played hole 3 is what gets reported.
+    expect(changes).toHaveLength(1);
+    expect(changes[0].hole).toBe(2);
+  });
+
+  it("skips holes that were cleared rather than played", () => {
+    const H = (Result: string, Diff: number) => ({ Result, Diff, PEN: 0 });
+    const prev = makeResponse([{ name: "Matti", sum: 7, holes: [H("4", 1), H("3", 0)] }]);
+    const next = makeResponse([{ name: "Matti", sum: 4, holes: [H("4", 1), []] }]);
+
+    // Hole 2's score was deleted - there is nothing to comment on.
+    expect(detectChanges(prev, next, [makeTracked("Matti", 1)])).toHaveLength(0);
+  });
 });
 
 // ── hasCompetitionEnded ────────────────────────────────────────────────────────
