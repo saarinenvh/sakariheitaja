@@ -11,6 +11,10 @@ function getPositionDeltaText(prev: number, next: number): string {
   return Math.abs(delta) === 1 ? ", putosi sijan" : `, putosi ${Math.abs(delta)} sijaa`;
 }
 
+// `results` MUST already be narrowed to the player's own division - see
+// divisionResultsFor below. Metrix returns one OrderNumber === 1 per division,
+// so on an unfiltered array both the `find` and the `filter` here silently pick
+// up other divisions' leaders.
 function getCompetitionContextSuffix(player: MetrixPlayerResult, results: MetrixPlayerResult[]): string {
   const leader = results.find(r => r.OrderNumber === 1);
   if (!leader) return "";
@@ -176,14 +180,28 @@ export function truncateCourseName(rawName: string): string {
   return name.length > 38 ? `${name.slice(0, 37)}...` : name;
 }
 
-export async function formatCommentaryMessage(changes: Change[], metrixId: string, courseName: string, results: MetrixPlayerResult[], chatId: number): Promise<string> {
-  const commentFn = llmEnabled
-    ? (change: Change) => generateLlmComment(change, metrixId, results, chatId)
-    : (change: Change) => Promise.resolve(generateComment(change, results));
+// A competition's Results contain every division at once, and standings context
+// - who leads, how far back you are, whether you just took the lead - is only
+// meaningful inside your own division. Passing the raw array meant an MA3
+// player was measured against the MPO winner: "vain 2 takana johtajasta" where
+// the johtaja was in a different competition entirely, and a division leader
+// was reported as sharing the lead simply because another division also had an
+// OrderNumber === 1.
+function divisionResultsFor(change: Change, results: MetrixPlayerResult[]): MetrixPlayerResult[] {
+  const division = change.newPlayer.ClassName;
+  const withinDivision = results.filter(r => r.ClassName === division);
+  // Fall back to the full field rather than an empty context if a competition
+  // carries no usable ClassName at all (some older Metrix events).
+  return withinDivision.length > 0 ? withinDivision : results;
+}
 
+export async function formatCommentaryMessage(changes: Change[], metrixId: string, courseName: string, results: MetrixPlayerResult[], chatId: number): Promise<string> {
   const comments: string[] = [];
   for (const change of changes) {
-    comments.push(await commentFn(change));
+    const divisionResults = divisionResultsFor(change, results);
+    comments.push(llmEnabled
+      ? await generateLlmComment(change, metrixId, divisionResults, chatId)
+      : generateComment(change, divisionResults));
   }
 
   const byHole: Record<number, string[]> = {};
@@ -218,15 +236,25 @@ export function formatTopList(competitionName: string, results: MetrixPlayerResu
       .sort((a, b) => a.OrderNumber - b.OrderNumber);
   }
 
+  // Tracked players outside their division's top 5, grouped so that players
+  // from different divisions don't read as one ranking - sorting purely by
+  // OrderNumber put an MA3 6th place above an MPO 8th as though they were
+  // competing against each other, with nothing on the line to say otherwise.
+  const OTHERS = "Muut Sankarit";
   const outsideTopFive = trackedPlayers.filter(player => player.OrderNumber > 5);
   if (outsideTopFive.length) {
-    rankings["Muut Sankarit"] = [...outsideTopFive].sort((a, b) => a.OrderNumber - b.OrderNumber);
+    rankings[OTHERS] = [...outsideTopFive].sort(
+      (a, b) => a.ClassName.localeCompare(b.ClassName) || a.OrderNumber - b.OrderNumber,
+    );
   }
 
   let message = `${competitionName} TOP-5\n\n`;
   for (const [division, players] of Object.entries(rankings)) {
     message += `Sarja ${division}\n`;
-    for (const player of players) message += `${player.OrderNumber}. ${player.Name}\t\t\t\t${player.Diff}\n`;
+    for (const player of players) {
+      const suffix = division === OTHERS ? ` (${player.ClassName})` : "";
+      message += `${player.OrderNumber}. ${player.Name}${suffix}\t\t\t\t${player.Diff}\n`;
+    }
     message += "\n";
   }
   return message;

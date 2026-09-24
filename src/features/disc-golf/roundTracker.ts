@@ -14,6 +14,11 @@ interface RoundState {
 
 const SUMMARY_INTERVAL = 6; // reset conversation every N holes
 
+// Keyed by "<metrixId>::<division>", matching llmCommentary's conversation
+// keys. Previously keyed by metrixId alone, which meant every division in a
+// competition shared one event log - so a summary handed to the model as
+// "merkittävät tapahtumat" listed other divisions' holes as if they were part
+// of the round being commentated.
 const states = new Map<string, RoundState>();
 
 function holeScoreLabel(diff: number, result: string): string {
@@ -31,17 +36,28 @@ function addPlusSign(score: number): string {
   return score > 0 ? `+${score}` : `${score}`;
 }
 
-export function initTracker(metrixId: string): void {
-  states.set(metrixId, { events: [], lastSummaryHole: 0 });
+export function initTracker(key: string): void {
+  states.set(key, { events: [], lastSummaryHole: 0 });
 }
 
+// Takes a competition id, not a full key: clears every division's tracker for
+// that competition in one call, since that's what "this competition is over"
+// means.
 export function clearTracker(metrixId: string): void {
-  states.delete(metrixId);
+  const prefix = `${metrixId}::`;
+  for (const key of [...states.keys()]) {
+    if (key === metrixId || key.startsWith(prefix)) states.delete(key);
+  }
 }
 
-export function recordEvent(metrixId: string, change: Change): void {
-  const state = states.get(metrixId);
-  if (!state) return;
+export function recordEvent(key: string, change: Change): void {
+  // Created on demand - a competition's divisions only become known as their
+  // results arrive, so there's no point at which they could all be pre-created.
+  let state = states.get(key);
+  if (!state) {
+    state = { events: [], lastSummaryHole: 0 };
+    states.set(key, state);
+  }
 
   const { holeResult, newPlayer, prevPlayer, hole } = change;
   const score = holeScoreLabel(holeResult.Diff, holeResult.Result);
@@ -60,14 +76,16 @@ export function recordEvent(metrixId: string, change: Change): void {
   });
 }
 
-export function shouldResetConversation(metrixId: string, currentHole: number): boolean {
-  const state = states.get(metrixId);
+export function shouldResetConversation(key: string, currentHole: number): boolean {
+  const state = states.get(key);
   if (!state) return false;
   return (currentHole - state.lastSummaryHole) >= SUMMARY_INTERVAL;
 }
 
-export function buildSummary(metrixId: string, currentHole: number, totalHoles: number, results: MetrixPlayerResult[]): string {
-  const state = states.get(metrixId);
+// `results` must already be narrowed to this key's division - the standings
+// block below is presented to the model as fact.
+export function buildSummary(key: string, currentHole: number, totalHoles: number, results: MetrixPlayerResult[]): string {
+  const state = states.get(key);
   if (!state) return "";
 
   const sorted = [...results].sort((a, b) => a.OrderNumber - b.OrderNumber).slice(0, 5);
@@ -81,7 +99,7 @@ export function buildSummary(metrixId: string, currentHole: number, totalHoles: 
     : "  - Ei merkittäviä tapahtumia";
 
   state.lastSummaryHole = currentHole;
-  Logger.info(`LLM conversation reset with summary at hole ${currentHole}/${totalHoles} for ${metrixId}`);
+  Logger.info(`LLM conversation reset with summary at hole ${currentHole}/${totalHoles} for ${key}`);
 
   return `[KIERROKSEN TIIVISTELMÄ — Väylä ${currentHole}/${totalHoles}]
 

@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
-import { TrackedPlayer } from "../../types/metrix";
+import { MetrixPlayerResult, TrackedPlayer } from "../../types/metrix";
 import Logger from "js-logger";
 
 const PROFILES_PATH = process.env.DATA_DIR
@@ -59,8 +59,19 @@ export function buildProfileSnippet(chatId: number, name: string): string | unde
   return parts.join(", ");
 }
 
-export function updateProfiles(chatId: number, trackedPlayers: TrackedPlayer[], totalFieldSize: number): void {
-  if (totalFieldSize === 0) return;
+// Takes the full result set rather than a single field size: OrderNumber is a
+// position WITHIN a division, so dividing it by the whole competition's head
+// count (what the caller used to pass) made every player in a small division
+// look like a front-runner - 3rd of 10 in MA3 at a 50-player event scored 0.06,
+// i.e. "tyypillisesti kärjessä". That rating is fed straight back into
+// commentary via buildProfileSnippet, so it isn't only a stats problem.
+export function updateProfiles(chatId: number, trackedPlayers: TrackedPlayer[], allResults: MetrixPlayerResult[]): void {
+  if (allResults.length === 0) return;
+
+  const divisionFieldSize = new Map<string, number>();
+  for (const r of allResults) {
+    divisionFieldSize.set(r.ClassName, (divisionFieldSize.get(r.ClassName) ?? 0) + 1);
+  }
 
   const store = load();
   const chatKey = String(chatId);
@@ -70,7 +81,9 @@ export function updateProfiles(chatId: number, trackedPlayers: TrackedPlayer[], 
 
   for (const player of trackedPlayers) {
     const existing = store[chatKey][player.Name];
-    const positionPct = player.OrderNumber / totalFieldSize;
+    const fieldSize = divisionFieldSize.get(player.ClassName) ?? allResults.length;
+    if (fieldSize === 0) continue;
+    const positionPct = player.OrderNumber / fieldSize;
 
     const prevGames = existing?.gamesPlayed ?? 0;
     const prevAvgPct = existing?.avgPositionPct ?? positionPct;

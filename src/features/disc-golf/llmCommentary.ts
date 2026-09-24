@@ -7,8 +7,19 @@ import Logger from "js-logger";
 
 let systemPrompt: string | null = null;
 
-// One conversation history per active competition (keyed by metrixId)
+// One conversation history per active competition AND division. Keying by
+// metrixId alone meant every division in a competition shared a single history
+// and a single running summary, so while commentating an MA3 hole the model was
+// being fed the MPO leaders' birdies as recent context - and the periodic
+// summary (roundTracker) mixed both divisions' standings into one list of
+// "facts" it was told to rely on.
 const conversations = new Map<string, OllamaMessage[]>();
+
+const KEY_SEPARATOR = "::";
+
+function conversationKey(metrixId: string, division: string): string {
+  return `${metrixId}${KEY_SEPARATOR}${division}`;
+}
 
 function getSystemPrompt(): string {
   if (!systemPrompt) {
@@ -20,31 +31,42 @@ function getSystemPrompt(): string {
   return systemPrompt;
 }
 
+// A competition's divisions aren't known until results actually arrive, so
+// per-division histories are created lazily on that division's first comment.
+// This just clears anything left over from a previous run of the same
+// competition.
 export function startConversation(metrixId: string): void {
-  conversations.set(metrixId, []);
-  initTracker(metrixId);
-  Logger.info(`LLM conversation started for competition ${metrixId}`);
+  clearConversation(metrixId);
+  Logger.info(`LLM conversations ready for competition ${metrixId}`);
 }
 
 export function clearConversation(metrixId: string): void {
-  conversations.delete(metrixId);
+  const prefix = `${metrixId}${KEY_SEPARATOR}`;
+  let cleared = 0;
+  for (const key of [...conversations.keys()]) {
+    if (key.startsWith(prefix)) {
+      conversations.delete(key);
+      cleared++;
+    }
+  }
   clearTracker(metrixId);
-  Logger.info(`LLM conversation cleared for competition ${metrixId}`);
+  Logger.info(`LLM conversations cleared for competition ${metrixId} (${cleared} division(s))`);
 }
 
-function resetWithSummary(metrixId: string, summary: string): void {
-  conversations.set(metrixId, [
+function resetWithSummary(key: string, summary: string): void {
+  conversations.set(key, [
     { role: "user", content: summary },
     { role: "assistant", content: "Selvä, jatkan kommentointia tästä." },
   ]);
-  Logger.info(`LLM conversation reset with summary for ${metrixId}`);
+  Logger.info(`LLM conversation reset with summary for ${key}`);
 }
 
-function getHistory(metrixId: string): OllamaMessage[] {
-  if (!conversations.has(metrixId)) {
-    startConversation(metrixId);
+function getHistory(key: string): OllamaMessage[] {
+  if (!conversations.has(key)) {
+    conversations.set(key, []);
+    Logger.info(`LLM conversation started for ${key}`);
   }
-  return conversations.get(metrixId)!;
+  return conversations.get(key)!;
 }
 
 function addPlusSign(score: number): string {
@@ -75,21 +97,28 @@ function buildStructuredTail(change: Change): string {
   return `\n<blockquote>${meta}</blockquote>`;
 }
 
+// `results` is expected to be narrowed to this change's own division already -
+// formatCommentaryMessage does that. The division is still read off the change
+// here, because it also decides which conversation history this comment belongs
+// to.
 export async function generateLlmComment(change: Change, metrixId: string, results: MetrixPlayerResult[], chatId: number): Promise<string> {
   try {
+    const key = conversationKey(metrixId, change.newPlayer.ClassName);
     const brief = buildCommentaryBrief(change, results, chatId);
     const context = buildPromptFromBrief(brief);
 
     // Record event before potentially resetting
-    recordEvent(metrixId, change);
+    recordEvent(key, change);
 
     // Reset conversation with programmatic summary every SUMMARY_INTERVAL holes
-    if (shouldResetConversation(metrixId, brief.holeNumber)) {
-      const summary = buildSummary(metrixId, brief.holeNumber, brief.totalHoles, results);
-      resetWithSummary(metrixId, summary);
+    if (shouldResetConversation(key, brief.holeNumber)) {
+      const summary = buildSummary(key, brief.holeNumber, brief.totalHoles, results);
+      resetWithSummary(key, summary);
     }
 
-    const history = getHistory(metrixId);
+    // Must stay after the reset above - resetWithSummary swaps in a new array,
+    // so a reference taken earlier would be the discarded one.
+    const history = getHistory(key);
     history.push({ role: "user", content: context });
 
     const messages: OllamaMessage[] = [

@@ -158,7 +158,7 @@ export class Orchestrator {
       await scoreService.saveResults(this.trackedPlayers, this.chatId, course.id, this.id);
     }
 
-    updateProfiles(this.chatId, this.trackedPlayers, this.snapshot!.Competition.Results.length);
+    updateProfiles(this.chatId, this.trackedPlayers, this.snapshot!.Competition.Results);
 
     const bagtagResult = computeAndApplySwaps(this.chatId, this.trackedPlayers, this.snapshot!.Competition.Results);
     await bot.api.sendMessage(this.chatId, formatBagtagAnnouncement(bagtagResult), HTML_NO_PREVIEW);
