@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import Logger from "js-logger";
+import { env } from "../env";
 
 export interface OllamaMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -25,13 +26,6 @@ export interface OllamaTool {
 }
 
 export type ToolHandler = (name: string, args: Record<string, unknown>) => Promise<string>;
-
-// Blank is not the same as unset - docker-compose substitutes an unset variable
-// as "", and Number("") is 0, which would mean an instantly-aborting timeout.
-function env(name: string): string | undefined {
-  const value = process.env[name];
-  return value === undefined || value.trim() === "" ? undefined : value;
-}
 
 const baseUrl = env("OLLAMA_BASE_URL") ?? "http://127.0.0.1:11434";
 const model   = env("BOT_OLLAMA_MODEL") ?? env("OLLAMA_MODEL") ?? "llama3";
