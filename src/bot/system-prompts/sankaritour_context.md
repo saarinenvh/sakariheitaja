@@ -194,6 +194,9 @@ Lisäksi:
 - vuosi: 2025
   voittaja: Ville Saarinen
 
+- vuosi: 2026
+  voittaja: Jori Nurminen
+
 ## Aikataulutus
 - SankariTourin päivämäärät päätetään vuosittain alkuvuodesta
 - Päivämäärät ilmoitetaan jäsenille erikseen
