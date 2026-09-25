@@ -14,7 +14,7 @@ jobs:
         with:
           # Matches the Dockerfile, so CI can't pass on a runtime the image
           # doesn't use.
-          node-version: "20"
+          node-version: "24"
           cache: npm
 
       - name: Install
@@ -39,7 +39,7 @@ jobs:
   image:
     # The artifact that actually gets deployed. Type-checking and tests both
     # pass against source that the image could still fail to produce.
-    # node:20-slim here rather than alpine, which segfaulted (9ec8510).
+    # node:24-slim here rather than alpine, which segfaulted (9ec8510).
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
