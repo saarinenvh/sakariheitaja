@@ -2,7 +2,7 @@ import { generate, loadPrompt, OllamaMessage } from "../../shared/llm/ollamaClie
 import { generateComment } from "./commentary";
 import { buildCommentaryBrief, buildPromptFromBrief } from "./commentaryBrief";
 import { Change, MetrixPlayerResult } from "../../types/metrix";
-import { initTracker, clearTracker, recordEvent, shouldResetConversation, buildSummary } from "./roundTracker";
+import { clearTracker, recordEvent, shouldResetConversation, buildSummary } from "./roundTracker";
 import Logger from "js-logger";
 
 let systemPrompt: string | null = null;

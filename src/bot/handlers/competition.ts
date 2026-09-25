@@ -72,9 +72,11 @@ competition.command("top5", async ctx => {
   }
 
   const orchestrator = registry.find(chatId, ctx.match.trim());
-  orchestrator
-    ? orchestrator.sendTopList()
-    : await ctx.reply(MSG.top5NoneActive);
+  if (orchestrator) {
+    orchestrator.sendTopList();
+  } else {
+    await ctx.reply(MSG.top5NoneActive);
+  }
 });
 
 // /score <player name>
