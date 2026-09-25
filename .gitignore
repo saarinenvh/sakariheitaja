@@ -72,11 +72,3 @@ instructions/
 
 # Python virtualenvs
 sakke-venv/
-training/sakke-venv/
-
-# Training artifacts (large model files / checkpoints)
-training/lora_*/
-training/__pycache__/
-training/unsloth_compiled_cache/
-training/training_data.jsonl
-*.gguf

@@ -1,9 +1,0 @@
-packaging
-numpy
-datasets
-transformers
-trl
-peft
-accelerate
-bitsandbytes
-torchvision

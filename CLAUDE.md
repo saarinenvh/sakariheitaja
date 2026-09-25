@@ -12,7 +12,8 @@ The bot:
 * Stores historical results in a database
 * Maintains long-term player performance data
 
-The system is being refactored from legacy code into a modern TypeScript architecture.
+The system was refactored from legacy code into TypeScript; what follows is the
+architecture it settled on and the rules that still apply.
 
 ---
 
