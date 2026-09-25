@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # Minor/patch bumps are grouped into one weekly PR. The 12 PRs just closed
+  # on this repo were stale artifacts from before the TypeScript/TypeORM
+  # rewrite, left open indefinitely with no config driving them - grouping
+  # keeps a fresh setup from accumulating the same kind of clutter.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
