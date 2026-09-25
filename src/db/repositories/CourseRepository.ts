@@ -15,7 +15,9 @@ export async function upsert(name: string): Promise<void> {
     "INSERT INTO courses (name) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM courses WHERE name = ?)",
     [name, name]
   );
-  result.affectedRows > 0
-    ? Logger.info(`Course: ${name} - added successfully`)
-    : Logger.debug(`Course: ${name} - already exists, nothing to do`);
+  if (result.affectedRows > 0) {
+    Logger.info(`Course: ${name} - added successfully`);
+  } else {
+    Logger.debug(`Course: ${name} - already exists, nothing to do`);
+  }
 }
