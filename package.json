@@ -16,9 +16,9 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^16.4.5",
-    "grammy": "^1.41.1",
+    "grammy": "^1.46.0",
     "js-logger": "^1.6.1",
-    "mysql2": "^3.20.0",
+    "mysql2": "^3.24.4",
     "reflect-metadata": "^0.2.2",
     "typeorm": "^0.3.28"
   },
