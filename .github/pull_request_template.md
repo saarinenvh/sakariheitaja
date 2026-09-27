@@ -19,4 +19,4 @@
 - [ ] If this fixes a bug: the new/updated test was verified to actually fail against the pre-fix code
 - [ ] `npm run lint`, `npm test`, and `npm run build` pass locally
 - [ ] No secrets, tokens, or `.env` values in the diff
-- [ ] README / CLAUDE.md updated if behavior, config, or setup changed
+- [ ] README / AGENTS.md updated if behavior, config, or setup changed
