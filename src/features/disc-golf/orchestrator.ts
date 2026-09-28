@@ -1,6 +1,6 @@
 import { bot } from "../../bot/bot";
 import Poller from "./poller";
-import { formatTopList, generateHeader, truncateCourseName } from "./commentary";
+import { formatTopList, truncateCourseName } from "./commentary";
 import * as playerRepo from "../../db/repositories/PlayerRepository";
 import * as competitionService from "./services/CompetitionService";
 import * as courseService from "./services/CourseService";
@@ -17,8 +17,12 @@ import {
   TrackedRoundPlayer, trackRoundPlayers, UnsupportedRoundError,
 } from "./metrixRound";
 import Logger from "js-logger";
+import { env } from "../../shared/env";
+import { fetchCurrentWeather, WeatherObservation } from "../../shared/weather";
+import { CourseLocationResult, fetchCourseLocation } from "./courseLocation";
 
 const BASE_URL = "https://discgolfmetrix.com/api.php?content=result&id=";
+const DEFAULT_COUNTRY_CODE = "FI";
 
 export class Orchestrator {
   following = true;
@@ -30,15 +34,20 @@ export class Orchestrator {
   private pollQueue: Promise<void> = Promise.resolve();
   private endQueued = false;
   private commentary: RoundCommentary;
+  private courseLocation: CourseLocationResult | null = null;
 
   constructor(
     public id: number, public metrixId: string, public chatId: number, private playersAnnounced = false,
   ) {
     this.commentary = new RoundCommentary(chatId, metrixId, {
       write: writeRoundCommentary,
-      send: html => bot.api.sendMessage(chatId, html, HTML_NO_PREVIEW),
+      fetchWeather: () => this.fetchCourseWeather(),
+      send: async html => {
+        const sent = await bot.api.sendMessage(chatId, html, HTML_NO_PREVIEW);
+        Logger.info(`${metrixId}: commentary message sent (${html.length} chars)`);
+        return sent;
+      },
       saveScores: (playerId, courseName, changes) => scoreService.saveRecordedScores(playerId, changes, chatId, id, courseName),
-      opening: generateHeader,
       onError: error => Logger.error(`${metrixId}: commentary delivery failed`, error),
     });
   }
@@ -71,6 +80,25 @@ export class Orchestrator {
     return this;
   }
 
+  private async fetchCourseWeather(): Promise<WeatherObservation | null> {
+    const round = this.snapshot;
+    if (!round?.courseId) return null;
+    const location = this.courseLocation
+      ?? await fetchCourseLocation(round.courseId, round.courseName, env("BOT_COMMENTARY_COUNTRY_CODE") ?? DEFAULT_COUNTRY_CODE);
+    if (location.kind !== "failed") this.courseLocation = location;
+    if (location.kind !== "found") {
+      Logger.warn(`${this.metrixId}: no course location for weather (${location.kind})`);
+      return null;
+    }
+    const weather = await fetchCurrentWeather(location.location);
+    if (weather.kind === "failed") {
+      Logger.warn(`${this.metrixId}: weather unavailable: ${weather.reason}`);
+      return null;
+    }
+    Logger.info(`${this.metrixId}: weather ${weather.observation.temperatureC} °C, ${weather.observation.description}`);
+    return weather.observation;
+  }
+
   stopFollowing(): void {
     this.following = false;
     this.poller?.stop();
@@ -101,6 +129,7 @@ export class Orchestrator {
     const tracked = await this.refreshTrackedPlayers(round);
     if (!this.following) return;
     const changed = this.commentary.observe(round, tracked);
+    if (changed) Logger.info(`${this.metrixId}: score changes detected, commentary queued`);
     this.snapshot = round;
     this.trackedPlayers = tracked;
     this.poller?.reportChanges(changed);

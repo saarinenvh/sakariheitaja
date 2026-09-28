@@ -37,6 +37,7 @@ async function callOllama(
   messages: OllamaMessage[],
   options: OllamaOptions,
   tools?: OllamaTool[],
+  format?: Record<string, unknown>,
 ): Promise<{ content: string; toolCalls?: { function: { name: string; arguments: Record<string, unknown> } }[] }> {
   const body: Record<string, unknown> = {
     model,
@@ -53,6 +54,7 @@ async function callOllama(
   };
 
   if (tools?.length) body.tools = tools;
+  if (format) body.format = format;
 
   const trace = await startOllamaTrace(body);
   let responseReceived = false;
@@ -142,6 +144,17 @@ export async function generate(
   }
 
   throw new Error("Ollama tool call loop exceeded max rounds");
+}
+
+/** Requests a reply constrained to `jsonSchema` and returns the raw JSON text, unparsed. */
+export async function generateStructured(
+  messages: OllamaMessage[],
+  jsonSchema: Record<string, unknown>,
+  options: OllamaOptions = {},
+): Promise<string> {
+  const { content } = await callOllama(messages, options, undefined, jsonSchema);
+  if (!content) throw new Error("Ollama returned empty response");
+  return content;
 }
 
 export function loadPrompt(filename: string): string {

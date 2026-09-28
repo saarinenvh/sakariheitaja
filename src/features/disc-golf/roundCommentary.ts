@@ -1,16 +1,21 @@
 import { PublishedStanding } from "./commentaryAnalysis";
 import { compareScorecards, ScoreChange } from "./commentaryFacts";
 import { buildFactualCommentaryBrief, CommentarySnapshot, FactualCommentaryBrief } from "./factualCommentaryBrief";
-import { CommentaryPromptContext, CommentaryText } from "./commentaryWriter";
 import { buildCommentarySnapshot, MetrixRound, TrackedRoundPlayer } from "./metrixRound";
-import { formatCommentaryMessages } from "./commentaryPresentation";
-import { buildCompetitionFacts, CompetitionPlayerFact } from "./competitionFacts";
+import { formatBatchCommentaryMessages } from "./commentaryPresentation";
+import { BatchCommentaryContext, buildBatchCommentaryContext, WeatherFacts } from "./batchCommentaryContext";
+import { BatchCommentaryResult } from "./batchCommentaryWriter";
+import { WeatherObservation } from "../../shared/weather";
+import { describeWeather, describeWeatherChange } from "./weatherFacts";
+
+const RECENT_MESSAGE_COUNT = 3;
+const WEATHER_RECHECK_PROGRESS_FRACTION = 0.5;
 
 export interface CommentaryDelivery {
-  write(context: CommentaryPromptContext): Promise<CommentaryText>;
+  write(context: BatchCommentaryContext): Promise<BatchCommentaryResult>;
+  fetchWeather(): Promise<WeatherObservation | null>;
   send(html: string): Promise<unknown>;
   saveScores(playerId: number, courseName: string, changes: readonly ScoreChange[]): Promise<void>;
-  opening(): string;
   onError(error: unknown): void;
 }
 
@@ -24,26 +29,34 @@ interface PendingUpdate {
   previous: CommentarySnapshot;
   current: CommentarySnapshot;
   firstRecorded: readonly number[];
-  competitionFacts: readonly CompetitionPlayerFact[];
 }
 
 interface ObservationBatch {
-  layoutKey: string;
+  round: MetrixRound;
   resetPlayers: number[];
   updates: PendingUpdate[];
 }
 
-interface PendingPost {
+interface PendingBrief {
   current: CommentarySnapshot;
   brief: FactualCommentaryBrief;
-  text: string;
   newScores: readonly ScoreChange[];
 }
+
+interface PendingPost extends PendingBrief {
+  text: string;
+}
+
+type RoundWeather =
+  | { kind: "not-fetched" }
+  | { kind: "started"; start: WeatherObservation | null }
+  | { kind: "rechecked" };
 
 export class RoundCommentary {
   private observed = new Map<number, ObservedPlayer>();
   private published = new Map<number, PublishedStanding>();
-  private history = new Map<number, string[]>();
+  private recentMessages = new Map<string, string[]>();
+  private weather: RoundWeather = { kind: "not-fetched" };
   private observedLayout: string | null = null;
   private publishedLayout: string | null = null;
   private queue: Promise<void> = Promise.resolve();
@@ -67,13 +80,13 @@ export class RoundCommentary {
     this.active = false;
     this.observed.clear();
     this.published.clear();
-    this.history.clear();
+    this.recentMessages.clear();
   }
 
   private captureObservation(round: MetrixRound, tracked: readonly TrackedRoundPlayer[]): ObservationBatch {
     if (this.observedLayout !== round.layoutKey) this.observed.clear();
     this.observedLayout = round.layoutKey;
-    const batch: ObservationBatch = { layoutKey: round.layoutKey, resetPlayers: [], updates: [] };
+    const batch: ObservationBatch = { round, resetPlayers: [], updates: [] };
     const currentPlayers = new Map<number, ObservedPlayer>();
     for (const player of tracked) {
       const current = buildCommentarySnapshot(round, player, this.chatId);
@@ -96,8 +109,7 @@ export class RoundCommentary {
       }
       const comparison = compareScorecards(previous.snapshot.scorecard, current.scorecard);
       if (comparison.kind === "compared" && comparison.changes.length > 0) {
-        batch.updates.push({ previous: previous.snapshot, current, firstRecorded,
-          competitionFacts: buildCompetitionFacts(round, player.player) });
+        batch.updates.push({ previous: previous.snapshot, current, firstRecorded });
       }
     }
     for (const playerId of this.observed.keys()) {
@@ -109,60 +121,105 @@ export class RoundCommentary {
 
   private async publishBatch(batch: ObservationBatch): Promise<void> {
     if (!this.active) return;
-    if (this.publishedLayout !== batch.layoutKey) {
-      this.published.clear();
-      this.history.clear();
-      this.publishedLayout = batch.layoutKey;
-    }
-    for (const playerId of batch.resetPlayers) {
-      this.published.delete(playerId);
-      this.history.delete(playerId);
-    }
-    const posts = await this.writePosts(batch.updates);
-    const messages = formatCommentaryMessages(posts, this.metrixId, this.delivery.opening());
-    for (const message of messages) {
+    this.resetPublishedState(batch);
+    for (const [division, pending] of this.buildBriefsByDivision(batch.updates)) {
       if (!this.active) return;
-      await this.delivery.send(message.html);
-      if (!this.active) return;
-      for (const fragment of message.published) this.acknowledge(fragment.post, fragment.text);
-      for (const { post, firstFragment } of message.published) {
-        if (!firstFragment) continue;
-        try {
-          await this.delivery.saveScores(post.current.scope.playerId, post.current.courseName, post.newScores);
-        } catch (error) {
-          this.delivery.onError(error);
-        }
-      }
+      const weather = await this.collectWeatherFacts(pending.map(entry => entry.brief));
+      const context = buildBatchCommentaryContext({
+        round: batch.round, division, briefs: pending.map(entry => entry.brief), weather,
+        recentMessages: [...(this.recentMessages.get(division) ?? [])],
+      });
+      const result = await this.delivery.write(context);
+      await this.deliverBatch(division, result, pending);
     }
   }
 
-  private async writePosts(updates: readonly PendingUpdate[]): Promise<PendingPost[]> {
-    const posts: PendingPost[] = [];
-    for (const update of updates) {
-      if (!this.active) break;
-      const { current, previous } = update;
+  private resetPublishedState(batch: ObservationBatch): void {
+    if (this.publishedLayout !== batch.round.layoutKey) {
+      this.published.clear();
+      this.recentMessages.clear();
+      this.publishedLayout = batch.round.layoutKey;
+    }
+    for (const playerId of batch.resetPlayers) this.published.delete(playerId);
+  }
+
+  private buildBriefsByDivision(updates: readonly PendingUpdate[]): Map<string, PendingBrief[]> {
+    const byDivision = new Map<string, PendingBrief[]>();
+    for (const { current, previous, firstRecorded } of updates) {
       const result = buildFactualCommentaryBrief({
         previousObserved: previous, current, lastPublished: this.published.get(current.scope.playerId) ?? null,
       });
       if (result.kind !== "ready") continue;
       const brief = result.brief;
-      const commentary = await this.delivery.write({
-        factualBrief: brief, competitionFacts: update.competitionFacts,
-        narrativeHistory: [...(this.history.get(current.scope.playerId) ?? [])],
-      });
-      posts.push({
-        current, brief, text: commentary.text,
-        newScores: brief.changes.filter(change => change.kind === "recorded" && update.firstRecorded.includes(change.holeNumber)),
-      });
+      const newScores = brief.changes.filter(change => change.kind === "recorded" && firstRecorded.includes(change.holeNumber));
+      const division = byDivision.get(brief.division) ?? [];
+      division.push({ current, brief, newScores });
+      byDivision.set(brief.division, division);
     }
-    return posts;
+    return byDivision;
   }
 
-  private acknowledge(post: PendingPost, deliveredText: string): void {
+  private async deliverBatch(division: string, result: BatchCommentaryResult, pending: readonly PendingBrief[]): Promise<void> {
+    const { opening, lines, closing } = result.commentary;
+    const posts: PendingPost[] = pending.map((entry, index) => ({ ...entry, text: lines[index].text }));
+    for (const message of formatBatchCommentaryMessages(opening, posts, closing, this.metrixId)) {
+      if (!this.active) return;
+      await this.delivery.send(message.html);
+      if (!this.active) return;
+      for (const post of message.posts) this.acknowledge(post);
+      for (const post of message.posts) await this.saveScores(post);
+    }
+    if (result.kind === "generated") this.rememberMessage(division, [opening, ...lines.map(line => line.text), closing]);
+  }
+
+  private async collectWeatherFacts(briefs: readonly FactualCommentaryBrief[]): Promise<WeatherFacts | null> {
+    if (this.weather.kind === "not-fetched") {
+      const start = await this.fetchWeather();
+      this.weather = { kind: "started", start };
+      return start ? { current: describeWeather(start), changeSinceStart: null } : null;
+    }
+    if (this.weather.kind !== "started" || maxProgressFraction(briefs) < WEATHER_RECHECK_PROGRESS_FRACTION) return null;
+    const { start } = this.weather;
+    this.weather = { kind: "rechecked" };
+    const current = await this.fetchWeather();
+    const change = start && current ? describeWeatherChange(start, current) : null;
+    return current && change ? { current: describeWeather(current), changeSinceStart: change } : null;
+  }
+
+  private async fetchWeather(): Promise<WeatherObservation | null> {
+    try {
+      return await this.delivery.fetchWeather();
+    } catch (error) {
+      this.delivery.onError(error);
+      return null;
+    }
+  }
+
+  private async saveScores(post: PendingPost): Promise<void> {
+    try {
+      await this.delivery.saveScores(post.current.scope.playerId, post.current.courseName, post.newScores);
+    } catch (error) {
+      this.delivery.onError(error);
+    }
+  }
+
+  private acknowledge(post: PendingPost): void {
     const { scope, standing } = post.current;
     this.published.set(scope.playerId, { scope, standing });
-    const history = this.history.get(scope.playerId) ?? [];
-    history.push(deliveredText);
-    this.history.set(scope.playerId, history);
   }
+
+  private rememberMessage(division: string, parts: readonly string[]): void {
+    const messages = this.recentMessages.get(division) ?? [];
+    messages.push(parts.filter(part => part.trim()).join("\n"));
+    this.recentMessages.set(division, messages.slice(-RECENT_MESSAGE_COUNT));
+  }
+}
+
+function maxProgressFraction(briefs: readonly FactualCommentaryBrief[]): number {
+  let fraction = 0;
+  for (const { round: { progress } } of briefs) {
+    if (progress.kind === "unknown" || progress.totalHoles === null || progress.totalHoles === 0) continue;
+    fraction = Math.max(fraction, progress.completedHoles / progress.totalHoles);
+  }
+  return fraction;
 }

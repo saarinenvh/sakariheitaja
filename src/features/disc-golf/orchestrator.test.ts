@@ -4,14 +4,14 @@ import { OllamaMessage } from "../../shared/llm/ollamaClient";
 const mocks = vi.hoisted(() => ({
   getData: vi.fn<() => Promise<unknown>>(),
   send: vi.fn<(chatId: number, text: string) => Promise<unknown>>(),
-  generate: vi.fn<(messages: OllamaMessage[]) => Promise<string>>(),
+  generate: vi.fn<(messages: OllamaMessage[], jsonSchema: unknown, options: unknown) => Promise<string>>(),
   handlers: new Map<string, (input: unknown) => Promise<void>>(),
   markDone: vi.fn(), saveScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
 }));
 
 vi.mock("../../bot/bot", () => ({ bot: { api: { sendMessage: mocks.send } } }));
 vi.mock("../../shared/http", () => ({ getData: mocks.getData }));
-vi.mock("../../shared/llm/ollamaClient", () => ({ generate: mocks.generate, loadPrompt: () => "Sakke" }));
+vi.mock("../../shared/llm/ollamaClient", () => ({ generateStructured: mocks.generate, loadPrompt: () => "Sakke" }));
 vi.mock("../../db/repositories/PlayerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
 vi.mock("./services/CompetitionService", () => ({ markDone: mocks.markDone }));
 vi.mock("./services/CourseService", () => ({ getOrCreate: async () => ({ id: 2 }) }));
@@ -33,6 +33,9 @@ vi.mock("./poller", () => ({ default: class {
 } }));
 
 import { Orchestrator } from "./orchestrator";
+
+const batchReply = (text: string): string =>
+  JSON.stringify({ opening: "Avaus.", players: [{ name: "Matti", text }], closing: "Loppu." });
 
 function response(strokes: readonly (number | null)[], position = "11") {
   const holes = strokes.map(value => value === null ? [] : { Result: String(value), Diff: value - 3, PEN: 0 });
@@ -65,7 +68,7 @@ beforeEach(() => {
   process.env.LLM_ENABLED = "true";
   mocks.getData.mockResolvedValue(response([null, null, null]));
   mocks.send.mockResolvedValue(undefined);
-  mocks.generate.mockResolvedValue("Matti, ihan jees.");
+  mocks.generate.mockResolvedValue(batchReply("Matti, ihan jees."));
 });
 
 describe("poll to publication", () => {
@@ -87,9 +90,9 @@ describe("poll to publication", () => {
     await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(2));
     expect(mocks.send.mock.calls[1][1]).toContain("sija 10 ↑");
     const context = JSON.parse(mocks.generate.mock.calls[1][0][1].content);
-    expect(context.narrativeHistory).toEqual(["Matti, ihan jees."]);
-    expect(context.factualBrief.standing).toContain("sijalla 10");
-    expect(mocks.generate.mock.calls[1]).toEqual(expect.arrayContaining([expect.objectContaining({ num_ctx: 16384 })]));
+    expect(context.recentMessages).toEqual(["Avaus.\nMatti, ihan jees.\nLoppu."]);
+    expect(context.players[0]).toMatchObject({ position: 10, positionChange: "nousu 1" });
+    expect(mocks.generate.mock.calls[1][2]).toMatchObject({ num_ctx: 16384 });
     orchestrator.stopFollowing();
   });
 
@@ -113,7 +116,7 @@ describe("poll to publication", () => {
     await poll(response([3, 3, 3]));
     await vi.waitFor(() => expect(mocks.generate).toHaveBeenCalledTimes(1));
     expect(mocks.markDone).not.toHaveBeenCalled();
-    release("Matti pelasi parin.");
+    release(batchReply("Matti pelasi parin."));
     await vi.waitFor(() => expect(mocks.markDone).toHaveBeenCalledWith(1));
     expect(mocks.send.mock.calls[0][1]).toContain("Matti pelasi parin.");
     expect(orchestrator.following).toBe(false);

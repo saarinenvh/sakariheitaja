@@ -1,13 +1,23 @@
-import { generate, loadPrompt } from "../../shared/llm/ollamaClient";
-import { buildFactualFallback, CommentaryPromptContext, CommentaryText, writeFactualCommentary } from "./commentaryWriter";
+import Logger from "js-logger";
+import { generateStructured, loadPrompt } from "../../shared/llm/ollamaClient";
+import { BatchCommentaryContext } from "./batchCommentaryContext";
+import { BatchCommentaryResult, buildBatchFallback, writeBatchCommentary } from "./batchCommentaryWriter";
 
-const COMMENTARY_MODEL_OPTIONS = { temperature: 0.9, num_predict: 350, num_ctx: 16384, repeat_penalty: 1.1 };
+const COMMENTARY_MODEL_OPTIONS = { temperature: 0.9, num_predict: 800, num_ctx: 16384, repeat_penalty: 1.1 };
+const BATCH_PROMPT_FILE = "batch_commentator.md";
+const MS_PER_SECOND = 1000;
 let systemPrompt: string | undefined;
 
-export async function writeRoundCommentary(context: CommentaryPromptContext): Promise<CommentaryText> {
+export async function writeRoundCommentary(context: BatchCommentaryContext): Promise<BatchCommentaryResult> {
   if (process.env.LLM_ENABLED !== "true") {
-    return { kind: "fallback", text: buildFactualFallback(context.factualBrief), reason: "disabled" };
+    return { kind: "fallback", commentary: buildBatchFallback(context), reason: "disabled" };
   }
-  systemPrompt ??= ["persona.md", "disc_golf_vocabulary.md", "commentator.md"].map(loadPrompt).join("\n\n---\n\n");
-  return writeFactualCommentary(context, systemPrompt, messages => generate(messages, COMMENTARY_MODEL_OPTIONS));
+  systemPrompt ??= loadPrompt(BATCH_PROMPT_FILE);
+  const startedAt = Date.now();
+  Logger.info(`Commentary: writing a batch for ${context.players.map(brief => brief.playerName).join(", ")}`);
+  const result = await writeBatchCommentary(context, systemPrompt,
+    (messages, jsonSchema) => generateStructured(messages, jsonSchema, COMMENTARY_MODEL_OPTIONS));
+  const outcome = result.kind === "generated" ? "generated" : `fallback (${result.reason})`;
+  Logger.info(`Commentary: batch ${outcome} in ${Math.round((Date.now() - startedAt) / MS_PER_SECOND)}s`);
+  return result;
 }

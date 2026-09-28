@@ -8,6 +8,7 @@ import { CommentarySnapshot } from "./factualCommentaryBrief";
 
 const positiveInteger = integerSchema.pipe(z.number().int().positive());
 const identifier = positiveInteger.transform(String);
+const optionalIdentifier = identifier.nullish().catch(null).transform(value => value ?? null);
 const optionalText = z.string().nullish().transform(value => value ?? "");
 // Metrix reports tied players, and many players early in a round, with place 0.
 const METRIX_UNRANKED = 0;
@@ -40,6 +41,7 @@ const roundSchema = z.object({
     Name: z.string(),
     Date: z.string(),
     CourseName: z.string(),
+    CourseID: optionalIdentifier,
     Tracks: z.array(trackSchema),
     SubCompetitions: z.array(z.unknown()).nullish(),
     HasSubcompetitions: optionalIntegerSchema,
@@ -66,6 +68,7 @@ export interface MetrixRound {
   name: string;
   date: string;
   courseName: string;
+  courseId: string | null;
   layoutKey: string;
   holeLabels: readonly string[];
   players: readonly RoundPlayer[];
@@ -105,7 +108,7 @@ export function parseMetrixRound(input: unknown, expectedId: string): MetrixRoun
   const players = source.Results.map((player, index) => normalizePlayer(player, source, tiedPositions[index]));
   return {
     id: source.ID, name: source.Name, date: source.Date, courseName: source.CourseName,
-    layoutKey: JSON.stringify([source.CourseName, source.Tracks]), holeLabels, players,
+    courseId: source.CourseID, layoutKey: JSON.stringify([source.CourseName, source.Tracks]), holeLabels, players,
   };
 }
 
