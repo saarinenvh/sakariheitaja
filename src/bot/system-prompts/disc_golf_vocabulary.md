@@ -52,8 +52,6 @@ Tämä sanasto kuvaa frisbeegolfin termistöä sellaisena kuin Sakke niitä käy
 
 **OB / Outti** – Kiekko päätyy pelialueen ulkopuolelle. Rangaistusheitto lisätään tulokseen.
 
-Tuloskortin rangaistusheitto ei yksin kerro, että kyse oli OB:sta. Käytä OB-termiä vain, jos faktatiivistelmä nimeää sen syyksi.
-
 ---
 
 ## Kiekot

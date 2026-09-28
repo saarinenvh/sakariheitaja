@@ -60,14 +60,17 @@ describe("factual commentary brief", () => {
     });
   });
 
-  it("distinguishes mixed updates and acknowledges unknown penalty causes", () => {
+  it("distinguishes mixed updates and includes OB count as a known fact", () => {
     const brief = readyBrief(buildFactualCommentaryBrief({
       previousObserved: snapshot([{ Result: 4, Diff: 1 }, [], []]),
       current: snapshot([{ Result: 3, Diff: 0 }, { Result: 5, Diff: 2, PEN: 1 }, []]), lastPublished: null,
     }));
     expect(brief.event).toBe("mixed-update");
-    expect(brief.limitations).toContain("penalty-cause-unknown");
-    expect(serializeFactualBrief(brief)).not.toContain("OB");
+    expect(brief.limitations).toEqual(["play-order-unknown"]);
+    expect(brief.changes).toContainEqual({
+      kind: "recorded", holeNumber: 2, score: { strokes: 5, relativeToPar: 2, obCount: 1 },
+    });
+    expect(serializeFactualBrief(brief)).toContain("obCount");
   });
 
   it("serializes only the selected factual contract, not a full card or static profile", () => {

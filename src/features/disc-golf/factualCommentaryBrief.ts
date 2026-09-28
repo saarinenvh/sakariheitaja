@@ -19,7 +19,7 @@ export interface FactualBriefInput {
   lastPublished: PublishedStanding | null;
 }
 
-export type BriefLimitation = "play-order-unknown" | "penalty-cause-unknown";
+export type BriefLimitation = "play-order-unknown";
 
 export interface FactualCommentaryBrief {
   playerName: string;
@@ -75,12 +75,5 @@ function classifyChanges(changes: readonly ScoreChange[]): FactualCommentaryBrie
 }
 
 function buildLimitations(changes: readonly ScoreChange[]): FactualCommentaryBrief["limitations"] {
-  const limitations: BriefLimitation[] = ["play-order-unknown"];
-  const hasPenalty = changes.some(change => {
-    if (change.kind === "recorded") return (change.score.penaltyStrokes ?? 0) > 0;
-    if (change.kind === "removed") return (change.previous.penaltyStrokes ?? 0) > 0;
-    return (change.previous.penaltyStrokes ?? 0) > 0 || (change.current.penaltyStrokes ?? 0) > 0;
-  });
-  if (hasPenalty) limitations.push("penalty-cause-unknown");
-  return limitations;
+  return changes.length > 0 ? ["play-order-unknown"] : [];
 }

@@ -28,7 +28,7 @@ export async function writeFactualCommentary(
     if (!result.success) {
       return { kind: "fallback", text: buildFactualFallback(brief), reason: "unusable-response" };
     }
-    if (containsPromptLeak(result.data)) {
+    if (containsPromptLeak(result.data) || !mentionsPlayer(result.data, brief.playerName)) {
       return { kind: "fallback", text: buildFactualFallback(brief), reason: "unusable-response" };
     }
     return { kind: "generated", text: result.data };
@@ -39,7 +39,7 @@ export async function writeFactualCommentary(
 
 export function buildFactualFallback(brief: FactualCommentaryBrief): string {
   const opening = getFallbackOpening(brief);
-  const changes = brief.changes.map(describeChange).join(" ");
+  const changes = `${brief.playerName}: ${brief.changes.map(describeChange).join(" ")}`;
   const standing = describeStanding(brief);
   const round = describeRound(brief);
   return [opening, changes, standing, round].filter(Boolean).join(" ");
@@ -47,6 +47,10 @@ export function buildFactualFallback(brief: FactualCommentaryBrief): string {
 
 function containsPromptLeak(text: string): boolean {
   return responseLeakMarkers.some(marker => text.includes(marker));
+}
+
+function mentionsPlayer(text: string, playerName: string): boolean {
+  return text.toLocaleLowerCase("fi").includes(playerName.toLocaleLowerCase("fi"));
 }
 
 function getFallbackOpening(brief: FactualCommentaryBrief): string {
@@ -80,10 +84,10 @@ function describeScore(score: HoleScore): string {
     : relativeToPar === 1 ? "bogi"
     : relativeToPar === 2 ? "tuplabogi"
     : `${relativeToPar} yli parin`;
-  const penalty = score.penaltyStrokes === null || score.penaltyStrokes === 0 ? ""
-    : score.penaltyStrokes === 1 ? ", 1 rangaistusheitto"
-    : `, ${score.penaltyStrokes} rangaistusheittoa`;
-  return `${label} (${score.strokes} heittoa${penalty})`;
+  const outOfBounds = score.obCount === null || score.obCount === 0 ? ""
+    : score.obCount === 1 ? ", 1 OB"
+    : `, ${score.obCount} OB-merkintää`;
+  return `${label} (${score.strokes} heittoa${outOfBounds})`;
 }
 
 function describeStanding(brief: FactualCommentaryBrief): string {

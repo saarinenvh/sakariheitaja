@@ -2,14 +2,18 @@ import { z } from "zod";
 import { parseOrThrow } from "../../util/validation";
 import { integerSchema, optionalIntegerSchema } from "./scoreSchemas";
 
+const obScoreFieldsSchema = z.object({
+  PEN: optionalIntegerSchema.refine(value => value === null || value >= 0),
+  OB: optionalIntegerSchema.refine(value => value === null || value >= 0),
+}).refine(score => score.PEN === null || score.OB === null || score.PEN === score.OB);
+
 const holeScoreSchema = z.object({
   Result: integerSchema.pipe(z.number().int().positive()),
   Diff: optionalIntegerSchema,
-  PEN: optionalIntegerSchema.refine(value => value === null || value >= 0),
-}).transform(score => ({
+}).and(obScoreFieldsSchema).transform(score => ({
   strokes: score.Result,
   relativeToPar: score.Diff,
-  penaltyStrokes: score.PEN,
+  obCount: score.PEN ?? score.OB,
 }));
 
 const scorecardSchema = z.array(z.union([
@@ -70,5 +74,5 @@ function compareHole(previous: HoleScore | null, current: HoleScore | null, hole
 function scoresMatch(previous: HoleScore, current: HoleScore): boolean {
   return previous.strokes === current.strokes
     && previous.relativeToPar === current.relativeToPar
-    && previous.penaltyStrokes === current.penaltyStrokes;
+    && previous.obCount === current.obCount;
 }

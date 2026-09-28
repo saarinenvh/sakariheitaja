@@ -11,9 +11,9 @@ describe("parseScorecard", () => {
     ])).toEqual({
       kind: "available",
       holes: [
-        { strokes: 3, relativeToPar: -1, penaltyStrokes: 0 },
+        { strokes: 3, relativeToPar: -1, obCount: 0 },
         null,
-        { strokes: 5, relativeToPar: 2, penaltyStrokes: 1 },
+        { strokes: 5, relativeToPar: 2, obCount: 1 },
       ],
     });
   });
@@ -26,11 +26,20 @@ describe("parseScorecard", () => {
     ])).toEqual({
       kind: "available",
       holes: [
-        { strokes: 3, relativeToPar: null, penaltyStrokes: null },
-        { strokes: 3, relativeToPar: null, penaltyStrokes: null },
-        { strokes: 3, relativeToPar: 0, penaltyStrokes: 0 },
+        { strokes: 3, relativeToPar: null, obCount: null },
+        { strokes: 3, relativeToPar: null, obCount: null },
+        { strokes: 3, relativeToPar: 0, obCount: 0 },
       ],
     });
+  });
+
+  it("normalizes Metrix OB and PEN fields to one OB count", () => {
+    expect(parseScorecard([
+      { Result: "3", OB: "1" },
+      { Result: "4", PEN: 1 },
+      { Result: "3", OB: 1, PEN: "1" },
+    ])).toMatchObject({ kind: "available", holes: [{ obCount: 1 }, { obCount: 1 }, { obCount: 1 }] });
+    expect(() => parseScorecard([{ Result: "3", OB: 1, PEN: 2 }])).toThrow(ValidationError);
   });
 
   it.each([undefined, null, []].map(input => ({ input })))("treats an absent scorecard as unavailable ($input)", ({ input }) => {
@@ -75,8 +84,8 @@ describe("compareScorecards", () => {
     expect(compareScorecards(previous, current)).toEqual({
       kind: "compared",
       changes: [
-        { kind: "recorded", holeNumber: 3, score: { strokes: 2, relativeToPar: -1, penaltyStrokes: null } },
-        { kind: "recorded", holeNumber: 4, score: { strokes: 3, relativeToPar: 0, penaltyStrokes: null } },
+        { kind: "recorded", holeNumber: 3, score: { strokes: 2, relativeToPar: -1, obCount: null } },
+        { kind: "recorded", holeNumber: 4, score: { strokes: 3, relativeToPar: 0, obCount: null } },
       ],
     });
   });

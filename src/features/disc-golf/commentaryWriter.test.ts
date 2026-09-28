@@ -28,9 +28,9 @@ describe("factual commentary writer", () => {
         { role: "system", content: "Sakke voice instructions" },
         { role: "user", content: JSON.stringify(brief) },
       ]);
-      return "Par. Kortti etenee.";
+      return "Matti pelaa parin, ja kortti etenee.";
     });
-    expect(result).toEqual({ kind: "generated", text: "Par. Kortti etenee." });
+    expect(result).toEqual({ kind: "generated", text: "Matti pelaa parin, ja kortti etenee." });
   });
 
   it("uses a factual deterministic fallback when generation fails", async () => {
@@ -44,8 +44,7 @@ describe("factual commentary writer", () => {
       text: buildFactualFallback(brief),
     });
     expect(result.text).toContain("tuplabogi");
-    expect(result.text).toContain("1 rangaistusheitto");
-    expect(result.text).not.toContain("OB");
+    expect(result.text).toContain("1 OB");
     expect(result.text).not.toContain("secret provider details");
   });
 
@@ -58,6 +57,13 @@ describe("factual commentary writer", () => {
     },
   );
 
+  it("falls back when the generated commentary omits the player's name", async () => {
+    const brief = buildBrief([[], [], []], [[], [], { Result: 3, Diff: 0 }]);
+    await expect(writeFactualCommentary(brief, "Sakke", async () => "Par. Kortti etenee.")).resolves.toEqual({
+      kind: "fallback", reason: "unusable-response", text: buildFactualFallback(brief),
+    });
+  });
+
   it("describes score corrections and removals as edits instead of new achievements", () => {
     const brief = buildBrief(
       [{ Result: 5, Diff: 2 }, { Result: 3, Diff: 0 }, []],
@@ -65,6 +71,7 @@ describe("factual commentary writer", () => {
     );
     const fallback = buildFactualFallback(brief);
     expect(fallback).toContain("tulos muuttui");
+    expect(fallback).toContain("Matti:");
     expect(fallback).toContain("merkintä poistettiin");
     expect(fallback).not.toContain("uusi tulos");
   });
@@ -73,6 +80,7 @@ describe("factual commentary writer", () => {
     const first = buildFactualFallback(buildBrief([[], [], []], [[], [], { Result: 3, Diff: 0 }]));
     const second = buildFactualFallback(buildBrief([[], [], [], []], [[], [], [], { Result: 3, Diff: 0 }], 4));
     expect(first).not.toBe(second);
+    expect(first).toContain("Matti:");
     expect(first).toContain("Väylä 3: par");
     expect(second).toContain("Väylä 4: par");
   });
