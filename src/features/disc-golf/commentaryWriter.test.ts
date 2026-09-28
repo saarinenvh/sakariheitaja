@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseRoundState, parseStanding } from "./commentaryAnalysis";
 import { parseScorecard } from "./commentaryFacts";
 import { buildFactualCommentaryBrief, CommentarySnapshot } from "./factualCommentaryBrief";
-import { buildFactualFallback, writeFactualCommentary } from "./commentaryWriter";
+import { buildFactualFallback, CommentaryPromptContext, writeFactualCommentary } from "./commentaryWriter";
 
 function buildBrief(previous: unknown, current: unknown, holeCount = 3) {
   const makeSnapshot = (scorecard: unknown): CommentarySnapshot => ({
@@ -21,12 +21,19 @@ function buildBrief(previous: unknown, current: unknown, holeCount = 3) {
 }
 
 describe("factual commentary writer", () => {
-  it("sends the system style and compact factual JSON as a stateless request", async () => {
+  it("sends the factual brief and a single narrative-history field as structured context", async () => {
     const brief = buildBrief([[], [], []], [[], [], { Result: 3, Diff: 0 }]);
-    const result = await writeFactualCommentary(brief, "Sakke voice instructions", async messages => {
+    const context: CommentaryPromptContext = {
+      factualBrief: brief,
+      narrativeHistory: [
+        "No niin, Matti avasi kierroksen parilla. Eipä tässä vielä juhlia järjestetä.",
+        "Jori sentään löysi birdien. Nyt Matti saa vähän seurata sivusta.",
+      ],
+    };
+    const result = await writeFactualCommentary(context, "Sakke voice instructions", async messages => {
       expect(messages).toEqual([
         { role: "system", content: "Sakke voice instructions" },
-        { role: "user", content: JSON.stringify(brief) },
+        { role: "user", content: JSON.stringify(context) },
       ]);
       return "Matti pelaa parin, ja kortti etenee.";
     });
@@ -35,7 +42,7 @@ describe("factual commentary writer", () => {
 
   it("uses a factual deterministic fallback when generation fails", async () => {
     const brief = buildBrief([[], [], []], [[], [], { Result: 5, Diff: 2, PEN: 1 }]);
-    const result = await writeFactualCommentary(brief, "Sakke", async () => {
+    const result = await writeFactualCommentary({ factualBrief: brief, narrativeHistory: [] }, "Sakke", async () => {
       throw new Error("secret provider details");
     });
     expect(result).toEqual({
@@ -51,7 +58,7 @@ describe("factual commentary writer", () => {
   it.each(["", "   ", 42, null, "Pelaaja: Matti", "Reaktiovihjeitä: iloinen"]) (
     "falls back when model output is empty or leaks prompt text (%j)", async output => {
       const brief = buildBrief([[], [], []], [[], [], { Result: 3, Diff: 0 }]);
-      await expect(writeFactualCommentary(brief, "Sakke", async () => output)).resolves.toEqual({
+      await expect(writeFactualCommentary({ factualBrief: brief, narrativeHistory: [] }, "Sakke", async () => output)).resolves.toEqual({
         kind: "fallback", reason: "unusable-response", text: buildFactualFallback(brief),
       });
     },
@@ -59,7 +66,7 @@ describe("factual commentary writer", () => {
 
   it("falls back when the generated commentary omits the player's name", async () => {
     const brief = buildBrief([[], [], []], [[], [], { Result: 3, Diff: 0 }]);
-    await expect(writeFactualCommentary(brief, "Sakke", async () => "Par. Kortti etenee.")).resolves.toEqual({
+    await expect(writeFactualCommentary({ factualBrief: brief, narrativeHistory: [] }, "Sakke", async () => "Par. Kortti etenee.")).resolves.toEqual({
       kind: "fallback", reason: "unusable-response", text: buildFactualFallback(brief),
     });
   });

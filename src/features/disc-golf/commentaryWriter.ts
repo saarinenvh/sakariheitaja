@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { OllamaMessage } from "../../shared/llm/ollamaClient";
-import { FactualCommentaryBrief, serializeFactualBrief } from "./factualCommentaryBrief";
+import { FactualCommentaryBrief } from "./factualCommentaryBrief";
 import { HoleScore, ScoreChange } from "./commentaryFacts";
 
 const modelResponseSchema = z.string().trim().min(1);
@@ -8,33 +8,42 @@ const responseLeakMarkers = ["Pelaaja:", "Reaktiovihjeitä:", "Tulosnimivaihtoeh
 
 export type CommentaryModel = (messages: OllamaMessage[]) => Promise<unknown>;
 
+export interface CommentaryPromptContext {
+  factualBrief: FactualCommentaryBrief;
+  narrativeHistory: readonly string[];
+}
+
 export type CommentaryText =
   | { kind: "generated"; text: string }
   | { kind: "fallback"; text: string; reason: "generation-failed" | "unusable-response" };
 
 export async function writeFactualCommentary(
-  brief: FactualCommentaryBrief,
+  context: CommentaryPromptContext,
   systemPrompt: string,
   generate: CommentaryModel,
 ): Promise<CommentaryText> {
   const messages: OllamaMessage[] = [
     { role: "system", content: systemPrompt },
-    { role: "user", content: serializeFactualBrief(brief) },
+    { role: "user", content: serializeCommentaryContext(context) },
   ];
 
   try {
     const response = await generate(messages);
     const result = modelResponseSchema.safeParse(response);
     if (!result.success) {
-      return { kind: "fallback", text: buildFactualFallback(brief), reason: "unusable-response" };
+      return { kind: "fallback", text: buildFactualFallback(context.factualBrief), reason: "unusable-response" };
     }
-    if (containsPromptLeak(result.data) || !mentionsPlayer(result.data, brief.playerName)) {
-      return { kind: "fallback", text: buildFactualFallback(brief), reason: "unusable-response" };
+    if (containsPromptLeak(result.data) || !mentionsPlayer(result.data, context.factualBrief.playerName)) {
+      return { kind: "fallback", text: buildFactualFallback(context.factualBrief), reason: "unusable-response" };
     }
     return { kind: "generated", text: result.data };
   } catch {
-    return { kind: "fallback", text: buildFactualFallback(brief), reason: "generation-failed" };
+    return { kind: "fallback", text: buildFactualFallback(context.factualBrief), reason: "generation-failed" };
   }
+}
+
+export function serializeCommentaryContext(context: CommentaryPromptContext): string {
+  return JSON.stringify(context);
 }
 
 export function buildFactualFallback(brief: FactualCommentaryBrief): string {
