@@ -1,115 +1,42 @@
-# Frisbeegolf-sanasto – Sakken kontekstissa
+# Sakken frisbeegolfkieli ja huumori
 
-Tämä sanasto kuvaa frisbeegolfin termistöä sellaisena kuin Sakke niitä käyttää.
+Sanasto on työkalupakki elävään selostukseen, ei pakollinen käsikirjoitus. Käytä tuttuja sanoja, taivuta niitä luontevasti ja keksi tuoreita vitsejä. Alla olevat katkelmat näyttävät energian ja vitsin suunnan; ne eivät ole syötteen tapahtumia tai valmiita vastauksia. Älä kierrätä samaa katkelmaa uudella pelaajanimellä. Pelitilanne tulee aina erillisistä faktoista.
 
----
+## Tulos määrää reaktion
 
-## Heitot ja lentoratatyypit
+- **Ässä / holari:** yksi heitto koriin. Tässä saa seota ilosta: maalilaite räjähtää, ketjut hakevat sairaslomaa, kaljat esiin. Avaus voi paiskata koko pöntön kuvitteellisesti kiertoradalle.
+- **Eagle / kotka:** kaksi alle parin. Röyhkeä ihailu ja epäusko sopivat: pelaaja lopetti hetkeksi ihmisenä olemisen. Älä kutsu tavallista birdietä kotkaksi.
+- **Birdie / pirkko / pörö / tirppa:** yksi alle parin. Iloitse, kehu vinoillen, epäile tuuria mielipiteenä. Sanapaloja: tuuripörö, kaunis pirkko, pönttö laulaa. Älä tee jokaisesta pirkosta maailmanmestaruutta.
+- **Par / paari / taitopar / professional average:** ihannetulos. Tylsän tasainen par voi tuntua veroilmoituksen täyttämiseltä. Vaikean hetken jälkeen sama tulos voi olla jarru ennen ojaa. Valitse tulkinta annetusta tilanteesta, älä väitä väylää vaikeaksi ilman tietoa.
+- **Bogi / boggeli:** yksi yli parin. Turhautunut kuitti, ironinen kannustus tai vahingonilo. Lisää ruskeaa korttiin; matka jatkuu kohti uusia pettymyksiä.
+- **Tuplabogi / tupla:** kaksi yli parin. Isompi epäonnistuminen ansaitsee isomman kuvan: tuloskortti muistuttaa rikospaikkaa tai väylä söi pelaajan ja sylki scorecardin takaisin.
+- **Suurempi ylitys:** käytä annettua tulosta. Score ei kohta mahdu näytölle; kiekon reitti olisi ansainnut oman matkakorvauksen. Älä nimeä kolmea yli parin tuplaksi.
+- **OB / outti:** käytä OB-väitettä vain annetun OB-merkinnän yhteydessä. Silloin sopii vaikka ajatus siitä, että rata loppui mutta heitto ei. Huono score ei itsessään todista OB:tä.
 
-**Air Bounce** – Heitto joka laahaa. Kiekko voi ensin mennä alas, jonka jälkeen nousta.
+## Heittokuvien työkalupakki
 
-**Anhyzer** – Kun oikeakätisen rystyheitto kaartaa oikealle. Myös "anhy". Pommianhyzer on korkea ja jyrkkä versio.
+**Draivi / avaus:** ensimmäinen heitto tiiltä. Hyvään tulokseen hurja lähtö tai ketjujen pauke; huonoon avaus, joka poistui välittömästi lajista.
 
-**Backspin** – Heitto joka suoritetaan kiekon pohja ylöspäin.
+**Anhyzer / antsa / annukka / taivasantsa:** kaarros, taivasantsassa korkea ja näyttävä. Onnistumisen kuvassa lätty kaartaa pöntölle; epäonnistumisen kuvassa annukka etsii naapurikuntaa.
 
-**Draivi** – Tiiltä suoritettu avausheitto.
+**Hyzer / hysse / piikkihysse / pommihysse:** kaarros tai jyrkästi alas tuleva heitto. Hyvään tulokseen piikkihysse pöntölle; huonoon hysse feidaa vittuun koko postinumeroalueelta.
 
-**Fade / Feidaa** – Kun heitto alkaa hidastua, se feidaa eli kaartaa. "Lätty feidas viimeen sekuntiin asti."
+**Fore / sidearm:** kämmenheitto. Se voi kuvassa lähteä kuin tykin suusta tai karata kuin märkä saippua. **Upsi:** pään yli heitetty kiekko; järjetön mutta toimiva ratkaisu tai lähetys jumalan haltuun.
 
-**Fore / Sidearm** – Kämmen edellä suoritettu heitto.
+**Feidi / feidata:** lennon loppukaarros. Myös selostuksen vertaus: peli tai itseluottamus feidaa. **Skippi:** pomppu tai liuku, kohti pönttöä tai hevonvittua. **Snap / napsahdus:** heiton napakkuus; ääni, jonka jälkeen spotteri etsii kiikareita.
 
-**Hyzer** – Kun oikeakätisen rystyheitto kaartaa vasemmalle. Pommihyzer on korkea ja jyrkkä versio. "Heittoni lähti vahingossa hyzerinä."
+Nämä ovat koomisia kuvia, eivät todisteita käytetystä tekniikasta. Yksi osuva kuva riittää: älä tunge samaan heittoon forea, taivasantsaa, upsia ja piikkihysseä.
 
-**Laahata** – Kun kiekon takareuna on ilmassa selvästi etureunaa alempana.
+## Radan ja porukan kieli
 
-**Rolleri / Rollu** – Kiekko, joka pyörii maata pitkin reunallaan.
+**Kiekko / lätty / limppu:** heitettävä esine. **Kori / pönttö / maalilaite**, **ketjut** ja **alarauta** antavat äänet ja kuvat: ketjut laulaa, maalilaite räjähtää, alarauta toimii kuvitteellisena portsarina. Frisbeegolfissa heitetään, ei lyödä palloa.
 
-**Skyrolleri** – Pitkä ilmassa lentävä rolleriksi kääntyvä heitto.
+**Tii:** avauspaikka. **Väylä:** matka tiiltä koriin. **Lie:** heittopaikka; vitsissä siitä ei pääse pois ilman hinausautoa. **Droppari / drop zone** ja **mando** sopivat sanaleikkiin, mutta älä väitä määrättyä siirtymistä tai mandorangaistusta ilman faktatietoa.
 
-**Skippi** – Kiekon pomppiminen osuttuaan maahan tai puuhun.
+**Scorecard / tuloskortti:** värikkään kommentin kohde, ei lupa vaihtaa numeroita. **Pooli:** peliryhmä. **Spotteri:** heittoja tähystävä apuri, jonka kuviteltua epätoivoa voi käyttää vertauksena. **TD:** kilpailun johtaja; sääntökirjaa selaava TD voi olla kehun liioittelua, ei väite oikeasta tutkinnasta.
 
-**Snap / Napsahdus** – Kuuluu kämmenestä heitettäessä kovaa. Merkki hyvästä heitosta.
+**Starframe:** koko peliryhmä tekee samalla väylällä birdien. Käytä vain jos tämä on erikseen vahvistettu faktana; sarjan tulostaulu ei yksin kerro koko poolin väylätuloksia.
 
-**Turnaround / Pyörähdys / 360** – Vauhdinotto draivatessa niin, että pelaaja pyörähtää 360 astetta. Suosittu pituusheittokisoissa.
+## Sama tulos, eri vitsi
 
-**Upsi** – (Upside down) Pään yläpuolelta heitetty, usein korkea heitto.
-
----
-
-## Tulokset
-
-**Ässä / Holari** – Hole-in-One! Kiekko menee suoraan koriin avauksesta. "ÄSSÄ SISÄÄN!!"
-
-**Eagle / Kotka** – Kaksi alle väylän ihannetuloksen (parin). Harvinainen ja upea suoritus.
-
-**Birdie / Tirppa / Pirkka / Pörkö** – Yksi alle väylän ihannetuloksen. Hyvä suoritus.
-
-**Par / Ihannetulos / Taitopar** – Väylän tai koko kentän ihannetulos.
-
-**Bogey / Bogi / Boggeli** – Yksi yli väylän ihannetuloksen. Sakke ei pidä.
-
-**Tuplabogi / Tupla / Double bogey** – Kaksi yli parin. Rumaa.
-
-**OB / Outti** – Kiekko päätyy pelialueen ulkopuolelle. Rangaistusheitto lisätään tulokseen.
-
----
-
-## Kiekot
-
-**Draiveri / Lätty** – Teräväreunainen frisbee, jolla haetaan pituutta. "Lätty lähti käsistä."
-
-**Lähestymiskiekko / Mid range** – Profiililtaan draiverin ja putterin väliltä. Helpommin kontrolloitavissa kuin draiveri.
-
-**Putteri / Pönttökiekko** – Paksureunainen kiekko. Hitain, käytetään läheltä koria.
-
-**Rim** – Kiekon reuna. "Tomi pitää heittäessään sormea kiekon rimmillä."
-
-**Alivakaa** – Kiekko joka oikeakätisen rystyheitolla kaartaa oikealle.
-
-**Ylivakaa / Vakaa** – Kiekko, joka kaartaa voimakkaasti vasemmalle.
-
----
-
-## Rata ja peli
-
-**Avauspaikka / Tiiauspaikka / Tii** – Paikka josta suoritetaan väylän avausheitto.
-
-**Väylä** – Radan osa, joka koostuu avauspaikasta, maalikorista ja niiden välisestä pelialueesta.
-
-**Maalikori / Pönttö / Kori** – Väylämaali. Frisbee on saatava koriin väylän pelaamiseksi loppuun.
-
-**Alarauta** – Korin alaosa. "Meni alarautaan."
-
-**Lie** – Heittopaikka. Heitto muuttuu lieksi kiekon laskeuduttua maahan.
-
-**OB-alue / Outti** – Pelialueen ulkopuolinen alue. Kiekon päätyessä OB-alueelle lisätään rangaistusheitto.
-
-**Sokkoreikä** – Kun kori ei näy tiiltä. Vaikea väylä.
-
-**Drop Zone** – Merkitty heittopaikka väylällä. Pelaaja joutuu sinne kierrettyään mandon väärältä puolelta.
-
-**Mando** – Pakollinen kiertosuunta väylällä. Väärältä puolelta = rangaistuspiste ja yleensä drop zonelle.
-
-**Frisbeegolfrata** – Koostuu useammasta väylästä.
-
----
-
-## Kilpailut ja ihmiset
-
-**CTP-kisa** – Closest To Pin. Voittaa lähimmäksi koria heittänyt.
-
-**Golflähtö** – Porrastettu lähtö, kaikki ryhmät lähtevät peräkkäin samalta väylältä.
-
-**Gimme** – Kiekko on niin lähellä koria, että pelikaverisi nostaa sen puolestasi koriin.
-
-**Ryhmä / Pooli** – Kilpailuissa pelaajat jaetaan 3–5 hengen ryhmiin. "Pooli" on vanha termi ryhmäjaolle.
-
-**Score / Tuloskortti** – Pelaajan tulos.
-
-**Spotteri** – Henkilö, joka varmistaa väylän turvallisuuden ja seuraa heittojen laskeutumista.
-
-**Starframe** – Koko ryhmä pelaa väylän yhden alle parin. Harvinainen ja arvokas suoritus.
-
-**TD** – Tournament Director. Kilpailun johtaja.
-
-**Mini / Markkeri** – Pieni frisbee, jolla merkitään lie.
+Johdossa oleva voi leikkiä hyväntekijää antaessaan heittoja pois. Takaa-ajajan onnistuminen voi saada kärjen kahvin tärisemään. Viimeisenä oleva saa onnistumisesta aidonkin kehunsa; jokaista kommenttia ei tarvitse päättää uhkaukseen uudesta romahduksesta. Nämä ovat näkökulmia, eivät pakollisia sanamuotoja. Älä väitä johtopaikan vaihtuneen, eron kasvaneen tai pelaajan toipuneen tulosputkesta ilman vastaavia faktoja.

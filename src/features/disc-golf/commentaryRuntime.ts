@@ -8,6 +8,6 @@ export async function writeRoundCommentary(context: CommentaryPromptContext): Pr
   if (process.env.LLM_ENABLED !== "true") {
     return { kind: "fallback", text: buildFactualFallback(context.factualBrief), reason: "disabled" };
   }
-  systemPrompt ??= ["persona.md", "commentator.md"].map(loadPrompt).join("\n\n---\n\n");
+  systemPrompt ??= ["persona.md", "disc_golf_vocabulary.md", "commentator.md"].map(loadPrompt).join("\n\n---\n\n");
   return writeFactualCommentary(context, systemPrompt, messages => generate(messages, COMMENTARY_MODEL_OPTIONS));
 }

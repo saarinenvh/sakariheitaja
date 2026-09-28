@@ -54,7 +54,7 @@ export function serializeCommentaryContext(context: CommentaryPromptContext): st
       progress: describeRound(brief),
       standing: describeStanding(brief) || "Sijoitus tuntematon.",
       movement: brief.movementSincePublication.kind === "unknown" ? "Sijoituksen muutosta ei tiedetä." : describeStanding(brief),
-      playOrder: "Väylänumero ei osoita pelaamisjärjestystä. Kirjaus ei kerro heiton lentorataa tai epäonnistumisen syytä.",
+      playOrder: "Väylänumero ei osoita pelaamisjärjestystä. Heittokuvailu on sallittua koomista väritystä, ei tulosfakta.",
     },
     competitionFacts: context.competitionFacts ?? [],
     narrativeHistory: context.narrativeHistory,

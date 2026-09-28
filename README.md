@@ -54,8 +54,10 @@ or 4–5 for exceptional events; output is not cut by sentence count.
 Competition facts include untracked opponents in the same division. Gaps are
 withheld for DNF, provisional standings, missing scores or different recorded
 hole sets. They describe recorded scores, not predicted final margins.
-The commentary prompt uses persona and commentator instructions, not the full
-throw-technique vocabulary. The vocabulary file and shared persona are unchanged.
+The commentary prompt loads persona, disc-golf vocabulary/humour inspiration,
+then task-specific commentator rules. Imagined throw descriptions are permitted
+as comic colour; scores, OB entries and competition claims must match supplied
+facts. The shared persona is unchanged; this exception belongs to commentary.
 
 See [implementation findings and the owner test checklist](docs/commentary-findings.md).
 

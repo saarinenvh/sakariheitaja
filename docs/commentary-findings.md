@@ -58,7 +58,39 @@ cleanup; it is not a factual correctness evaluator.
    no hard sentence truncation is added. Names remain mandatory, placement varies,
    and Telegram headings/score footers retain their existing shape.
 
-## Reading path
+## Follow-up: humour direction before the next owner test
+
+The owner clarified that the vocabulary examples express the desired humour,
+not literal telemetry or complete comments. The target is the energy of the
+pre-LLM reactions: vivid praise, result-appropriate roasting and competition
+context, not a cautious score report with swearing attached.
+
+This supersedes step 5 above: vocabulary is restored and rewritten as a compact
+result-oriented humour toolkit. Runtime order is persona → vocabulary →
+commentator rules. The shared persona is unchanged. The commentary role explicitly
+permits invented throw imagery as comic colour, including exploding baskets or
+an imagined disc swimming lesson. Scores, OB entries, names, standings and gaps
+remain factual. A lake joke must not turn zero OB into an OB claim. A current
+gap does not prove it widened or narrowed. Starframe needs explicit group-result
+facts, which the current competition snapshot does not supply.
+
+The writer's play-order note is aligned with this permission instead of implying
+all imagined action is forbidden. No scoring, history or sampling changes are
+made in this follow-up. One paragraph and the 1–3 sentence target remain.
+Recent-form/streak facts are not added by this prompt change; old jokes must not
+be used as proof of a streak or actual throw technique.
+
+A runtime regression test first failed because vocabulary was omitted, then
+passes with the real prompt files loaded in the intended order. This verifies
+wiring, not humour quality. For the next owner test compare ace/birdie/par/bogi/
+tupla reactions, zero versus positive OB, and leading versus chasing. Expect
+result-appropriate vocabulary and fresh comic imagery without identical stock
+openings, fabricated OBs or unsupported gap-change claims.
+
+Follow-up local verification: 185 tests, lint, TypeScript checking, application
+build and Docker build pass. No live model call was made by the agent.
+
+## Code reading path
 
 `Orchestrator.onPollResult` validates the response and calls
 `RoundCommentary.observe`. That captures updates and current competition facts.
