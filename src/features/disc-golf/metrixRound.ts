@@ -9,6 +9,8 @@ import { CommentarySnapshot } from "./factualCommentaryBrief";
 const positiveInteger = integerSchema.pipe(z.number().int().positive());
 const identifier = positiveInteger.transform(String);
 const optionalText = z.string().nullish().transform(value => value ?? "");
+// Metrix reports tied players, and many players early in a round, with place 0.
+const METRIX_UNRANKED = 0;
 const dnfSchema = z.union([
   z.literal("1"), z.literal(1), z.literal(true), z.literal("DNF"),
   z.literal("0"), z.literal(0), z.literal(false), z.literal(""),
@@ -99,7 +101,8 @@ export function parseMetrixRound(input: unknown, expectedId: string): MetrixRoun
     || (source.HasSubcompetitions ?? 0) !== 0) throw new UnsupportedRoundError();
   const holeLabels = source.Tracks.map(track => track.NumberAlt || String(track.Number));
   if (new Set(holeLabels).size !== holeLabels.length) throw new Error("Metrix returned duplicate hole labels");
-  const players = source.Results.map(player => normalizePlayer(player, source));
+  const tiedPositions = rankByRecordedTotals(source.Results);
+  const players = source.Results.map((player, index) => normalizePlayer(player, source, tiedPositions[index]));
   return {
     id: source.ID, name: source.Name, date: source.Date, courseName: source.CourseName,
     layoutKey: JSON.stringify([source.CourseName, source.Tracks]), holeLabels, players,
@@ -178,7 +181,11 @@ function finalTotals(player: RoundPlayer): FinalTotals {
   };
 }
 
-function normalizePlayer(source: z.output<typeof playerSchema>, competition: z.output<typeof roundSchema>["Competition"]): RoundPlayer {
+function normalizePlayer(
+  source: z.output<typeof playerSchema>,
+  competition: z.output<typeof roundSchema>["Competition"],
+  rankedPosition: number | null,
+): RoundPlayer {
   const fieldSize = competition.Results.filter(player => player.ClassName === source.ClassName).length;
   let scorecard = source.PlayerResults;
   if (scorecard.kind === "available" && scorecard.holes.length !== competition.Tracks.length) {
@@ -187,11 +194,47 @@ function normalizePlayer(source: z.output<typeof playerSchema>, competition: z.o
   const round = parseRoundState({ totalHoles: competition.Tracks.length, status: source.DNF ? "dnf" : "active" });
   const aggregateStanding = (competition.ShowPreviousRoundsSum ?? 0) !== 0
     || source.PreviousRoundsSum !== null || source.PreviousRoundsDiff !== null;
-  const position = source.DNF || !source.OrderNumber || source.OrderNumber > fieldSize ? null : source.OrderNumber;
+  const position = resolvePosition(source, fieldSize, rankedPosition, aggregateStanding);
   return {
     sourceId: source.UserID || null, name: source.Name, division: source.ClassName, group: source.Group,
     scorecard, round,
     standing: parseStanding({ position, fieldSize, isProvisional: position === null || aggregateStanding }),
     totalStrokes: source.Sum, totalRelativeToPar: source.Diff,
   };
+}
+
+function resolvePosition(
+  source: z.output<typeof playerSchema>, fieldSize: number, rankedPosition: number | null, aggregateStanding: boolean,
+): number | null {
+  if (source.DNF || source.OrderNumber === null || source.OrderNumber > fieldSize) return null;
+  if (source.OrderNumber === METRIX_UNRANKED) return aggregateStanding ? null : rankedPosition;
+  return source.OrderNumber;
+}
+
+/** Shared competition places (ties share a place) from recorded scorecard totals, per division. */
+function rankByRecordedTotals(results: readonly z.output<typeof playerSchema>[]): (number | null)[] {
+  const totals = results.map(player => player.DNF ? null : recordedRelativeToPar(player.PlayerResults));
+  return results.map((player, index) => {
+    const total = totals[index];
+    if (total === null) return null;
+    let betterPlayers = 0;
+    results.forEach((other, otherIndex) => {
+      const otherTotal = totals[otherIndex];
+      if (other.ClassName === player.ClassName && otherTotal !== null && otherTotal < total) betterPlayers++;
+    });
+    return betterPlayers + 1;
+  });
+}
+
+function recordedRelativeToPar(scorecard: Scorecard): number | null {
+  if (scorecard.kind !== "available") return null;
+  let total = 0;
+  let recordedHoles = 0;
+  for (const hole of scorecard.holes) {
+    if (hole === null) continue;
+    if (hole.relativeToPar === null) return null;
+    total += hole.relativeToPar;
+    recordedHoles++;
+  }
+  return recordedHoles > 0 ? total : null;
 }

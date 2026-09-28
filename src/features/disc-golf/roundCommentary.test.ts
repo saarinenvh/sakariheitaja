@@ -101,6 +101,24 @@ describe("Metrix round boundary", () => {
     expect(hasTrackedRoundEnded(trackRoundPlayers(incompleteMetadata, tracked))).toBe(false);
   });
 
+  it("gives tied players reported at place 0 a shared place from recorded totals", () => {
+    const raw = input([score(3), score(3), [], []], "0");
+    const results = raw.Competition.Results;
+    results[1] = { ...results[1], Name: "Teppo", OrderNumber: 0, PlayerResults: [score(2), score(4), [], []] };
+    results[2] = { ...results[2], Name: "Tommi", OrderNumber: 3, PlayerResults: [score(4), score(3), [], []] };
+    results[3] = { ...results[3], Name: "Aloittamaton", OrderNumber: 0 };
+    results[4] = { ...results[4], ClassName: "MPO", OrderNumber: 0, PlayerResults: [score(1, -2), [], [], []] };
+    const players = parseMetrixRound(raw, "123").players;
+    expect(players.slice(0, 4).map(player => player.standing)).toEqual([
+      { position: 1, fieldSize: 19, isProvisional: false },
+      { position: 1, fieldSize: 19, isProvisional: false },
+      { position: 3, fieldSize: 19, isProvisional: false },
+      { position: null, fieldSize: 19, isProvisional: true },
+    ]);
+    const aggregate = parseMetrixRound({ Competition: { ...raw.Competition, ShowPreviousRoundsSum: "1" } }, "123");
+    expect(aggregate.players[0].standing).toMatchObject({ position: null, isProvisional: true });
+  });
+
   it("avoids ambiguous names and treats aggregate standings as provisional", () => {
     const ambiguous = input();
     ambiguous.Competition.Results.push({ ...ambiguous.Competition.Results[0], UserID: "999" });
