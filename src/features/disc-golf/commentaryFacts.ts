@@ -27,10 +27,11 @@ export type Scorecard =
   | { kind: "unavailable" }
   | { kind: "available"; holes: readonly (HoleScore | null)[] };
 
-export type ScoreChange =
+export type ScoreChange = (
   | { kind: "recorded"; holeNumber: number; score: HoleScore }
   | { kind: "corrected"; holeNumber: number; previous: HoleScore; current: HoleScore }
-  | { kind: "removed"; holeNumber: number; previous: HoleScore };
+  | { kind: "removed"; holeNumber: number; previous: HoleScore }
+) & { holeLabel?: string };
 
 export type ScorecardComparison =
   | { kind: "unavailable"; reason: "missing-scorecard" | "hole-count-changed" }

@@ -2,6 +2,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import Logger from "js-logger";
 import { env } from "../env";
+import { finishOllamaTrace, startOllamaTrace } from "./ollamaTrace";
 
 export interface OllamaMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -30,12 +31,6 @@ export type ToolHandler = (name: string, args: Record<string, unknown>) => Promi
 const baseUrl = env("OLLAMA_BASE_URL") ?? "http://127.0.0.1:11434";
 const model   = env("BOT_OLLAMA_MODEL") ?? env("OLLAMA_MODEL") ?? "llama3";
 
-// Generous on purpose: gemma3:12b doesn't fit the 3070 alone and runs part on
-// CPU, and Ollama swaps models between this bot and sakke-gateway, so a cold
-// load plus a slow generation is normal rather than a fault. This is only here
-// to stop a call that will never return - which used to stall a competition's
-// commentary permanently, because orchestrator chains every comment onto one
-// serial promise queue and nothing downstream had a deadline either.
 const timeoutMs = Number(env("BOT_OLLAMA_TIMEOUT_MS") ?? "120000");
 
 async function callOllama(
@@ -59,20 +54,40 @@ async function callOllama(
 
   if (tools?.length) body.tools = tools;
 
-  const res = await fetch(`${baseUrl}/api/chat`, {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(body),
-    signal:  AbortSignal.timeout(timeoutMs),
-  });
+  const trace = await startOllamaTrace(body);
+  let responseReceived = false;
+  try {
+    const res = await fetch(`${baseUrl}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
 
-  if (!res.ok) throw new Error(`Ollama HTTP ${res.status}: ${res.statusText}`);
+    const rawResponse = await res.text();
+    await finishOllamaTrace(trace, { status: res.status, response: parseTraceResponse(rawResponse) });
+    responseReceived = true;
+    if (!res.ok) throw new Error(`Ollama HTTP ${res.status}: ${res.statusText}`);
 
-  const json = await res.json() as { message?: { content?: string; tool_calls?: any[] } };
-  return {
-    content: json?.message?.content?.trim() ?? "",
-    toolCalls: json?.message?.tool_calls,
-  };
+    const json = JSON.parse(rawResponse) as { message?: { content?: string; tool_calls?: any[] } };
+    return {
+      content: json?.message?.content?.trim() ?? "",
+      toolCalls: json?.message?.tool_calls,
+    };
+  } catch (error) {
+    if (!responseReceived) {
+      await finishOllamaTrace(trace, { error: error instanceof Error ? error.name : "UnknownError" });
+    }
+    throw error;
+  }
+}
+
+function parseTraceResponse(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }
 
 function stripArtifacts(text: string): string {

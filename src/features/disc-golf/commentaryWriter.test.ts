@@ -6,7 +6,7 @@ import { buildFactualFallback, CommentaryPromptContext, writeFactualCommentary }
 
 function buildBrief(previous: unknown, current: unknown, holeCount = 3) {
   const makeSnapshot = (scorecard: unknown): CommentarySnapshot => ({
-    scope: { chatId: -100, competitionId: "round", roundId: "round", division: "MA3", playerId: 4 },
+    scope: { chatId: -100, competitionId: "round", division: "MA3", playerId: 4 },
     playerName: "Matti",
     courseName: "Nummenmäki",
     scorecard: parseScorecard(scorecard),
@@ -31,13 +31,25 @@ describe("factual commentary writer", () => {
       ],
     };
     const result = await writeFactualCommentary(context, "Sakke voice instructions", async messages => {
-      expect(messages).toEqual([
-        { role: "system", content: "Sakke voice instructions" },
-        { role: "user", content: JSON.stringify(context) },
-      ]);
+      expect(messages[0]).toEqual({ role: "system", content: "Sakke voice instructions" });
+      const input = JSON.parse(messages[1].content);
+      expect(input.narrativeHistory).toEqual(context.narrativeHistory);
+      expect(input.factualBrief.events).toEqual(["Väylä 3: par (3 heittoa, väylän par-tulos, OB-määrä tuntematon)."]);
+      expect(input.factualBrief).not.toHaveProperty("courseName");
+      expect(input.factualBrief.movement).toContain("ei tiedetä");
       return "Matti pelaa parin, ja kortti etenee.";
     });
     expect(result).toEqual({ kind: "generated", text: "Matti pelaa parin, ja kortti etenee." });
+  });
+
+  it("separates a birdie from the round total and explicitly rules out OB", async () => {
+    const brief = buildBrief([{ Result: 2, Diff: -1 }, [], []], [{ Result: 2, Diff: -1 }, { Result: 2, Diff: -1, PEN: 0 }, []]);
+    await writeFactualCommentary({ factualBrief: brief, narrativeHistory: [] }, "Sakke", async messages => {
+      const input = JSON.parse(messages[1].content);
+      expect(input.factualBrief.events[0]).toContain("birdie (2 heittoa, 1 alle väylän parin, ei OB-merkintöjä)");
+      expect(input.factualBrief.recordedRoundTotal).toContain("-2, 2 alle parin");
+      return "Matti, birdie.";
+    });
   });
 
   it("uses a factual deterministic fallback when generation fails", async () => {

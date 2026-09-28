@@ -6,7 +6,7 @@ import {
 import { parseScorecard } from "./commentaryFacts";
 
 const scope: CommentaryScope = {
-  chatId: -100, competitionId: "competition", roundId: "round", division: "MA3", playerId: 1,
+  chatId: -100, competitionId: "competition", division: "MA3", playerId: 1,
 };
 
 describe("standing and round metadata validation", () => {
@@ -119,7 +119,7 @@ describe("standing movement since publication", () => {
   });
 
   it.each([
-    { chatId: -200 }, { competitionId: "other" }, { roundId: "other" }, { division: "MPO" }, { playerId: 2 },
+    { chatId: -200 }, { competitionId: "other" }, { division: "MPO" }, { playerId: 2 },
   ])("rejects a published baseline from a different scope (%j)", mismatch => {
     expect(comparePublishedStanding(scope, parseStanding({ position: 1, isProvisional: false }), {
       scope: { ...scope, ...mismatch }, standing: parseStanding({ position: 10, isProvisional: false }),

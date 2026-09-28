@@ -1,6 +1,6 @@
 import { join } from "path";
 import { createJsonStore } from "../../shared/jsonStore";
-import { MetrixPlayerResult, TrackedPlayer } from "../../types/metrix";
+import { MetrixPlayerResult } from "../../types/metrix";
 import Logger from "js-logger";
 
 const BAGTAGS_PATH = process.env.DATA_DIR
@@ -44,7 +44,7 @@ export function getAllBagtags(chatId: number): Record<string, number> {
   return load()[String(chatId)] ?? {};
 }
 
-export function getMissingTagPlayers(chatId: number, trackedPlayers: TrackedPlayer[]): string[] {
+export function getMissingTagPlayers(chatId: number, trackedPlayers: readonly { Name: string }[]): string[] {
   const tags = getAllBagtags(chatId);
   return trackedPlayers.filter(p => tags[p.Name] == null).map(p => p.Name);
 }
@@ -63,8 +63,8 @@ export interface BagtagRoundResult {
 
 export function computeAndApplySwaps(
   chatId: number,
-  trackedPlayers: TrackedPlayer[],
-  allResults: MetrixPlayerResult[],
+  trackedPlayers: readonly { Name: string; Diff: number | null }[],
+  allResults: readonly Pick<MetrixPlayerResult, "Name" | "Group" | "DNF">[],
 ): BagtagRoundResult {
   const store = load();
   const chatKey = String(chatId);
@@ -112,6 +112,7 @@ export function computeAndApplySwaps(
     const sorted = [...tagHolders].sort((a, b) => {
       if (a.DNF && !b.DNF) return 1;
       if (!a.DNF && b.DNF) return -1;
+      if (a.Diff === null || b.Diff === null) return 0;
       return a.Diff - b.Diff;
     });
 

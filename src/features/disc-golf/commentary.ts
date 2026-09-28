@@ -1,8 +1,5 @@
 import { getRandom } from "../../shared/utils";
 import { Change, MetrixHoleResult, MetrixPlayerResult, TrackedPlayer } from "../../types/metrix";
-import { generateLlmComment } from "./llmCommentary";
-
-const llmEnabled = process.env.LLM_ENABLED === "true";
 
 function getPositionDeltaText(prev: number, next: number): string {
   const delta = prev - next;
@@ -195,13 +192,11 @@ function divisionResultsFor(change: Change, results: MetrixPlayerResult[]): Metr
   return withinDivision.length > 0 ? withinDivision : results;
 }
 
-export async function formatCommentaryMessage(changes: Change[], metrixId: string, courseName: string, results: MetrixPlayerResult[], chatId: number): Promise<string> {
+export async function formatCommentaryMessage(changes: Change[], metrixId: string, courseName: string, results: MetrixPlayerResult[], _chatId: number): Promise<string> {
   const comments: string[] = [];
   for (const change of changes) {
     const divisionResults = divisionResultsFor(change, results);
-    comments.push(llmEnabled
-      ? await generateLlmComment(change, metrixId, divisionResults, chatId)
-      : generateComment(change, divisionResults));
+    comments.push(generateComment(change, divisionResults));
   }
 
   const byHole: Record<number, string[]> = {};

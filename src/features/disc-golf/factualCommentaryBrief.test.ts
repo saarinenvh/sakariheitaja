@@ -7,7 +7,7 @@ import {
 
 function snapshot(scores: unknown, position = 10): CommentarySnapshot {
   return {
-    scope: { chatId: -100, competitionId: "3802730", roundId: "round", division: "MA3", playerId: 1 },
+    scope: { chatId: -100, competitionId: "3802730", division: "MA3", playerId: 1 },
     playerName: "Alexander Wickholm",
     courseName: "Nummenmäki",
     scorecard: parseScorecard(scores),
@@ -68,7 +68,7 @@ describe("factual commentary brief", () => {
     expect(brief.event).toBe("mixed-update");
     expect(brief.limitations).toEqual(["play-order-unknown"]);
     expect(brief.changes).toContainEqual({
-      kind: "recorded", holeNumber: 2, score: { strokes: 5, relativeToPar: 2, obCount: 1 },
+      kind: "recorded", holeNumber: 2, holeLabel: "2", score: { strokes: 5, relativeToPar: 2, obCount: 1 },
     });
     expect(serializeFactualBrief(brief)).toContain("obCount");
   });
@@ -141,7 +141,7 @@ describe("factual commentary brief", () => {
   });
 
   it.each([
-    { chatId: -200 }, { competitionId: "other" }, { roundId: "other" }, { division: "MPO" }, { playerId: 2 },
+    { chatId: -200 }, { competitionId: "other" }, { division: "MPO" }, { playerId: 2 },
   ])("never compares observed scorecards from another scope (%j)", mismatch => {
     const previousObserved = snapshot([[], [], []]);
     previousObserved.scope = { ...previousObserved.scope, ...mismatch };

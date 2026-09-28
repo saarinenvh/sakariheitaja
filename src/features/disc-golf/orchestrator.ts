@@ -1,214 +1,159 @@
 import { bot } from "../../bot/bot";
 import Poller from "./poller";
-import { detectChanges, hasCompetitionEnded } from "./changeDetector";
-import { formatCommentaryMessage, formatTopList, truncateCourseName } from "./commentary";
+import { formatTopList, generateHeader, truncateCourseName } from "./commentary";
 import * as playerRepo from "../../db/repositories/PlayerRepository";
 import * as competitionService from "./services/CompetitionService";
 import * as courseService from "./services/CourseService";
 import * as scoreService from "./services/ScoreService";
-import { MetrixApiResponse, MetrixPlayerResult, TrackedPlayer, Change } from "../../types/metrix";
 import { competition as MSG } from "../../config/messages";
 import { HTML_NO_PREVIEW } from "../../config/bot";
 import { updateProfiles } from "./playerProfiles";
-import { startConversation, clearConversation } from "./llmCommentary";
 import { computeAndApplySwaps, formatBagtagAnnouncement, getMissingTagPlayers } from "./bagtags";
+import { escapeHtml } from "./commentaryPresentation";
+import { RoundCommentary } from "./roundCommentary";
+import { writeRoundCommentary } from "./commentaryRuntime";
+import {
+  hasTrackedRoundEnded, MetrixRound, parseMetrixRound, toBagtagPlayers, toFinalScores, toLegacyResults, toLegacyTracked,
+  TrackedRoundPlayer, trackRoundPlayers, UnsupportedRoundError,
+} from "./metrixRound";
 import Logger from "js-logger";
 
 const BASE_URL = "https://discgolfmetrix.com/api.php?content=result&id=";
 
 export class Orchestrator {
-  id: number;
-  metrixId: string;
-  chatId: number;
-  following: boolean = true;
-  snapshot: MetrixApiResponse | null = null;
-  trackedPlayers: TrackedPlayer[] = [];
+  following = true;
+  snapshot: MetrixRound | null = null;
+  trackedPlayers: TrackedRoundPlayer[] = [];
+  initializationError: string | null = null;
 
-  private playersAnnounced: boolean;
   private poller: Poller | null = null;
-  private commentaryQueue: Promise<void> = Promise.resolve();
-  private endQueued: boolean = false;
+  private pollQueue: Promise<void> = Promise.resolve();
+  private endQueued = false;
+  private commentary: RoundCommentary;
 
-  constructor(id: number, metrixId: string, chatId: number, playersAnnounced: boolean = false) {
-    this.id = id;
-    this.metrixId = metrixId;
-    this.chatId = chatId;
-    this.playersAnnounced = playersAnnounced;
+  constructor(
+    public id: number, public metrixId: string, public chatId: number, private playersAnnounced = false,
+  ) {
+    this.commentary = new RoundCommentary(chatId, metrixId, {
+      write: writeRoundCommentary,
+      send: html => bot.api.sendMessage(chatId, html, HTML_NO_PREVIEW),
+      saveScores: (playerId, courseName, changes) => scoreService.saveRecordedScores(playerId, changes, chatId, id, courseName),
+      opening: generateHeader,
+      onError: error => Logger.error(`${metrixId}: commentary delivery failed`, error),
+    });
   }
 
   async init(): Promise<this> {
     const { getData } = await import("../../shared/http");
-    const initialSnapshot = await getData<MetrixApiResponse>(`${BASE_URL}${this.metrixId}`);
-
-    if (!initialSnapshot?.Competition) {
-      Logger.error(`Orchestrator ${this.metrixId}: invalid initial data`);
+    try {
+      const input = await getData<unknown>(`${BASE_URL}${this.metrixId}`);
+      this.snapshot = parseMetrixRound(input, this.metrixId);
+    } catch (error) {
+      Logger.error(`Orchestrator ${this.metrixId}: invalid initial round`, error);
+      this.initializationError = error instanceof UnsupportedRoundError ? error.message : MSG.followInvalid;
       this.following = false;
       return this;
     }
-
-    this.snapshot = initialSnapshot;
-    await this._refreshTrackedPlayers();
-
-    Logger.info(`Started following: ${this.snapshot.Competition.Name} (${this.metrixId})`);
-
-    if (this.trackedPlayers.length === 0) {
-      if (this.playersAnnounced) {
-        Logger.info(`${this.metrixId}: no tracked players on restore, continuing to poll`);
-      } else {
-        Logger.info(`${this.metrixId}: no tracked players, stopping`);
-        await bot.api.sendMessage(this.chatId, MSG.followNoPlayers);
-        this.following = false;
-        return this;
-      }
+    this.trackedPlayers = await this.refreshTrackedPlayers(this.snapshot);
+    if (this.trackedPlayers.length === 0 && !this.playersAnnounced) {
+      await bot.api.sendMessage(this.chatId, MSG.followNoPlayers);
+      this.following = false;
+      return this;
     }
-
-    await this._announceIfNeeded();
-
-    const initialDelay = this._msUntilStart(this.snapshot.Competition.Date);
-    if (initialDelay > 0) {
-      Logger.info(`${this.snapshot.Competition.Name} starts in ${Math.round(initialDelay / 60000)}min`);
-    }
-
-    startConversation(this.metrixId);
-
+    this.commentary.observe(this.snapshot, this.trackedPlayers);
+    await this.announceIfNeeded();
+    const initialDelay = this.msUntilStart(this.snapshot.date);
     this.poller = new Poller(this.metrixId, BASE_URL);
-    this.poller.on("data", (snapshot: MetrixApiResponse) => this._onPollResult(snapshot));
-    this.poller.on("fetchError", (err: Error) => Logger.error(`${this.metrixId}: ${err.message}`));
+    this.poller.on("data", (input: unknown) => this.enqueuePoll(input));
+    this.poller.on("fetchError", (error: Error) => Logger.error(`${this.metrixId}: ${error.message}`));
     this.poller.start(initialDelay);
-
+    Logger.info(`Started following: ${this.snapshot.name} (${this.metrixId})`);
     return this;
   }
 
   stopFollowing(): void {
     this.following = false;
     this.poller?.stop();
+    this.commentary.stop();
   }
 
-  getScoreByPlayerName(name: string) {
-    return this.snapshot?.Competition.Results.find(result => result.Name === name);
+  getScoreByPlayerName(name: string): MetrixRound["players"][number] | undefined {
+    return this.snapshot?.players.find(player => player.name === name);
   }
 
-  sendTopList(): void {
-    this._sendTopList();
-  }
-
-  private async _onPollResult(freshSnapshot: MetrixApiResponse): Promise<void> {
-    if (!this.following) return;
-
-    try {
-      // `this.snapshot === freshSnapshot` used to be part of this condition.
-      // freshSnapshot is always a newly parsed JSON object, so it could never
-      // be reference-equal to the stored one - the check never fired.
-      if (!this.snapshot) {
-        this.poller!.reportChanges(false);
-        return;
-      }
-
-      const changes = detectChanges(this.snapshot, freshSnapshot, this.trackedPlayers);
-      const hadChanges = changes.length > 0;
-
-      if (hadChanges) {
-        const capturedChanges = changes;
-        const capturedResults = freshSnapshot.Competition.Results;
-        // Captured alongside the changes rather than read inside the queued
-        // callback. Commentary runs later, by which point `this.snapshot` has
-        // already been replaced with a newer poll - the changes were captured
-        // but the course name they were labelled with was not.
-        const capturedCourseName = freshSnapshot.Competition.CourseName;
-        this.commentaryQueue = this.commentaryQueue
-          .then(() => this._sendCommentary(capturedChanges, capturedResults, capturedCourseName))
-          .catch(err => Logger.error(`${this.metrixId}: commentary queue error: ${err.message}`));
-      } else {
-        Logger.debug(`${this.snapshot.Competition.Name} ${this.metrixId}: no changes`);
-      }
-
-      this.poller!.reportChanges(hadChanges);
-      this.snapshot = freshSnapshot;
-      await this._refreshTrackedPlayers();
-
-      if (hasCompetitionEnded(this.trackedPlayers) && !this.endQueued) {
-        this.endQueued = true;
-        this.commentaryQueue = this.commentaryQueue
-          .then(() => this._handleCompetitionEnd())
-          .catch(err => Logger.error(`${this.metrixId}: end handler error: ${err.message}`));
-      }
-
-    } catch (err: any) {
-      Logger.error(`Orchestrator ${this.metrixId}: ${err.message}`);
-      this.poller!.reportChanges(false);
-    }
-  }
-
-  private async _sendCommentary(changes: Change[], freshResults: MetrixPlayerResult[], courseName: string): Promise<void> {
-    const message = await formatCommentaryMessage(changes, this.metrixId, courseName, freshResults, this.chatId);
-
-    await bot.api.sendMessage(this.chatId, message, HTML_NO_PREVIEW);
-
-    Logger.debug(`Changes in ${courseName}, ${this.metrixId}`);
-
-    for (const change of changes) {
-      await scoreService.saveSuperScore(change, this.chatId, this.id, courseName);
-    }
-  }
-
-  private async _handleCompetitionEnd(): Promise<void> {
-    this.following = false;
-    this.poller!.stop();
-    clearConversation(this.metrixId);
-
-    Logger.info(`Game ${this.snapshot!.Competition.Name}, ${this.metrixId} is finished`);
-
-    await bot.api.sendMessage(this.chatId, MSG.endSoon);
-    await competitionService.markDone(this.id);
-
-    const course = await courseService.getOrCreate(this.snapshot!.Competition.CourseName);
-    if (course) {
-      await scoreService.saveResults(this.trackedPlayers, this.chatId, course.id, this.id);
-    }
-
-    updateProfiles(this.chatId, this.trackedPlayers, this.snapshot!.Competition.Results);
-
-    const bagtagResult = computeAndApplySwaps(this.chatId, this.trackedPlayers, this.snapshot!.Competition.Results);
-    await bot.api.sendMessage(this.chatId, formatBagtagAnnouncement(bagtagResult), HTML_NO_PREVIEW);
-
-    this._sendTopList();
-  }
-
-  private async _sendTopList(): Promise<void> {
-    const message = formatTopList(this.snapshot!.Competition.Name, this.snapshot!.Competition.Results, this.trackedPlayers);
+  async sendTopList(): Promise<void> {
+    if (!this.snapshot) return;
+    const message = formatTopList(this.snapshot.name, toLegacyResults(this.snapshot.players), toLegacyTracked(this.trackedPlayers));
     await bot.api.sendMessage(this.chatId, message);
   }
 
-  private async _refreshTrackedPlayers(): Promise<void> {
-    const chatPlayers = await playerRepo.findByChatId(this.chatId);
-    this.trackedPlayers = this.snapshot!.Competition.Results
-      .filter(result => chatPlayers.find(chatPlayer => chatPlayer.name === result.Name))
-      .map(result => {
-        const chatPlayer = chatPlayers.find(chatPlayer => chatPlayer.name === result.Name)!;
-        return { ...result, id: chatPlayer.id };
-      });
+  private enqueuePoll(input: unknown): Promise<void> {
+    this.pollQueue = this.pollQueue.then(() => this.onPollResult(input)).catch(error => {
+      Logger.error(`Orchestrator ${this.metrixId}: rejected poll`, error);
+      this.poller?.reportChanges(false);
+    });
+    return this.pollQueue;
   }
 
-  private async _announceIfNeeded(): Promise<void> {
-    if (this.trackedPlayers.length === 0 || this.playersAnnounced) return;
-    const course = `<a href="https://discgolfmetrix.com/${this.metrixId}">${truncateCourseName(this.snapshot!.Competition.CourseName)}</a>`;
+  private async onPollResult(input: unknown): Promise<void> {
+    if (!this.following || this.endQueued) return;
+    const round = parseMetrixRound(input, this.metrixId);
+    const tracked = await this.refreshTrackedPlayers(round);
+    if (!this.following) return;
+    const changed = this.commentary.observe(round, tracked);
+    this.snapshot = round;
+    this.trackedPlayers = tracked;
+    this.poller?.reportChanges(changed);
+    if (hasTrackedRoundEnded(tracked)) this.queueRoundEnd(round, tracked);
+  }
+
+  private queueRoundEnd(round: MetrixRound, tracked: TrackedRoundPlayer[]): void {
+    this.endQueued = true;
+    this.poller?.stop();
+    void this.commentary.idle().then(async () => {
+      if (!this.following) return;
+      await this.handleRoundEnd(round, tracked);
+    }).catch(error => Logger.error(`${this.metrixId}: end handler failed`, error));
+  }
+
+  private async handleRoundEnd(round: MetrixRound, tracked: TrackedRoundPlayer[]): Promise<void> {
+    this.stopFollowing();
+    Logger.info(`Tracked scorecards in ${round.name}, ${this.metrixId} are finished`);
+    await bot.api.sendMessage(this.chatId, MSG.endSoon);
+    await competitionService.markDone(this.id);
+    const completed = toLegacyTracked(tracked).filter(player => !player.DNF);
+    const results = toLegacyResults(round.players);
+    const course = await courseService.getOrCreate(round.courseName);
+    if (course) await scoreService.saveResults(toFinalScores(tracked), this.chatId, course.id, this.id);
+    updateProfiles(this.chatId, completed, results);
+    const participants = toBagtagPlayers(tracked);
+    const bagtags = computeAndApplySwaps(this.chatId, participants, participants);
+    await bot.api.sendMessage(this.chatId, formatBagtagAnnouncement(bagtags), HTML_NO_PREVIEW);
+    await this.sendTopList();
+  }
+
+  private async refreshTrackedPlayers(round: MetrixRound): Promise<TrackedRoundPlayer[]> {
+    const players = await playerRepo.findByChatId(this.chatId);
+    return trackRoundPlayers(round, players);
+  }
+
+  private async announceIfNeeded(): Promise<void> {
+    if (!this.snapshot || this.trackedPlayers.length === 0 || this.playersAnnounced) return;
+    const course = `<a href="https://discgolfmetrix.com/${this.metrixId}">${escapeHtml(truncateCourseName(this.snapshot.courseName))}</a>`;
     let message = `Peliareenana toimii ${course}\n\nJa tällä kertaa kisassa on mukana:\n`;
-    for (const player of this.trackedPlayers) message += `${player.Name}\n`;
-
-    const missingTags = getMissingTagPlayers(this.chatId, this.trackedPlayers);
+    for (const tracked of this.trackedPlayers) message += `${escapeHtml(tracked.player.name)}\n`;
+    const names = this.trackedPlayers.map(tracked => ({ Name: tracked.player.name }));
+    const missingTags = getMissingTagPlayers(this.chatId, names);
     if (missingTags.length > 0) {
-      message += `\n🏷️ Ilman tägiä: ${missingTags.join(", ")}\nAseta: /bagtag set [nimi] [numero]`;
+      message += `\n🏷️ Ilman tägiä: ${missingTags.map(escapeHtml).join(", ")}\nAseta: /bagtag set [nimi] [numero]`;
     }
-
     await bot.api.sendMessage(this.chatId, message, HTML_NO_PREVIEW);
     this.playersAnnounced = true;
   }
 
-  private _msUntilStart(date: string): number {
-    // Metrix date strings have no timezone info — they are in local Finnish time.
-    // new Date() parses them as UTC, so we correct by the system's UTC offset.
-    const offsetMs = new Date().getTimezoneOffset() * 60 * 1000; // negative for UTC+3
-    const diff = new Date(date).getTime() + offsetMs - Date.now();
-    return diff > 0 ? diff : 0;
+  private msUntilStart(date: string): number {
+    const offsetMs = new Date().getTimezoneOffset() * 60 * 1000;
+    const difference = new Date(date).getTime() + offsetMs - Date.now();
+    return difference > 0 ? difference : 0;
   }
 }

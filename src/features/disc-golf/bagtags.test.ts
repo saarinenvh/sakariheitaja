@@ -1,7 +1,31 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { mkdtempSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 import { formatBagtagAnnouncement } from "./bagtags";
 
 describe("formatBagtagAnnouncement", () => {
+  it("keeps a DNF tag holder in allocation when their ranking and score are unknown", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "sakke-dnf-tags-"));
+    vi.stubEnv("DATA_DIR", directory);
+    vi.resetModules();
+    try {
+      const tags = await import("./bagtags");
+      tags.setBagtag(-100, "DNF", 1);
+      tags.setBagtag(-100, "Finisher", 2);
+      const players = [
+        { Name: "DNF", Diff: null, Group: "1", DNF: "1" },
+        { Name: "Finisher", Diff: 3, Group: "1", DNF: null },
+      ];
+      expect(tags.computeAndApplySwaps(-100, players, players).swaps).toEqual([
+        { playerName: "Finisher", from: 2, to: 1 },
+        { playerName: "DNF", from: 1, to: 2 },
+      ]);
+    } finally {
+      vi.unstubAllEnvs();
+      rmSync(directory, { recursive: true });
+    }
+  });
   it("does not announce a swap when nothing swapped", () => {
     // The early return only covers "no swaps AND nobody untagged", so this
     // combination used to print the "Bag Tag vaihdettu!" header over a list of

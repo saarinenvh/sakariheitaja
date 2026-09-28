@@ -1,6 +1,5 @@
 import EventEmitter from "events";
 import { getData } from "../../shared/http";
-import { MetrixApiResponse } from "../../types/metrix";
 import Logger from "js-logger";
 import { env } from "../../shared/env";
 import { loggerSettings } from "../../shared/logger";
@@ -61,9 +60,9 @@ export default class Poller extends EventEmitter {
     let hadError = false;
 
     try {
-      const data = await getData<MetrixApiResponse>(`${this.baseUrl}${this.metrixId}`);
+      const data = await getData<unknown>(`${this.baseUrl}${this.metrixId}`);
 
-      if (!data || !data.Competition) {
+      if (data === undefined) {
         hadError = true;
         this.errorCount++;
         Logger.warn(`Poller ${this.metrixId}: invalid/empty response (attempt ${this.errorCount}), backing off`);

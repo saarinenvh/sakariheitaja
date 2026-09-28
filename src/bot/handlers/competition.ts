@@ -23,7 +23,7 @@ competition.command("follow", async ctx => {
   const orchestrator = await new Orchestrator(result.insertId, metrixId, chatId).init();
 
   if (!orchestrator.following) {
-    await ctx.reply(MSG.followInvalid);
+    await ctx.reply(orchestrator.initializationError ?? MSG.followInvalid);
     await competitionService.remove(String(result.insertId));
     return;
   }
@@ -54,7 +54,7 @@ competition.command("pelit", async ctx => {
 
   let message = active.length > 0 ? MSG.pelitHeader : MSG.pelitNone;
   for (const orchestrator of active) {
-    message += `${orchestrator.metrixId}: ${orchestrator.snapshot!.Competition.Name}, ${orchestrator.trackedPlayers.length} sankari(a). https://discgolfmetrix.com/${orchestrator.metrixId}\n`;
+    message += `${orchestrator.metrixId}: ${orchestrator.snapshot?.name}, ${orchestrator.trackedPlayers.length} sankari(a). https://discgolfmetrix.com/${orchestrator.metrixId}\n`;
   }
   await ctx.reply(message, HTML_NO_PREVIEW);
 });
@@ -73,7 +73,7 @@ competition.command("top5", async ctx => {
 
   const orchestrator = registry.find(chatId, ctx.match.trim());
   if (orchestrator) {
-    orchestrator.sendTopList();
+    await orchestrator.sendTopList();
   } else {
     await ctx.reply(MSG.top5NoneActive);
   }
@@ -90,7 +90,7 @@ competition.command("score", async ctx => {
 
   await ctx.reply(
     player
-      ? MSG.scoreFound(player.Name, player.Diff, player.OrderNumber)
+      ? MSG.scoreFound(player.name, player.totalRelativeToPar, player.standing.position)
       : MSG.scoreNotFound
   );
 });

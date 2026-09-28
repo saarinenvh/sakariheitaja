@@ -8,6 +8,7 @@ export interface CommentarySnapshot {
   scope: CommentaryScope;
   playerName: string;
   courseName: string;
+  holeLabels?: readonly string[];
   scorecard: Scorecard;
   round: RoundState;
   standing: Standing;
@@ -54,7 +55,9 @@ export function buildFactualCommentaryBrief(input: FactualBriefInput): FactualBr
       courseName: current.courseName,
       division: current.scope.division,
       event: classifyChanges(comparison.changes),
-      changes: comparison.changes,
+      changes: comparison.changes.map(change => ({
+        ...change, holeLabel: current.holeLabels?.[change.holeNumber - 1] ?? String(change.holeNumber),
+      })),
       round: analyzeRound(current.scorecard, current.round),
       standing: current.standing,
       movementSincePublication: comparePublishedStanding(current.scope, current.standing, lastPublished),

@@ -23,7 +23,6 @@ export type RoundState = Readonly<z.output<typeof roundStateSchema>>;
 export interface CommentaryScope {
   chatId: number;
   competitionId: string;
-  roundId: string;
   division: string;
   playerId: number;
 }
@@ -102,7 +101,6 @@ export function comparePublishedStanding(
 export function sameCommentaryScope(previous: CommentaryScope, current: CommentaryScope): boolean {
   return previous.chatId === current.chatId
     && previous.competitionId === current.competitionId
-    && previous.roundId === current.roundId
     && previous.division === current.division
     && previous.playerId === current.playerId;
 }

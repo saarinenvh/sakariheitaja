@@ -2,6 +2,7 @@ import { z } from "zod";
 import { OllamaMessage } from "../../shared/llm/ollamaClient";
 import { FactualCommentaryBrief } from "./factualCommentaryBrief";
 import { HoleScore, ScoreChange } from "./commentaryFacts";
+import { CompetitionPlayerFact } from "./competitionFacts";
 
 const modelResponseSchema = z.string().trim().min(1);
 const responseLeakMarkers = ["Pelaaja:", "Reaktiovihjeitä:", "Tulosnimivaihtoehtoja:", "Kirjoita vain"];
@@ -11,11 +12,12 @@ export type CommentaryModel = (messages: OllamaMessage[]) => Promise<unknown>;
 export interface CommentaryPromptContext {
   factualBrief: FactualCommentaryBrief;
   narrativeHistory: readonly string[];
+  competitionFacts?: readonly CompetitionPlayerFact[];
 }
 
 export type CommentaryText =
   | { kind: "generated"; text: string }
-  | { kind: "fallback"; text: string; reason: "generation-failed" | "unusable-response" };
+  | { kind: "fallback"; text: string; reason: "generation-failed" | "unusable-response" | "disabled" };
 
 export async function writeFactualCommentary(
   context: CommentaryPromptContext,
@@ -43,7 +45,26 @@ export async function writeFactualCommentary(
 }
 
 export function serializeCommentaryContext(context: CommentaryPromptContext): string {
-  return JSON.stringify(context);
+  const brief = context.factualBrief;
+  return JSON.stringify({
+    factualBrief: {
+      playerName: brief.playerName,
+      events: brief.changes.map(describeChange),
+      recordedRoundTotal: describeRelativeTotal(brief.round.recordedRelativeToPar),
+      progress: describeRound(brief),
+      standing: describeStanding(brief) || "Sijoitus tuntematon.",
+      movement: brief.movementSincePublication.kind === "unknown" ? "Sijoituksen muutosta ei tiedetä." : describeStanding(brief),
+      playOrder: "Väylänumero ei osoita pelaamisjärjestystä. Kirjaus ei kerro heiton lentorataa tai epäonnistumisen syytä.",
+    },
+    competitionFacts: context.competitionFacts ?? [],
+    narrativeHistory: context.narrativeHistory,
+  });
+}
+
+function describeRelativeTotal(total: number | null): string {
+  if (total === null) return "Kirjattujen väylien yhteistulos suhteessa pariin tuntematon.";
+  if (total === 0) return "Kirjattujen väylien yhteistulos: par (0).";
+  return `Kirjattujen väylien yhteistulos: ${total > 0 ? "+" : ""}${total}, ${Math.abs(total)} ${total < 0 ? "alle" : "yli"} parin.`;
 }
 
 export function buildFactualFallback(brief: FactualCommentaryBrief): string {
@@ -75,17 +96,17 @@ function getFallbackOpening(brief: FactualCommentaryBrief): string {
 
 function describeChange(change: ScoreChange): string {
   if (change.kind === "recorded") {
-    return `Väylä ${change.holeNumber}: ${describeScore(change.score)}.`;
+    return `Väylä ${change.holeLabel ?? change.holeNumber}: ${describeScore(change.score)}.`;
   }
   if (change.kind === "corrected") {
-    return `Väylän ${change.holeNumber} tulos muuttui: ${describeScore(change.previous)} vaihtui tulokseen ${describeScore(change.current)}.`;
+    return `Väylän ${change.holeLabel ?? change.holeNumber} tulos muuttui: ${describeScore(change.previous)} vaihtui tulokseen ${describeScore(change.current)}.`;
   }
-  return `Väylän ${change.holeNumber} tulosmerkintä poistettiin. Aiempi merkintä oli ${describeScore(change.previous)}.`;
+  return `Väylän ${change.holeLabel ?? change.holeNumber} tulosmerkintä poistettiin. Aiempi merkintä oli ${describeScore(change.previous)}.`;
 }
 
 function describeScore(score: HoleScore): string {
   const relativeToPar = score.relativeToPar;
-  const label = relativeToPar === null ? "tulos"
+  const label = score.strokes === 1 ? "ässä" : relativeToPar === null ? "tulos"
     : relativeToPar <= -3 ? `${Math.abs(relativeToPar)} alle parin`
     : relativeToPar === -2 ? "eagle"
     : relativeToPar === -1 ? "birdie"
@@ -93,10 +114,14 @@ function describeScore(score: HoleScore): string {
     : relativeToPar === 1 ? "bogi"
     : relativeToPar === 2 ? "tuplabogi"
     : `${relativeToPar} yli parin`;
-  const outOfBounds = score.obCount === null || score.obCount === 0 ? ""
+  const outOfBounds = score.obCount === null ? ", OB-määrä tuntematon"
+    : score.obCount === 0 ? ", ei OB-merkintöjä"
     : score.obCount === 1 ? ", 1 OB"
     : `, ${score.obCount} OB-merkintää`;
-  return `${label} (${score.strokes} heittoa${outOfBounds})`;
+  const relation = relativeToPar === null ? "ero väylän pariin tuntematon"
+    : relativeToPar === 0 ? "väylän par-tulos"
+    : `${Math.abs(relativeToPar)} ${relativeToPar < 0 ? "alle" : "yli"} väylän parin`;
+  return `${label} (${score.strokes} heittoa, ${relation}${outOfBounds})`;
 }
 
 function describeStanding(brief: FactualCommentaryBrief): string {
