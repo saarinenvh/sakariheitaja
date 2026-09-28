@@ -41,7 +41,7 @@ function describeGap(subject: RoundPlayer, opponent: RoundPlayer): string {
   if (subjectTotal === null || opponentTotal === null) return "Eroa ei tiedetä.";
   const difference = opponentTotal - subjectTotal;
   if (!Number.isSafeInteger(difference)) return "Eroa ei tiedetä.";
-  if (difference === 0) return `Sama kirjattu yhteistulos kuin pelaajalla ${subject.name}.`;
+  if (difference === 0) return "Sama kirjattu yhteistulos kuin kommentoitavalla pelaajalla.";
   const direction = difference < 0 ? "edellä" : "jäljessä";
-  return `${Math.abs(difference)} heittoa ${direction} pelaajaa ${subject.name} samoilla kirjatuilla väylillä.`;
+  return `${Math.abs(difference)} heittoa ${direction} kommentoitavaa pelaajaa samoilla kirjatuilla väylillä.`;
 }

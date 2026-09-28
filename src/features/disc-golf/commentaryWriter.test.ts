@@ -52,6 +52,25 @@ describe("factual commentary writer", () => {
     });
   });
 
+  it("gives the model first names and accepts commentary that uses them", async () => {
+    const brief = { ...buildBrief([[], [], []], [[], [], { Result: 3, Diff: 0 }]), playerName: "Matti Meikäläinen" };
+    const competitor = {
+      position: 1, provisional: false, dnf: false, recordedHoles: 3, roundRelativeToPar: -1,
+      comparisonToPlayer: "1 heittoa edellä kommentoitavaa pelaajaa samoilla kirjatuilla väylillä.",
+    };
+    const context: CommentaryPromptContext = {
+      factualBrief: brief, narrativeHistory: [],
+      competitionFacts: [{ ...competitor, playerName: "Matti Meikäläinen" }, { ...competitor, playerName: "jori Virtanen" }],
+    };
+    const result = await writeFactualCommentary(context, "Sakke", async messages => {
+      const input = JSON.parse(messages[1].content);
+      expect(input.factualBrief.playerName).toBe("Matti");
+      expect(input.competitionFacts.map((fact: { playerName: string }) => fact.playerName)).toEqual(["Matti", "Jori"]);
+      return "Matti lapioi paarin ja Jori nauraa.";
+    });
+    expect(result).toEqual({ kind: "generated", text: "Matti lapioi paarin ja Jori nauraa." });
+  });
+
   it("uses a factual deterministic fallback when generation fails", async () => {
     const brief = buildBrief([[], [], []], [[], [], { Result: 5, Diff: 2, PEN: 1 }]);
     const result = await writeFactualCommentary({ factualBrief: brief, narrativeHistory: [] }, "Sakke", async () => {

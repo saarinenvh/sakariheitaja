@@ -3,6 +3,7 @@ import { OllamaMessage } from "../../shared/llm/ollamaClient";
 import { FactualCommentaryBrief } from "./factualCommentaryBrief";
 import { HoleScore, ScoreChange } from "./commentaryFacts";
 import { CompetitionPlayerFact } from "./competitionFacts";
+import { buildSpokenNames } from "./spokenNames";
 
 const modelResponseSchema = z.string().trim().min(1);
 const responseLeakMarkers = ["Pelaaja:", "Reaktiovihjeitä:", "Tulosnimivaihtoehtoja:", "Kirjoita vain"];
@@ -24,9 +25,11 @@ export async function writeFactualCommentary(
   systemPrompt: string,
   generate: CommentaryModel,
 ): Promise<CommentaryText> {
+  const spokenNames = buildContextSpokenNames(context);
+  const spokenPlayerName = spokenNames.get(context.factualBrief.playerName) ?? context.factualBrief.playerName;
   const messages: OllamaMessage[] = [
     { role: "system", content: systemPrompt },
-    { role: "user", content: serializeCommentaryContext(context) },
+    { role: "user", content: serializeCommentaryContext(context, spokenNames) },
   ];
 
   try {
@@ -35,7 +38,7 @@ export async function writeFactualCommentary(
     if (!result.success) {
       return { kind: "fallback", text: buildFactualFallback(context.factualBrief), reason: "unusable-response" };
     }
-    if (containsPromptLeak(result.data) || !mentionsPlayer(result.data, context.factualBrief.playerName)) {
+    if (containsPromptLeak(result.data) || !mentionsPlayer(result.data, spokenPlayerName)) {
       return { kind: "fallback", text: buildFactualFallback(context.factualBrief), reason: "unusable-response" };
     }
     return { kind: "generated", text: result.data };
@@ -44,11 +47,12 @@ export async function writeFactualCommentary(
   }
 }
 
-export function serializeCommentaryContext(context: CommentaryPromptContext): string {
+function serializeCommentaryContext(context: CommentaryPromptContext, spokenNames: ReadonlyMap<string, string>): string {
   const brief = context.factualBrief;
+  const speak = (fullName: string): string => spokenNames.get(fullName) ?? fullName;
   return JSON.stringify({
     factualBrief: {
-      playerName: brief.playerName,
+      playerName: speak(brief.playerName),
       events: brief.changes.map(describeChange),
       recordedRoundTotal: describeRelativeTotal(brief.round.recordedRelativeToPar),
       progress: describeRound(brief),
@@ -56,9 +60,14 @@ export function serializeCommentaryContext(context: CommentaryPromptContext): st
       movement: brief.movementSincePublication.kind === "unknown" ? "Sijoituksen muutosta ei tiedetä." : describeStanding(brief),
       playOrder: "Väylänumero ei osoita pelaamisjärjestystä. Heittokuvailu on sallittua koomista väritystä, ei tulosfakta.",
     },
-    competitionFacts: context.competitionFacts ?? [],
+    competitionFacts: (context.competitionFacts ?? []).map(fact => ({ ...fact, playerName: speak(fact.playerName) })),
     narrativeHistory: context.narrativeHistory,
   });
+}
+
+function buildContextSpokenNames(context: CommentaryPromptContext): ReadonlyMap<string, string> {
+  const competitorNames = (context.competitionFacts ?? []).map(fact => fact.playerName);
+  return buildSpokenNames([context.factualBrief.playerName, ...competitorNames]);
 }
 
 function describeRelativeTotal(total: number | null): string {

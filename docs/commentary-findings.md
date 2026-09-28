@@ -90,6 +90,34 @@ openings, fabricated OBs or unsupported gap-change claims.
 Follow-up local verification: 185 tests, lint, TypeScript checking, application
 build and Docker build pass. No live model call was made by the agent.
 
+## Follow-up: first names and prompt experiments
+
+The writer now gives the model capitalized first names for the commented player
+and every competitor, keeping full names when first names collide within the
+division. Gap descriptions refer to "the commented player" instead of embedding
+a full name. The Telegram footer keeps full Metrix names, and the player-name
+check accepts the first name.
+
+Owner prompt experiments on 2026-09-28 were reverted; the committed prompts are
+unchanged by this follow-up. Findings from those experiments:
+
+- Long, instruction-heavy prompts pulled output towards written, report-style
+  Finnish. A roughly 120-word commentator prompt without persona or vocabulary
+  produced the most natural spoken Finnish so far, but lost the fact rules
+  (an unknown movement became "johtoon") and disc-golf imagery.
+- Example lines were copied as templates, including placeholder brackets and
+  situation labels, and phrases were reused for the wrong results.
+- Showing each player's comment the other comments already written for the same
+  hole was tried earlier and made every comment end with a recap of the other
+  players. It is not pursued.
+- Code-injected text in the model input also sets tone: `playOrder` is a style
+  permission disguised as data, and the other fields are formal written Finnish.
+- Per-player calls cannot vary structure relative to each other, and the model
+  has no fact about how the lead developed, only current standings.
+
+A batch format (one call per update: situation opening, very short line per
+player, closing situation) is being explored on a separate spike branch.
+
 ## Code reading path
 
 `Orchestrator.onPollResult` validates the response and calls

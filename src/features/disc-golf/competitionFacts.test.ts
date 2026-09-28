@@ -20,7 +20,7 @@ describe("current competition facts", () => {
     const facts = buildCompetitionFacts(snapshot, snapshot.players[1]);
     expect(facts).toHaveLength(2);
     expect(facts[0]).toMatchObject({ position: 1, roundRelativeToPar: -1, recordedHoles: 1 });
-    expect(facts[0].comparisonToPlayer).toBe("2 heittoa edellä pelaajaa Player samoilla kirjatuilla väylillä.");
+    expect(facts[0].comparisonToPlayer).toBe("2 heittoa edellä kommentoitavaa pelaajaa samoilla kirjatuilla väylillä.");
     expect(buildCompetitionFacts(snapshot, snapshot.players[0])[1].comparisonToPlayer).toContain("2 heittoa jäljessä");
   });
 
