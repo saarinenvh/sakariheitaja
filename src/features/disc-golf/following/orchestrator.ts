@@ -201,8 +201,8 @@ export class Orchestrator {
     updateProfiles(this.chatId, completed, results);
     const participants = toBagtagPlayers(tracked);
     const bagtags = computeAndApplySwaps(this.chatId, participants, participants);
-    await bot.api.sendMessage(this.chatId, formatBagtagAnnouncement(bagtags), HTML_NO_PREVIEW);
     await this.sendTopList();
+    await bot.api.sendMessage(this.chatId, formatBagtagAnnouncement(bagtags), HTML_NO_PREVIEW);
   }
 
   private async refreshTrackedPlayers(round: MetrixRound): Promise<TrackedRoundPlayer[]> {
