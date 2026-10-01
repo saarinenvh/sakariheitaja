@@ -32,8 +32,16 @@ export const trackSchema = z.object({
 const weatherSchema = z.object({
   temperatureC: z.number(),
   windSpeedMs: z.number().nonnegative(),
+  windFromDeg: z.number().min(0).max(360).nullable().default(null),
   description: z.string().min(1),
   precipitationMmPerHour: z.number().nonnegative().nullable(),
+});
+
+// Course data as Metrix returned it (layout API response, parsed statistics); public course information, never the key.
+const courseSchema = z.object({
+  courseId: z.string(),
+  detailsResponse: z.unknown().nullable(),
+  statistics: z.unknown().nullable(),
 });
 
 const fixtureSchema = z.object({
@@ -44,12 +52,14 @@ const fixtureSchema = z.object({
   weather: z.object({ start: weatherSchema, halfway: weatherSchema }),
   tracks: z.array(trackSchema).min(1),
   players: z.array(playerSchema).min(1),
+  course: courseSchema.nullable().default(null),
 });
 
 export type FixtureHole = z.output<typeof holeSchema>;
 export type FixturePlayer = z.output<typeof playerSchema>;
 export type FixtureTrack = z.output<typeof trackSchema>;
 export type FixtureWeather = z.output<typeof weatherSchema>;
+export type FixtureCourse = z.output<typeof courseSchema>;
 export type CommentaryFixture = z.output<typeof fixtureSchema> & { name: string };
 
 export function loadFixtures(names: readonly string[]): CommentaryFixture[] {

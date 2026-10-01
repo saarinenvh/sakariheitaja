@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { parseOrThrow } from "../../src/util/validation";
-import { CommentaryFixture, FixtureWeather, playerSchema, trackSchema } from "./fixtureFile";
+import { CommentaryFixture, FixtureCourse, FixtureWeather, playerSchema, trackSchema } from "./fixtureFile";
 
 const FAKE_FIRST_NAMES = [
   "Aatu", "Eero", "Juho", "Lauri", "Mikko", "Niilo", "Onni", "Paavo", "Risto", "Santeri", "Topi", "Urho",
@@ -14,12 +14,13 @@ const FAKE_SURNAMES = [
 ] as const;
 
 const DEFAULT_WEATHER: { start: FixtureWeather; halfway: FixtureWeather } = {
-  start: { temperatureC: 14, windSpeedMs: 4, description: "puolipilvistä", precipitationMmPerHour: null },
-  halfway: { temperatureC: 10, windSpeedMs: 8, description: "kevyt sade", precipitationMmPerHour: 0.6 },
+  start: { temperatureC: 14, windSpeedMs: 4, windFromDeg: 225, description: "puolipilvistä", precipitationMmPerHour: null },
+  halfway: { temperatureC: 10, windSpeedMs: 8, windFromDeg: 270, description: "kevyt sade", precipitationMmPerHour: 0.6 },
 };
 
 const metrixResponseSchema = z.object({
   Competition: z.object({
+    CourseID: z.union([z.string(), z.number()]).nullish().transform(value => (value === null || value === undefined ? null : String(value))),
     CourseName: z.string(),
     Date: z.string(),
     Tracks: z.array(trackSchema).min(1),
@@ -31,6 +32,11 @@ export interface FixtureRequest {
   name: string;
   description: string;
   trackedRealNames: readonly string[];
+  course: FixtureCourse | null;
+}
+
+export function readCourseId(response: unknown): string | null {
+  return parseOrThrow(metrixResponseSchema, response, "Metrix round for fixture").Competition.CourseID;
 }
 
 /** Builds a fixture from a Metrix result response with every player name replaced consistently. */
@@ -48,6 +54,7 @@ export function buildAnonymizedFixture(response: unknown, request: FixtureReques
     weather: DEFAULT_WEATHER,
     tracks: round.Tracks,
     players: round.Results.map(player => ({ ...player, Name: fakeNameFor(fakeNames, player.Name) })),
+    course: request.course,
   };
 }
 

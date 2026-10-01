@@ -5,6 +5,8 @@ export interface EvalRecord {
   run: number;
   holes: string;
   facts: string;
+  /** Course and hole facts the model received, as one line; empty when Metrix had none. */
+  courseFacts: string;
   outcome: string;
   durationMs: number;
   message: string;
@@ -80,6 +82,7 @@ function renderMessages(records: readonly EvalRecord[]): string[] {
     }
     if (record.holes !== currentHoles) {
       lines.push(`### Väylä ${record.holes}`, "", `Facts: ${record.facts}`, "");
+      if (record.courseFacts) lines.push(`Course: ${record.courseFacts}`, "");
       currentHoles = record.holes;
     }
     const marks = record.findings.map(finding => `${SEVERITY_MARK[finding.severity]} ${finding.check}: ${finding.detail}`);

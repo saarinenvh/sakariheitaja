@@ -10,6 +10,7 @@ import type { OllamaMessage, OllamaOptions } from "../../src/shared/llm/ollamaCl
 import type { BatchCommentaryContext } from "../../src/features/disc-golf/batchCommentaryContext";
 import type { BatchCommentaryResult } from "../../src/features/disc-golf/batchCommentaryWriter";
 import type { WeatherObservation } from "../../src/shared/weather";
+import type { CourseInfo } from "../../src/features/disc-golf/courseCommentaryFacts";
 import { parsePositiveIntegerFlag, parseFlags } from "./cliFlags";
 import { CommentaryFixture, FixtureWeather, loadFixtures } from "./fixtureFile";
 import { EvalMeta, EvalRecord, renderConsoleSummary, renderMarkdownReport } from "./report";
@@ -133,6 +134,7 @@ async function replayFixture(fixture: CommentaryFixture, run: number, runtime: R
       return evaluated.result;
     },
     fetchWeather: async () => toObservation(weather[Math.min(weatherRequests++, weather.length - 1)], fixture.date),
+    fetchCourse: async () => loadFixtureCourse(fixture),
     send: async html => {
       if (current) current.message = [current.message, toPlainText(html)].filter(Boolean).join("\n\n");
     },
@@ -167,6 +169,7 @@ async function writeEvaluated(context: BatchCommentaryContext, runtime: Runtime)
     record: {
       holes: holes.join(", "),
       facts: describeFacts(context),
+      courseFacts: [context.holeFacts, context.courseDifficulty, ...context.roundRatings.values()].filter(Boolean).join(" · "),
       outcome: result.kind === "generated" ? "generated" : `fallback (${result.reason})`,
       durationMs: Date.now() - startedAt,
       message: "",
@@ -198,6 +201,16 @@ function describeFacts(context: BatchCommentaryContext): string {
     const movement = brief.movementSincePublication.kind;
     return `${name} ${results} (yht. ${total === null ? "?" : signed(total)}, sija ${brief.standing.position ?? "?"}, ${movement})`;
   }).join(" · ");
+}
+
+async function loadFixtureCourse(fixture: CommentaryFixture): Promise<CourseInfo> {
+  const { parseCourseDetails } = await import("../../src/features/disc-golf/metrixCourse");
+  const { parseStoredCourseStatistics } = await import("../../src/features/disc-golf/courseStatistics");
+  const course = fixture.course;
+  return {
+    details: course?.detailsResponse ? parseCourseDetails(course.detailsResponse, course.courseId) : null,
+    statistics: course?.statistics ? parseStoredCourseStatistics(course.statistics) : null,
+  };
 }
 
 function toObservation(weather: FixtureWeather, date: string): WeatherObservation {

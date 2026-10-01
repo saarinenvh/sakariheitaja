@@ -12,12 +12,14 @@
     "start": {
       "temperatureC": 14,
       "windSpeedMs": 4,
+      "windFromDeg": 225,
       "description": "puolipilvistä",
       "precipitationMmPerHour": null
     },
     "halfway": {
       "temperatureC": 10,
       "windSpeedMs": 8,
+      "windFromDeg": 270,
       "description": "kevyt sade",
       "precipitationMmPerHour": 0.6
     }
@@ -2164,5 +2166,349 @@
         }
       ]
     }
-  ]
+  ],
+  "course": {
+    "courseId": "38619",
+    "detailsResponse": null,
+    "statistics": {
+      "holes": [
+        {
+          "label": "1",
+          "par": 3,
+          "averageStrokes": 2.8,
+          "difficultyRank": 6,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 234,
+            "pars": 175,
+            "bogeys": 75,
+            "doubleBogeys": 15,
+            "tripleBogeys": 2,
+            "worse": 5
+          }
+        },
+        {
+          "label": "2",
+          "par": 3,
+          "averageStrokes": 3.2,
+          "difficultyRank": 10,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 55,
+            "pars": 326,
+            "bogeys": 104,
+            "doubleBogeys": 15,
+            "tripleBogeys": 2,
+            "worse": 4
+          }
+        },
+        {
+          "label": "3",
+          "par": 3,
+          "averageStrokes": 3.4,
+          "difficultyRank": 14,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 40,
+            "pars": 280,
+            "bogeys": 135,
+            "doubleBogeys": 40,
+            "tripleBogeys": 6,
+            "worse": 5
+          }
+        },
+        {
+          "label": "4",
+          "par": 3,
+          "averageStrokes": 2.6,
+          "difficultyRank": 1,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 240,
+            "pars": 229,
+            "bogeys": 28,
+            "doubleBogeys": 3,
+            "tripleBogeys": 2,
+            "worse": 4
+          }
+        },
+        {
+          "label": "5",
+          "par": 3,
+          "averageStrokes": 3.4,
+          "difficultyRank": 17,
+          "counts": {
+            "aces": 1,
+            "eagles": 0,
+            "birdies": 34,
+            "pars": 290,
+            "bogeys": 139,
+            "doubleBogeys": 29,
+            "tripleBogeys": 5,
+            "worse": 8
+          }
+        },
+        {
+          "label": "6",
+          "par": 3,
+          "averageStrokes": 3.3,
+          "difficultyRank": 11,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 63,
+            "pars": 295,
+            "bogeys": 108,
+            "doubleBogeys": 27,
+            "tripleBogeys": 7,
+            "worse": 6
+          }
+        },
+        {
+          "label": "7",
+          "par": 4,
+          "averageStrokes": 4.6,
+          "difficultyRank": 21,
+          "counts": {
+            "aces": 0,
+            "eagles": 18,
+            "birdies": 46,
+            "pars": 167,
+            "bogeys": 179,
+            "doubleBogeys": 68,
+            "tripleBogeys": 21,
+            "worse": 7
+          }
+        },
+        {
+          "label": "8",
+          "par": 3,
+          "averageStrokes": 2.9,
+          "difficultyRank": 7,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 191,
+            "pars": 241,
+            "bogeys": 35,
+            "doubleBogeys": 7,
+            "tripleBogeys": 18,
+            "worse": 14
+          }
+        },
+        {
+          "label": "9",
+          "par": 3,
+          "averageStrokes": 3.5,
+          "difficultyRank": 20,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 39,
+            "pars": 252,
+            "bogeys": 162,
+            "doubleBogeys": 39,
+            "tripleBogeys": 8,
+            "worse": 6
+          }
+        },
+        {
+          "label": "10",
+          "par": 3,
+          "averageStrokes": 2.7,
+          "difficultyRank": 3,
+          "counts": {
+            "aces": 1,
+            "eagles": 0,
+            "birdies": 214,
+            "pars": 236,
+            "bogeys": 42,
+            "doubleBogeys": 6,
+            "tripleBogeys": 2,
+            "worse": 5
+          }
+        },
+        {
+          "label": "11",
+          "par": 3,
+          "averageStrokes": 3.4,
+          "difficultyRank": 16,
+          "counts": {
+            "aces": 1,
+            "eagles": 0,
+            "birdies": 64,
+            "pars": 248,
+            "bogeys": 132,
+            "doubleBogeys": 44,
+            "tripleBogeys": 10,
+            "worse": 7
+          }
+        },
+        {
+          "label": "12",
+          "par": 3,
+          "averageStrokes": 3.3,
+          "difficultyRank": 12,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 67,
+            "pars": 257,
+            "bogeys": 143,
+            "doubleBogeys": 26,
+            "tripleBogeys": 6,
+            "worse": 7
+          }
+        },
+        {
+          "label": "13",
+          "par": 3,
+          "averageStrokes": 3.1,
+          "difficultyRank": 9,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 102,
+            "pars": 289,
+            "bogeys": 93,
+            "doubleBogeys": 14,
+            "tripleBogeys": 2,
+            "worse": 6
+          }
+        },
+        {
+          "label": "14",
+          "par": 3,
+          "averageStrokes": 2.8,
+          "difficultyRank": 4,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 199,
+            "pars": 243,
+            "bogeys": 46,
+            "doubleBogeys": 9,
+            "tripleBogeys": 3,
+            "worse": 6
+          }
+        },
+        {
+          "label": "15",
+          "par": 3,
+          "averageStrokes": 3.3,
+          "difficultyRank": 13,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 68,
+            "pars": 272,
+            "bogeys": 118,
+            "doubleBogeys": 34,
+            "tripleBogeys": 5,
+            "worse": 9
+          }
+        },
+        {
+          "label": "16",
+          "par": 3,
+          "averageStrokes": 3,
+          "difficultyRank": 8,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 141,
+            "pars": 273,
+            "bogeys": 61,
+            "doubleBogeys": 17,
+            "tripleBogeys": 6,
+            "worse": 8
+          }
+        },
+        {
+          "label": "17",
+          "par": 3,
+          "averageStrokes": 3.4,
+          "difficultyRank": 15,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 21,
+            "pars": 328,
+            "bogeys": 124,
+            "doubleBogeys": 23,
+            "tripleBogeys": 6,
+            "worse": 4
+          }
+        },
+        {
+          "label": "18",
+          "par": 4,
+          "averageStrokes": 3.8,
+          "difficultyRank": 5,
+          "counts": {
+            "aces": 0,
+            "eagles": 5,
+            "birdies": 208,
+            "pars": 220,
+            "bogeys": 58,
+            "doubleBogeys": 10,
+            "tripleBogeys": 0,
+            "worse": 5
+          }
+        },
+        {
+          "label": "19",
+          "par": 4,
+          "averageStrokes": 4.4,
+          "difficultyRank": 18,
+          "counts": {
+            "aces": 1,
+            "eagles": 17,
+            "birdies": 74,
+            "pars": 198,
+            "bogeys": 134,
+            "doubleBogeys": 54,
+            "tripleBogeys": 19,
+            "worse": 9
+          }
+        },
+        {
+          "label": "20",
+          "par": 3,
+          "averageStrokes": 3.5,
+          "difficultyRank": 19,
+          "counts": {
+            "aces": 0,
+            "eagles": 0,
+            "birdies": 22,
+            "pars": 279,
+            "bogeys": 159,
+            "doubleBogeys": 35,
+            "tripleBogeys": 6,
+            "worse": 5
+          }
+        },
+        {
+          "label": "21",
+          "par": 3,
+          "averageStrokes": 2.6,
+          "difficultyRank": 2,
+          "counts": {
+            "aces": 1,
+            "eagles": 0,
+            "birdies": 257,
+            "pars": 194,
+            "bogeys": 46,
+            "doubleBogeys": 2,
+            "tripleBogeys": 2,
+            "worse": 4
+          }
+        }
+      ]
+    }
+  }
 }

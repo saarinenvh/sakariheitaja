@@ -28,18 +28,18 @@ describe("fixture anonymization", () => {
   });
 
   it("maps tracked players, drops personal fields and rejects unknown tracked names", () => {
-    const fixture = buildAnonymizedFixture(metrixResponse, { name: "test", description: "d", trackedRealNames: ["Ville Liedes"] });
+    const fixture = buildAnonymizedFixture(metrixResponse, { name: "test", description: "d", trackedRealNames: ["Ville Liedes"], course: null });
     expect(fixture.tracked).toEqual(["Aatu Heikkilä"]);
     expect(Object.keys(fixture.players[0]).sort()).toEqual(["ClassName", "DNF", "Group", "Name", "PlayerResults"]);
     expect(JSON.stringify(fixture)).not.toMatch(/Saarinen|Liedes|teppo|"77"/);
-    expect(() => buildAnonymizedFixture(metrixResponse, { name: "t", description: "d", trackedRealNames: ["Nobody"] }))
+    expect(() => buildAnonymizedFixture(metrixResponse, { name: "t", description: "d", trackedRealNames: ["Nobody"], course: null }))
       .toThrow("Nobody");
   });
 });
 
 describe("round replay", () => {
   const fixture: CommentaryFixture = buildAnonymizedFixture(metrixResponse, {
-    name: "test", description: "d", trackedRealNames: ["Ville Saarinen", "Ville Liedes"],
+    name: "test", description: "d", trackedRealNames: ["Ville Saarinen", "Ville Liedes"], course: null,
   });
 
   it("cuts every card to the first holes, recomputes totals and lets the bot derive places", () => {
@@ -63,6 +63,7 @@ describe("message checks", () => {
   });
   const context = (players: FactualCommentaryBrief[]): BatchCommentaryContext => ({
     players, standings: [], scorecardTable: null, playOrderKnown: true, leadHistory: null, weather: null, recentMessages: [],
+    firstMessage: false, holeFacts: null, courseDifficulty: null, roundRatings: new Map(),
     spokenNames: new Map([["Aatu Ahonen", "Aatu"]]),
   });
   const generated = (opening: string, text: string, closing: string, players = [brief()]) => ({
