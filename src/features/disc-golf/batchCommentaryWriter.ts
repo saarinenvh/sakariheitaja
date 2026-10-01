@@ -27,7 +27,8 @@ export type StructuredCommentaryModel = (messages: OllamaMessage[], jsonSchema: 
 
 /**
  * Ollama constrains generation to this schema, so the model can only name the update's players,
- * spelled exactly as given, and must write one line for each of them.
+ * spelled exactly as given, and must write one line for each of them. The line comes before the
+ * name: written right after the name, the model opened every line with it.
  */
 export function buildBatchResponseJsonSchema(playerNames: readonly string[]): Record<string, unknown> {
   return {
@@ -40,8 +41,8 @@ export function buildBatchResponseJsonSchema(playerNames: readonly string[]): Re
         maxItems: playerNames.length,
         items: {
           type: "object",
-          properties: { name: { type: "string", enum: [...playerNames] }, text: { type: "string" } },
-          required: ["name", "text"],
+          properties: { text: { type: "string" }, name: { type: "string", enum: [...playerNames] } },
+          required: ["text", "name"],
         },
       },
       closing: { type: "string" },
