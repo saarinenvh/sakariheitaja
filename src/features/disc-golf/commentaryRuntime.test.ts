@@ -29,6 +29,7 @@ const context: BatchCommentaryContext = {
     movementSincePublication: { kind: "unknown" }, limitations: ["play-order-unknown"],
   }],
   standings: [], scorecardTable: null, playOrderKnown: true, leadHistory: null, weather: null, recentMessages: [],
+  firstMessage: true, holeFacts: null, courseDifficulty: null, roundRatings: new Map(),
   spokenNames: new Map([["Testaaja", "Testaaja"]]),
 };
 

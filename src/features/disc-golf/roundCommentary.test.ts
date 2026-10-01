@@ -39,7 +39,7 @@ function generatedCommentary(context: BatchCommentaryContext, count: number): Ba
 }
 
 function weatherAt(temperatureC: number): WeatherObservation {
-  return { observedAt: new Date("2026-09-28T12:00:00Z"), temperatureC, windSpeedMs: 4, description: "pilvistä", precipitationMmPerHour: null };
+  return { observedAt: new Date("2026-09-28T12:00:00Z"), temperatureC, windSpeedMs: 4, windFromDeg: null, description: "pilvistä", precipitationMmPerHour: null };
 }
 
 function harness(chatId = -100, roundId = "123", writer?: CommentaryDelivery["write"]) {
@@ -48,19 +48,20 @@ function harness(chatId = -100, roundId = "123", writer?: CommentaryDelivery["wr
   const saveScores = vi.fn<CommentaryDelivery["saveScores"]>().mockResolvedValue(undefined);
   const onError = vi.fn<CommentaryDelivery["onError"]>();
   const fetchWeather = vi.fn<CommentaryDelivery["fetchWeather"]>().mockResolvedValue(null);
+  const fetchCourse = vi.fn<CommentaryDelivery["fetchCourse"]>().mockResolvedValue({ details: null, statistics: null });
   const session = new RoundCommentary(chatId, roundId, {
     write: async context => {
       contexts.push(context);
       if (writer) return writer(context);
       return generatedCommentary(context, contexts.length);
     },
-    fetchWeather, send, saveScores, onError,
+    fetchWeather, fetchCourse, send, saveScores, onError,
   });
   const observe = (raw: unknown) => {
     const round = parseMetrixRound(raw, roundId);
     return session.observe(round, trackRoundPlayers(round, tracked));
   };
-  return { session, contexts, send, saveScores, onError, fetchWeather, observe };
+  return { session, contexts, send, saveScores, onError, fetchWeather, fetchCourse, observe };
 }
 
 const firstPlayer = (context: BatchCommentaryContext): FactualCommentaryBrief => context.players[0];
@@ -307,6 +308,75 @@ describe("round publication", () => {
     expect(test.contexts[1].weather).toEqual({ current: expect.stringContaining("7 °C"), changeSinceStart: expect.stringContaining("5 °C") });
     expect(test.contexts[2].weather).toBeNull();
     expect(test.fetchWeather).toHaveBeenCalledTimes(2);
+  });
+
+  it("marks only the first delivered message of a division as the welcome, retrying it after a failed send", async () => {
+    const test = harness();
+    test.send.mockRejectedValueOnce(new Error("Telegram timeout"));
+    test.observe(input());
+    test.observe(input([score(3), [], [], []]));
+    test.observe(input([score(3), score(3), [], []]));
+    test.observe(input([score(3), score(3), score(3), []]));
+    await test.session.idle();
+    expect(test.contexts.map(context => context.firstMessage)).toEqual([true, true, false]);
+  });
+
+  describe("course data is optional enrichment", () => {
+    const layout = {
+      courseId: "1", location: null, rating: { value1: 909.61, result1: 63.06, value2: 1000, result2: 55.53 },
+      holes: ["1", "2", "3", "4"].map(label => ({ label, par: 3, lengthM: label === "1" ? 57 : 90, tee: null, basket: null })),
+    };
+
+    it("adds hole and course facts when Metrix provides them", async () => {
+      const test = harness();
+      test.fetchCourse.mockResolvedValue({ details: layout, statistics: null });
+      test.observe(input());
+      test.observe(input([score(3), [], [], []]));
+      await test.session.idle();
+      expect(test.contexts[0].holeFacts).toBe("Väylä 1: Par 3, 57 m, radan lyhyin.");
+      expect(test.contexts[0].courseDifficulty).toContain("par-rating");
+      expect(test.fetchCourse).toHaveBeenCalledTimes(1);
+    });
+
+    it("still publishes when fetching the course data fails", async () => {
+      const test = harness();
+      test.fetchCourse.mockRejectedValue(new Error("Metrix down"));
+      test.observe(input());
+      test.observe(input([score(3), [], [], []]));
+      await test.session.idle();
+      expect(test.send).toHaveBeenCalledTimes(1);
+      expect(test.contexts[0]).toMatchObject({ holeFacts: null, courseDifficulty: null });
+      expect(test.onError).toHaveBeenCalledWith(expect.objectContaining({ message: "Metrix down" }));
+    });
+
+    it("stops waiting for course data that never arrives", async () => {
+      vi.useFakeTimers();
+      try {
+        const test = harness();
+        test.fetchCourse.mockReturnValue(new Promise(() => undefined));
+        test.observe(input());
+        test.observe(input([score(3), [], [], []]));
+        await vi.advanceTimersByTimeAsync(15_000);
+        await test.session.idle();
+        expect(test.send).toHaveBeenCalledTimes(1);
+        expect(test.contexts[0].holeFacts).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("drops course facts, not the message, when they can't be composed", async () => {
+      const test = harness();
+      // Deliberately malformed: course data that slipped past validation must not cost the update its message.
+      const broken = { details: { ...layout, holes: null }, statistics: null } as unknown as Awaited<ReturnType<CommentaryDelivery["fetchCourse"]>>;
+      test.fetchCourse.mockResolvedValue(broken);
+      test.observe(input());
+      test.observe(input([score(3), [], [], []]));
+      await test.session.idle();
+      expect(test.send).toHaveBeenCalledTimes(1);
+      expect(test.contexts[0].holeFacts).toBeNull();
+      expect(test.onError).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("stops queued delivery on stop", async () => {

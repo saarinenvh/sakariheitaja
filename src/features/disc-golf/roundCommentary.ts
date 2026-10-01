@@ -3,17 +3,22 @@ import { compareScorecards, ScoreChange } from "./commentaryFacts";
 import { buildFactualCommentaryBrief, CommentarySnapshot, FactualCommentaryBrief } from "./factualCommentaryBrief";
 import { buildCommentarySnapshot, MetrixRound, TrackedRoundPlayer } from "./metrixRound";
 import { formatBatchCommentaryMessages } from "./commentaryPresentation";
-import { BatchCommentaryContext, buildBatchCommentaryContext, WeatherFacts } from "./batchCommentaryContext";
+import { BatchCommentaryContext, BatchContextInput, buildBatchCommentaryContext, WeatherFacts } from "./batchCommentaryContext";
 import { BatchCommentaryResult } from "./batchCommentaryWriter";
 import { WeatherObservation } from "../../shared/weather";
 import { describeWeather, describeWeatherChange } from "./weatherFacts";
+import { CourseInfo } from "./courseCommentaryFacts";
 
 const RECENT_MESSAGE_COUNT = 3;
+const COURSE_INFO_TIMEOUT_MS = 15_000;
+const NO_COURSE_INFO: CourseInfo = { details: null, statistics: null };
 const WEATHER_RECHECK_PROGRESS_FRACTION = 0.5;
 
 export interface CommentaryDelivery {
   write(context: BatchCommentaryContext): Promise<BatchCommentaryResult>;
   fetchWeather(): Promise<WeatherObservation | null>;
+  /** Course layout and statistics; called once per round, and may return empty parts. */
+  fetchCourse(): Promise<CourseInfo>;
   send(html: string): Promise<unknown>;
   saveScores(playerId: number, courseName: string, changes: readonly ScoreChange[]): Promise<void>;
   onError(error: unknown): void;
@@ -57,6 +62,9 @@ export class RoundCommentary {
   private published = new Map<number, PublishedStanding>();
   private recentMessages = new Map<string, string[]>();
   private weather: RoundWeather = { kind: "not-fetched" };
+  private latestWeather: WeatherObservation | null = null;
+  private welcomedDivisions = new Set<string>();
+  private course: Promise<CourseInfo> | null = null;
   private observedLayout: string | null = null;
   private publishedLayout: string | null = null;
   private queue: Promise<void> = Promise.resolve();
@@ -81,6 +89,7 @@ export class RoundCommentary {
     this.observed.clear();
     this.published.clear();
     this.recentMessages.clear();
+    this.welcomedDivisions.clear();
   }
 
   private captureObservation(round: MetrixRound, tracked: readonly TrackedRoundPlayer[]): ObservationBatch {
@@ -125,8 +134,10 @@ export class RoundCommentary {
     for (const [division, pending] of this.buildBriefsByDivision(batch.updates)) {
       if (!this.active) return;
       const weather = await this.collectWeatherFacts(pending.map(entry => entry.brief));
-      const context = buildBatchCommentaryContext({
+      const context = this.buildContext({
         round: batch.round, division, briefs: pending.map(entry => entry.brief), weather,
+        latestWeather: this.latestWeather, course: await this.loadCourse(),
+        firstMessage: !this.welcomedDivisions.has(division),
         recentMessages: [...(this.recentMessages.get(division) ?? [])],
       });
       const result = await this.delivery.write(context);
@@ -169,6 +180,7 @@ export class RoundCommentary {
       for (const post of message.posts) this.acknowledge(post);
       for (const post of message.posts) await this.saveScores(post);
     }
+    this.welcomedDivisions.add(division);
     if (result.kind === "generated") this.rememberMessage(division, [opening, ...lines.map(line => line.text), closing]);
   }
 
@@ -188,10 +200,30 @@ export class RoundCommentary {
 
   private async fetchWeather(): Promise<WeatherObservation | null> {
     try {
-      return await this.delivery.fetchWeather();
+      const observation = await this.delivery.fetchWeather();
+      if (observation) this.latestWeather = observation;
+      return observation;
     } catch (error) {
       this.delivery.onError(error);
       return null;
+    }
+  }
+
+  /** Course facts are optional enrichment: a failure or a hang must never hold back the commentary. */
+  private loadCourse(): Promise<CourseInfo> {
+    this.course ??= withTimeout(this.delivery.fetchCourse(), COURSE_INFO_TIMEOUT_MS).catch(error => {
+      this.delivery.onError(error);
+      return NO_COURSE_INFO;
+    });
+    return this.course;
+  }
+
+  private buildContext(input: BatchContextInput): BatchCommentaryContext {
+    try {
+      return buildBatchCommentaryContext(input);
+    } catch (error) {
+      this.delivery.onError(error);
+      return buildBatchCommentaryContext({ ...input, course: NO_COURSE_INFO });
     }
   }
 
@@ -222,4 +254,12 @@ function maxProgressFraction(briefs: readonly FactualCommentaryBrief[]): number 
     fraction = Math.max(fraction, progress.completedHoles / progress.totalHoles);
   }
   return fraction;
+}
+
+function withTimeout<Value>(promise: Promise<Value>, timeoutMs: number): Promise<Value> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Course data not available within ${timeoutMs} ms`)), timeoutMs);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }

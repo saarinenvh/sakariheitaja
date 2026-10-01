@@ -20,6 +20,9 @@ import Logger from "js-logger";
 import { env } from "../../shared/env";
 import { fetchCurrentWeather, WeatherObservation } from "../../shared/weather";
 import { CourseLocationResult, fetchCourseLocation } from "./courseLocation";
+import { CourseInfo } from "./courseCommentaryFacts";
+import { CourseDetails, fetchCourseDetails } from "./metrixCourse";
+import { CourseStatistics, fetchCourseStatistics } from "./courseStatistics";
 
 const BASE_URL = "https://discgolfmetrix.com/api.php?content=result&id=";
 const DEFAULT_COUNTRY_CODE = "FI";
@@ -35,6 +38,7 @@ export class Orchestrator {
   private endQueued = false;
   private commentary: RoundCommentary;
   private courseLocation: CourseLocationResult | null = null;
+  private courseInfo: Promise<CourseInfo> | null = null;
 
   constructor(
     public id: number, public metrixId: string, public chatId: number, private playersAnnounced = false,
@@ -42,6 +46,7 @@ export class Orchestrator {
     this.commentary = new RoundCommentary(chatId, metrixId, {
       write: writeRoundCommentary,
       fetchWeather: () => this.fetchCourseWeather(),
+      fetchCourse: () => this.fetchCourseInfo(),
       send: async html => {
         const sent = await bot.api.sendMessage(chatId, html, HTML_NO_PREVIEW);
         Logger.info(`${metrixId}: commentary message sent (${html.length} chars)`);
@@ -83,9 +88,10 @@ export class Orchestrator {
   private async fetchCourseWeather(): Promise<WeatherObservation | null> {
     const round = this.snapshot;
     if (!round?.courseId) return null;
-    const location = this.courseLocation
+    const layoutLocation = (await this.fetchCourseInfo()).details?.location ?? null;
+    const location = layoutLocation ? { kind: "found" as const, location: { ...layoutLocation, city: null } } : this.courseLocation
       ?? await fetchCourseLocation(round.courseId, round.courseName, env("BOT_COMMENTARY_COUNTRY_CODE") ?? DEFAULT_COUNTRY_CODE);
-    if (location.kind !== "failed") this.courseLocation = location;
+    if (!layoutLocation && location.kind !== "failed") this.courseLocation = location;
     if (location.kind !== "found") {
       Logger.warn(`${this.metrixId}: no course location for weather (${location.kind})`);
       return null;
@@ -97,6 +103,36 @@ export class Orchestrator {
     }
     Logger.info(`${this.metrixId}: weather ${weather.observation.temperatureC} °C, ${weather.observation.description}`);
     return weather.observation;
+  }
+
+  /** Fetched once per round; each part is null when Metrix doesn't have it or the key isn't configured. */
+  private fetchCourseInfo(): Promise<CourseInfo> {
+    this.courseInfo ??= this.loadCourseInfo();
+    return this.courseInfo;
+  }
+
+  private async loadCourseInfo(): Promise<CourseInfo> {
+    const courseId = this.snapshot?.courseId;
+    if (!courseId) return { details: null, statistics: null };
+    const [details, statistics] = await Promise.all([this.loadCourseDetails(courseId), this.loadCourseStatistics(courseId)]);
+    Logger.info(`${this.metrixId}: course data ${details ? "with" : "without"} layout details, ${statistics ? "with" : "without"} statistics`);
+    return { details, statistics };
+  }
+
+  private async loadCourseDetails(courseId: string): Promise<CourseDetails | null> {
+    const integrationCode = env("BOT_METRIX_INTEGRATION_CODE");
+    if (!integrationCode) return null;
+    const result = await fetchCourseDetails(courseId, integrationCode);
+    if (result.kind === "found") return result.details;
+    Logger.warn(`${this.metrixId}: course details unavailable: ${result.reason}`);
+    return null;
+  }
+
+  private async loadCourseStatistics(courseId: string): Promise<CourseStatistics | null> {
+    const result = await fetchCourseStatistics(courseId);
+    if (result.kind === "found") return result.statistics;
+    if (result.kind === "failed") Logger.warn(`${this.metrixId}: course statistics unavailable: ${result.reason}`);
+    return null;
   }
 
   stopFollowing(): void {

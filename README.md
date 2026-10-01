@@ -103,8 +103,9 @@ and writes a readable report. Only Telegram, the database and the weather API ar
 It is not part of `npm test` or CI, because it calls a live model.
 
 ```bash
-# Turn a public Metrix round into an anonymized fixture (every player name replaced)
-npm run eval:commentary:fixture -- --round=3628927 --track="Name A,Name B" --name=my-round
+# Turn a public Metrix round into an anonymized fixture (every player name replaced);
+# with the integration code it also stores the course layout data, otherwise only the statistics
+BOT_METRIX_INTEGRATION_CODE=... npm run eval:commentary:fixture -- --round=3628927 --track="Name A,Name B" --name=my-round
 
 # Replay all fixtures; each invocation writes .eval-results/runN/ (Git-ignored)
 # with report.md, results.json and prompt.md (the exact prompt used)
@@ -237,6 +238,8 @@ BOT_OLLAMA_TIMEOUT_MS=120000
 MORNING_CHAT_ID=
 GIPHY_API_KEY=
 OPENWEATHERMAP_APIKEY=
+BOT_METRIX_INTEGRATION_CODE=
+BOT_COMMENTARY_COUNTRY_CODE=FI
 CHALLONGE_TOURNAMENT_URL=
 CHALLONGE_API_KEY=
 
@@ -244,6 +247,14 @@ POLL_INTERVAL_ACTIVE=30000
 POLL_INTERVAL_IDLE=60000
 POLL_INTERVAL_DORMANT=120000
 ```
+
+`BOT_METRIX_INTEGRATION_CODE` is the personal integration code from Metrix user preferences.
+With it, commentary gets each hole's par, length and wind relative to the throwing direction,
+the course's par-rating difficulty, round ratings at the finish, and exact course coordinates for
+the weather. Without it, commentary still gets the public course statistics (historical hole
+averages and difficulty) and today's field average; nothing else depends on it. Course data is
+fetched once per round and is never allowed to delay commentary. `BOT_COMMENTARY_COUNTRY_CODE`
+(default `FI`) is only used to find the course for the weather when there's no integration code.
 
 Blank values are treated as unset. Note that the poll intervals are parsed as
 numbers — an empty string would become `NaN` and spin the Metrix poller, so

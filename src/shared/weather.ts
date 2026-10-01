@@ -43,7 +43,7 @@ const precipitationSchema = z.object({ "1h": z.number().nonnegative().optional()
 const currentWeatherSchema = z.object({
   dt: z.number().int().positive(),
   main: z.object({ temp: z.number() }),
-  wind: z.object({ speed: z.number().nonnegative() }),
+  wind: z.object({ speed: z.number().nonnegative(), deg: z.number().min(0).max(360).optional() }),
   weather: z.array(z.object({ description: z.string() })).min(1),
   rain: precipitationSchema,
   snow: precipitationSchema,
@@ -60,6 +60,8 @@ export interface WeatherObservation {
   observedAt: Date;
   temperatureC: number;
   windSpeedMs: number;
+  /** Meteorological: the direction the wind blows from, 0 = north. */
+  windFromDeg: number | null;
   description: string;
   precipitationMmPerHour: number | null;
 }
@@ -96,6 +98,7 @@ function toWeatherObservation(response: CurrentWeatherResponse): WeatherObservat
     observedAt: new Date(response.dt * MS_PER_SECOND),
     temperatureC: response.main.temp,
     windSpeedMs: response.wind.speed,
+    windFromDeg: response.wind.deg ?? null,
     description: response.weather[0].description,
     precipitationMmPerHour: sumPrecipitation(response.rain?.["1h"], response.snow?.["1h"]),
   };

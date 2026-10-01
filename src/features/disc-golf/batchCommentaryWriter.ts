@@ -90,6 +90,7 @@ export function buildBatchFallback(context: Pick<BatchCommentaryContext, "player
 function serializeBatchContext(context: BatchCommentaryContext): string {
   const speak = (fullName: string): string => context.spokenNames.get(fullName) ?? fullName;
   return JSON.stringify({
+    firstMessage: context.firstMessage,
     hole: describeUpdatedHoles(context.players),
     players: context.players.map(brief => ({
       name: speak(brief.playerName),
@@ -99,6 +100,7 @@ function serializeBatchContext(context: BatchCommentaryContext): string {
       position: brief.standing.position,
       provisional: brief.standing.isProvisional,
       positionChange: describeMovement(brief.movementSincePublication),
+      roundRating: context.roundRatings.get(brief.playerName) ?? null,
     })),
     standings: context.standings.map(standing => ({
       name: speak(standing.playerName),
@@ -112,6 +114,8 @@ function serializeBatchContext(context: BatchCommentaryContext): string {
     scorecard: context.scorecardTable,
     playOrder: context.playOrderKnown ? "väylänumerojärjestys" : "tuntematon",
     leadHistory: context.leadHistory,
+    holeFacts: context.holeFacts,
+    course: context.courseDifficulty,
     weather: context.weather,
     recentMessages: context.recentMessages,
   });

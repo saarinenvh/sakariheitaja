@@ -1,3 +1,5 @@
+import { WeatherObservation } from "../../shared/weather";
+import { buildCourseCommentaryFacts, CourseInfo } from "./courseCommentaryFacts";
 import { buildDivisionStandings, DivisionStanding } from "./competitionFacts";
 import { FactualCommentaryBrief } from "./factualCommentaryBrief";
 import { describeLeadHistory, isPlayOrderKnown } from "./leadHistory";
@@ -18,6 +20,12 @@ export interface BatchCommentaryContext {
   playOrderKnown: boolean;
   leadHistory: string | null;
   weather: WeatherFacts | null;
+  /** True for the first message delivered for this division since following started. */
+  firstMessage: boolean;
+  holeFacts: string | null;
+  courseDifficulty: string | null;
+  /** Round rating text for players who finished in this update, keyed by full player name. */
+  roundRatings: ReadonlyMap<string, string>;
   recentMessages: readonly string[];
   spokenNames: ReadonlyMap<string, string>;
 }
@@ -27,6 +35,10 @@ export interface BatchContextInput {
   division: string;
   briefs: readonly FactualCommentaryBrief[];
   weather: WeatherFacts | null;
+  /** Latest observation, for wind relative to the hole; kept even when the weather isn't re-announced. */
+  latestWeather: WeatherObservation | null;
+  course: CourseInfo | null;
+  firstMessage: boolean;
   recentMessages: readonly string[];
 }
 
@@ -34,6 +46,9 @@ export function buildBatchCommentaryContext(input: BatchContextInput): BatchComm
   const divisionPlayers = input.round.players.filter(player => player.division === input.division);
   const spokenNames = buildSpokenNames(divisionPlayers.map(player => player.name));
   const displayName = (fullName: string): string => spokenNames.get(fullName) ?? fullName;
+  const courseFacts = buildCourseCommentaryFacts({
+    course: input.course, round: input.round, divisionPlayers, briefs: input.briefs, weather: input.latestWeather,
+  });
   return {
     players: input.briefs,
     standings: buildDivisionStandings(input.round, input.division),
@@ -43,6 +58,10 @@ export function buildBatchCommentaryContext(input: BatchContextInput): BatchComm
     playOrderKnown: isPlayOrderKnown(divisionPlayers),
     leadHistory: describeLeadHistory(divisionPlayers, displayName),
     weather: input.weather,
+    firstMessage: input.firstMessage,
+    holeFacts: courseFacts.holeFacts,
+    courseDifficulty: courseFacts.courseDifficulty,
+    roundRatings: courseFacts.roundRatings,
     recentMessages: input.recentMessages,
     spokenNames,
   };

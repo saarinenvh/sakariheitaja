@@ -7,7 +7,7 @@ vi.mock("../../shared/http", () => ({ getData: mocks.getData }));
 
 function observation(overrides: Partial<WeatherObservation> = {}): WeatherObservation {
   return {
-    observedAt: new Date("2026-09-28T10:00:00Z"), temperatureC: 8.2, windSpeedMs: 6,
+    observedAt: new Date("2026-09-28T10:00:00Z"), temperatureC: 8.2, windSpeedMs: 6, windFromDeg: null,
     description: "pilvistä", precipitationMmPerHour: null, ...overrides,
   };
 }
@@ -60,12 +60,12 @@ describe("current weather fetch", () => {
 
   it("maps the observation and sums rain and snow", async () => {
     mocks.getData.mockResolvedValue({
-      dt: 1790000000, main: { temp: 7.5 }, wind: { speed: 4.2 }, weather: [{ description: "räntäsade" }],
+      dt: 1790000000, main: { temp: 7.5 }, wind: { speed: 4.2, deg: 225 }, weather: [{ description: "räntäsade" }],
       rain: { "1h": 0.4 }, snow: { "1h": 0.2 },
     });
     const result = await fetchCurrentWeather(location);
     expect(result).toEqual({ kind: "observed", observation: {
-      observedAt: new Date(1790000000 * 1000), temperatureC: 7.5, windSpeedMs: 4.2,
+      observedAt: new Date(1790000000 * 1000), temperatureC: 7.5, windSpeedMs: 4.2, windFromDeg: 225,
       description: "räntäsade", precipitationMmPerHour: expect.closeTo(0.6),
     } });
     expect(mocks.getData.mock.calls[0][0]).toContain("lat=60.19&lon=24.9&units=metric&lang=fi&appid=test-key");
