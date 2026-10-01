@@ -68,6 +68,12 @@ describe("course statistics page parsing", () => {
     expect(parseCourseStatisticsHtml(buildPage({ rows }))?.holes[0].averageStrokes).toBeNull();
   });
 
+  it("keeps a malformed numeric entity as written instead of throwing", () => {
+    const header = "<tr><th>&nbsp;</th><th>&#99999999;1</th><th>&#xFFFFFFF;2</th><th>3A</th><th>Tot</th><td class=\"total\">%</td></tr>";
+    const statistics = parseCourseStatisticsHtml(buildPage({ header }));
+    expect(statistics?.holes.map(hole => hole.label)).toEqual(["&#99999999;1", "&#xFFFFFFF;2", "3A"]);
+  });
+
   it("returns null when the page no longer has the expected table", () => {
     expect(parseCourseStatisticsHtml("<html><body>No statistics</body></html>")).toBeNull();
     expect(parseCourseStatisticsHtml(buildPage({ rows: defaultRows.filter(line => !line.includes(">Difficulty<")) }))).toBeNull();

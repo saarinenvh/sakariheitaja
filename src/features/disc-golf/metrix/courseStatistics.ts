@@ -2,6 +2,7 @@ import Logger from "js-logger";
 import { z } from "zod";
 import { parseOrThrow } from "../../../util/validation";
 
+const MAX_CODE_POINT = 0x10ffff;
 const COURSE_PAGE_URL = "https://discgolfmetrix.com/course/";
 const COURSE_PAGE_TIMEOUT_MS = 10_000;
 const REQUEST_HEADERS = { "User-Agent": "SakariHeitajaBot/1.0 (disc golf commentary bot)" };
@@ -93,7 +94,12 @@ export async function fetchCourseStatistics(courseId: string): Promise<CourseSta
   const page = await fetchCoursePage(courseId);
   if (page.kind === "failed") return page;
 
-  const statistics = parseCourseStatisticsHtml(page.html);
+  let statistics: CourseStatistics | null;
+  try {
+    statistics = parseCourseStatisticsHtml(page.html);
+  } catch (error) {
+    return { kind: "failed", reason: `Course statistics table could not be parsed: ${error instanceof Error ? error.message : String(error)}` };
+  }
   return statistics ? { kind: "found", statistics } : { kind: "not-found" };
 }
 
@@ -223,8 +229,13 @@ function readCellText(cellHtml: string): string {
 
 function decodeHtmlEntities(text: string): string {
   return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, name: string) => {
-    if (name.startsWith("#x") || name.startsWith("#X")) return String.fromCodePoint(parseInt(name.slice(2), 16));
-    if (name.startsWith("#")) return String.fromCodePoint(parseInt(name.slice(1), 10));
+    if (name.startsWith("#x") || name.startsWith("#X")) return decodeCodePoint(parseInt(name.slice(2), 16), entity);
+    if (name.startsWith("#")) return decodeCodePoint(parseInt(name.slice(1), 10), entity);
     return NAMED_ENTITIES[name.toLowerCase()] ?? entity;
   });
+}
+
+/** A malformed numeric entity stays as written instead of throwing out of the parser. */
+function decodeCodePoint(codePoint: number, entity: string): string {
+  return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= MAX_CODE_POINT ? String.fromCodePoint(codePoint) : entity;
 }

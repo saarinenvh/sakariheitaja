@@ -376,6 +376,24 @@ describe("round publication", () => {
       }
     });
 
+    it("loads weather and course data side by side and stops waiting for weather that never arrives", async () => {
+      vi.useFakeTimers();
+      try {
+        const test = harness();
+        test.fetchWeather.mockReturnValue(new Promise(() => undefined));
+        test.fetchCourse.mockResolvedValue({ details: layout, statistics: null });
+        test.observe(input());
+        test.observe(input([score(3), [], [], []]));
+        await vi.advanceTimersByTimeAsync(15_000);
+        await test.session.idle();
+        expect(test.send).toHaveBeenCalledTimes(1);
+        expect(test.contexts[0]).toMatchObject({ weather: null, holeFacts: "Väylä 1: Par 3, 57 m, radan lyhyin." });
+        expect(test.onError).toHaveBeenCalledWith(expect.objectContaining({ message: "Weather not available within 15000 ms" }));
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it("drops course facts, not the message, when they can't be composed", async () => {
       const test = harness();
       // Deliberately malformed: course data that slipped past validation must not cost the update its message.

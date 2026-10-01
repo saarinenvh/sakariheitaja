@@ -11,6 +11,7 @@ import { CourseInfo } from "./facts/holeFacts";
 
 const RECENT_MESSAGE_COUNT = 3;
 const COURSE_INFO_TIMEOUT_MS = 15_000;
+const WEATHER_FACTS_TIMEOUT_MS = 15_000;
 const NO_COURSE_INFO: CourseInfo = { details: null, statistics: null };
 const WEATHER_RECHECK_PROGRESS_FRACTION = 0.5;
 
@@ -133,10 +134,10 @@ export class RoundCommentary {
     this.resetPublishedState(batch);
     for (const [division, pending] of this.buildBriefsByDivision(batch.updates)) {
       if (!this.active) return;
-      const weather = await this.collectWeatherFacts(pending.map(entry => entry.brief));
+      const [weather, course] = await Promise.all([this.loadWeatherFacts(pending.map(entry => entry.brief)), this.loadCourse()]);
       const context = this.buildContext({
         round: batch.round, division, briefs: pending.map(entry => entry.brief), weather,
-        latestWeather: this.latestWeather, course: await this.loadCourse(),
+        latestWeather: this.latestWeather, course,
         firstMessage: !this.welcomedDivisions.has(division),
         recentMessages: [...(this.recentMessages.get(division) ?? [])],
       });
@@ -209,9 +210,17 @@ export class RoundCommentary {
     }
   }
 
+  /** Weather is optional enrichment too, bounded so that it never delays the message by more than the course data. */
+  private loadWeatherFacts(briefs: readonly FactualCommentaryBrief[]): Promise<WeatherFacts | null> {
+    return withTimeout(this.collectWeatherFacts(briefs), WEATHER_FACTS_TIMEOUT_MS, "Weather").catch(error => {
+      this.delivery.onError(error);
+      return null;
+    });
+  }
+
   /** Course facts are optional enrichment: a failure or a hang must never hold back the commentary. */
   private loadCourse(): Promise<CourseInfo> {
-    this.course ??= withTimeout(this.delivery.fetchCourse(), COURSE_INFO_TIMEOUT_MS).catch(error => {
+    this.course ??= withTimeout(this.delivery.fetchCourse(), COURSE_INFO_TIMEOUT_MS, "Course data").catch(error => {
       this.delivery.onError(error);
       return NO_COURSE_INFO;
     });
@@ -256,10 +265,10 @@ function maxProgressFraction(briefs: readonly FactualCommentaryBrief[]): number 
   return fraction;
 }
 
-function withTimeout<Value>(promise: Promise<Value>, timeoutMs: number): Promise<Value> {
+function withTimeout<Value>(promise: Promise<Value>, timeoutMs: number, what: string): Promise<Value> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`Course data not available within ${timeoutMs} ms`)), timeoutMs);
+    timer = setTimeout(() => reject(new Error(`${what} not available within ${timeoutMs} ms`)), timeoutMs);
   });
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }

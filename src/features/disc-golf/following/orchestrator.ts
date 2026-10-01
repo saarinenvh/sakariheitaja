@@ -114,9 +114,17 @@ export class Orchestrator {
   private async loadCourseInfo(): Promise<CourseInfo> {
     const courseId = this.snapshot?.courseId;
     if (!courseId) return { details: null, statistics: null };
-    const [details, statistics] = await Promise.all([this.loadCourseDetails(courseId), this.loadCourseStatistics(courseId)]);
+    const [details, statistics] = await Promise.all([
+      this.loadCourseDetails(courseId).catch(error => this.reportCourseDataFailure("details", error)),
+      this.loadCourseStatistics(courseId).catch(error => this.reportCourseDataFailure("statistics", error)),
+    ]);
     Logger.info(`${this.metrixId}: course data ${details ? "with" : "without"} layout details, ${statistics ? "with" : "without"} statistics`);
     return { details, statistics };
+  }
+
+  private reportCourseDataFailure(part: string, error: unknown): null {
+    Logger.warn(`${this.metrixId}: course ${part} unavailable: ${error instanceof Error ? error.message : String(error)}`);
+    return null;
   }
 
   private async loadCourseDetails(courseId: string): Promise<CourseDetails | null> {
