@@ -86,4 +86,3 @@ function buildRoundRatings(briefs: readonly FactualCommentaryBrief[], details: C
   }
   return ratings;
 }
-
