@@ -9,7 +9,7 @@ Logger.useDefaults(loggerSettings);
 import { dataSource } from "./db/dataSource";
 import { bot } from "./bot/bot";
 import * as registry from "./state/competitionRegistry";
-import { Orchestrator } from "./features/disc-golf/orchestrator";
+import { Orchestrator } from "./features/disc-golf/following/orchestrator";
 import * as competitionService from "./features/disc-golf/services/CompetitionService";
 import * as chatRepo from "./db/repositories/ChatRepository";
 import { startMorningGreeter } from "./scheduler/morningGreeter";

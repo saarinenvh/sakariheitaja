@@ -8,10 +8,10 @@ import { createHash } from "crypto";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import type { OllamaMessage, OllamaOptions } from "../../src/shared/llm/ollamaClient";
-import type { BatchCommentaryContext } from "../../src/features/disc-golf/batchCommentaryContext";
-import type { BatchCommentaryResult } from "../../src/features/disc-golf/batchCommentaryWriter";
+import type { BatchCommentaryContext } from "../../src/features/disc-golf/commentary/writer/commentaryContext";
+import type { BatchCommentaryResult } from "../../src/features/disc-golf/commentary/writer/commentaryWriter";
 import type { WeatherObservation } from "../../src/shared/weather";
-import type { CourseInfo } from "../../src/features/disc-golf/courseCommentaryFacts";
+import type { CourseInfo } from "../../src/features/disc-golf/commentary/facts/holeFacts";
 import { parsePositiveIntegerFlag, parseFlags } from "./cliFlags";
 import { CommentaryFixture, FixtureWeather, loadFixtures } from "./fixtureFile";
 import { EvalMeta, EvalRecord, renderConsoleSummary, renderMarkdownReport } from "./report";
@@ -110,7 +110,7 @@ function configureOllamaEnvironment(options: EvalOptions): void {
 
 async function loadRuntime(options: EvalOptions): Promise<Runtime> {
   const { generateStructured } = await import("../../src/shared/llm/ollamaClient");
-  const { COMMENTARY_MODEL_OPTIONS } = await import("../../src/features/disc-golf/commentaryRuntime");
+  const { COMMENTARY_MODEL_OPTIONS } = await import("../../src/features/disc-golf/commentary/writer/commentaryRuntime");
   return {
     generate: generateStructured,
     modelOptions: COMMENTARY_MODEL_OPTIONS,
@@ -121,8 +121,8 @@ async function loadRuntime(options: EvalOptions): Promise<Runtime> {
 }
 
 async function replayFixture(fixture: CommentaryFixture, run: number, runtime: Runtime): Promise<EvalRecord[]> {
-  const { RoundCommentary } = await import("../../src/features/disc-golf/roundCommentary");
-  const { parseMetrixRound, trackRoundPlayers } = await import("../../src/features/disc-golf/metrixRound");
+  const { RoundCommentary } = await import("../../src/features/disc-golf/commentary/roundCommentary");
+  const { parseMetrixRound, trackRoundPlayers } = await import("../../src/features/disc-golf/metrix/metrixRound");
   const tracked = fixture.tracked.map((name, index) => ({ id: index + 1, name }));
   const weather = [fixture.weather.start, fixture.weather.halfway];
   let weatherRequests = 0;
@@ -157,7 +157,7 @@ async function replayFixture(fixture: CommentaryFixture, run: number, runtime: R
 type EvaluatedWrite = { result: BatchCommentaryResult; record: Omit<EvalRecord, "fixture" | "run"> | null };
 
 async function writeEvaluated(context: BatchCommentaryContext, runtime: Runtime): Promise<EvaluatedWrite> {
-  const { buildBatchFallback, writeBatchCommentary } = await import("../../src/features/disc-golf/batchCommentaryWriter");
+  const { buildBatchFallback, writeBatchCommentary } = await import("../../src/features/disc-golf/commentary/writer/commentaryWriter");
   const holes = updatedHoles(context);
   if (!isInRange(holes, runtime.holeRange)) {
     return { result: { kind: "fallback", commentary: buildBatchFallback(context), reason: "disabled" }, record: null };
@@ -217,8 +217,8 @@ function describeFacts(context: BatchCommentaryContext): string {
 }
 
 async function loadFixtureCourse(fixture: CommentaryFixture): Promise<CourseInfo> {
-  const { parseCourseDetails } = await import("../../src/features/disc-golf/metrixCourse");
-  const { parseStoredCourseStatistics } = await import("../../src/features/disc-golf/courseStatistics");
+  const { parseCourseDetails } = await import("../../src/features/disc-golf/metrix/metrixCourse");
+  const { parseStoredCourseStatistics } = await import("../../src/features/disc-golf/metrix/courseStatistics");
   const course = fixture.course;
   return {
     details: course?.detailsResponse ? parseCourseDetails(course.detailsResponse, course.courseId) : null,

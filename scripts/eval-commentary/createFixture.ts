@@ -4,8 +4,8 @@
 // Without the integration code the fixture still gets the public course statistics, but no layout data.
 import { buildAnonymizedFixture, readCourseId } from "./anonymize";
 import { FixtureCourse, saveFixture } from "./fixtureFile";
-import { parseCourseDetails } from "../../src/features/disc-golf/metrixCourse";
-import { fetchCourseStatistics } from "../../src/features/disc-golf/courseStatistics";
+import { parseCourseDetails } from "../../src/features/disc-golf/metrix/metrixCourse";
+import { fetchCourseStatistics } from "../../src/features/disc-golf/metrix/courseStatistics";
 import { parseFlags, requireFlag } from "./cliFlags";
 
 const METRIX_RESULT_URL = "https://discgolfmetrix.com/api.php?content=result&id=";

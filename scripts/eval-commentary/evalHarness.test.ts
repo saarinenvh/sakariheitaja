@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { parseMetrixRound } from "../../src/features/disc-golf/metrixRound";
+import { parseMetrixRound } from "../../src/features/disc-golf/metrix/metrixRound";
 import { buildAnonymizedFixture, buildFakeNames } from "./anonymize";
 import { countSentences, runChecks } from "./checks";
 import { CommentaryFixture } from "./fixtureFile";
 import { buildReplaySteps, REPLAY_ROUND_ID } from "./replay";
-import { BatchCommentaryContext } from "../../src/features/disc-golf/batchCommentaryContext";
-import { FactualCommentaryBrief } from "../../src/features/disc-golf/factualCommentaryBrief";
+import { BatchCommentaryContext } from "../../src/features/disc-golf/commentary/writer/commentaryContext";
+import { FactualCommentaryBrief } from "../../src/features/disc-golf/commentary/facts/playerBrief";
 
 const hole = (Result: number, Diff: number, PEN = 0) => ({ Result, Diff, PEN });
 

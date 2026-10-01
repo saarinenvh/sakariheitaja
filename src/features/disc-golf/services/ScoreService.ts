@@ -2,7 +2,7 @@ import { TrackedPlayer } from "../../../types/metrix";
 import { ScoreRow } from "../../../db/repositories/ScoreRepository";
 import * as scoreRepo from "../../../db/repositories/ScoreRepository";
 import * as courseRepo from "../../../db/repositories/CourseRepository";
-import { ScoreChange } from "../commentaryFacts";
+import { ScoreChange } from "../metrix/scorecard";
 
 export async function saveRecordedScores(
   playerId: number, changes: readonly ScoreChange[], chatId: number, competitionId: number, courseName: string,

@@ -1,6 +1,6 @@
-import { BatchCommentaryContext } from "../../src/features/disc-golf/batchCommentaryContext";
-import { BatchCommentaryResult } from "../../src/features/disc-golf/batchCommentaryWriter";
-import { FactualCommentaryBrief } from "../../src/features/disc-golf/factualCommentaryBrief";
+import { BatchCommentaryContext } from "../../src/features/disc-golf/commentary/writer/commentaryContext";
+import { BatchCommentaryResult } from "../../src/features/disc-golf/commentary/writer/commentaryWriter";
+import { FactualCommentaryBrief } from "../../src/features/disc-golf/commentary/facts/playerBrief";
 
 export type CheckSeverity = "fail" | "warn" | "info";
 

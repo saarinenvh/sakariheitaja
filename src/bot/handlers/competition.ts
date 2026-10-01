@@ -1,5 +1,5 @@
 import { Composer } from "grammy";
-import { Orchestrator } from "../../features/disc-golf/orchestrator";
+import { Orchestrator } from "../../features/disc-golf/following/orchestrator";
 import * as competitionService from "../../features/disc-golf/services/CompetitionService";
 import * as registry from "../../state/competitionRegistry";
 import { competition as MSG } from "../../config/messages";
