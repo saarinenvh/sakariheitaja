@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseRoundState, parseStanding } from "./commentaryAnalysis";
 import { parseScorecard } from "./commentaryFacts";
 import {
-  buildFactualCommentaryBrief, CommentarySnapshot, FactualBriefResult, FactualCommentaryBrief, serializeFactualBrief,
+  buildFactualCommentaryBrief, CommentarySnapshot, FactualBriefResult, FactualCommentaryBrief,
 } from "./factualCommentaryBrief";
 
 function snapshot(scores: unknown, position = 10): CommentarySnapshot {
@@ -70,10 +70,9 @@ describe("factual commentary brief", () => {
     expect(brief.changes).toContainEqual({
       kind: "recorded", holeNumber: 2, holeLabel: "2", score: { strokes: 5, relativeToPar: 2, obCount: 1 },
     });
-    expect(serializeFactualBrief(brief)).toContain("obCount");
   });
 
-  it("serializes only the selected factual contract, not a full card or static profile", () => {
+  it("keeps only the selected factual contract, not a full card or static profile", () => {
     const current = {
       ...snapshot([{ Result: 3, Diff: 0 }, [], []]),
       playerProfile: "Keskikastissa ja hyvässä vireessä",
@@ -82,9 +81,7 @@ describe("factual commentary brief", () => {
     const brief = readyBrief(buildFactualCommentaryBrief({
       previousObserved: snapshot([[], [], []]), current, lastPublished: null,
     }));
-    const serialized = serializeFactualBrief(brief);
-    expect(JSON.parse(serialized)).toEqual(brief);
-    expect(serialized).not.toMatch(/playerProfile|generatedHistory|scorecard|Keskikastissa|invented story/);
+    expect(JSON.stringify(brief)).not.toMatch(/playerProfile|generatedHistory|scorecard|Keskikastissa|invented story/);
     expect(brief.standing.position).toBe(10);
   });
 

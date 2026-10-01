@@ -3,7 +3,7 @@ import { parseRoundState, parseStanding } from "./commentaryAnalysis";
 import { parseScorecard } from "./commentaryFacts";
 import { BatchCommentaryContext } from "./batchCommentaryContext";
 import { writeBatchCommentary } from "./batchCommentaryWriter";
-import { buildFactualFallback } from "./commentaryWriter";
+import { buildFactualFallback } from "./factualFallback";
 import { buildFactualCommentaryBrief, CommentarySnapshot, FactualCommentaryBrief } from "./factualCommentaryBrief";
 
 function buildBrief(playerName: string, previous: unknown, current: unknown): FactualCommentaryBrief {

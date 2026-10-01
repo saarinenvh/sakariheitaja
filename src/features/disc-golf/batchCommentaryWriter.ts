@@ -4,7 +4,7 @@ import { BatchCommentaryContext } from "./batchCommentaryContext";
 import { RoundProgress, StandingMovement } from "./commentaryAnalysis";
 import { ScoreChange } from "./commentaryFacts";
 import { holeScoreName } from "./commentaryPresentation";
-import { buildFactualFallback } from "./commentaryWriter";
+import { buildFactualFallback } from "./factualFallback";
 import { LeaderGap } from "./competitionFacts";
 import { FactualCommentaryBrief } from "./factualCommentaryBrief";
 

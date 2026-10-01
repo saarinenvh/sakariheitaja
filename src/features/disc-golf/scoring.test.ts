@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Change, MetrixHoleResult } from "../../types/metrix";
+import { ScoreChange } from "./commentaryFacts";
 
 // Mocked so this exercises which rows get written, without a database.
 vi.mock("../../db/repositories/ScoreRepository", () => ({
@@ -13,59 +13,37 @@ vi.mock("../../db/repositories/CourseRepository", () => ({
 }));
 
 import * as scoreRepo from "../../db/repositories/ScoreRepository";
-import { saveSuperScore } from "./services/ScoreService";
+import { saveRecordedScores } from "./services/ScoreService";
 
-const H = (Result: string, Diff: number): MetrixHoleResult => ({ Result, Diff, PEN: 0 });
+const recorded = (holeNumber: number, strokes: number, relativeToPar: number): ScoreChange =>
+  ({ kind: "recorded", holeNumber, score: { strokes, relativeToPar, obCount: 0 } });
 
-function change(hole: number, holeResult: MetrixHoleResult, earlierHoles?: { hole: number; holeResult: MetrixHoleResult }[]): Change {
-  const player = { Name: "Matti", ClassName: "MPO", OrderNumber: 1, Diff: 0, Sum: 54 };
-  return { playerName: "Matti", playerId: 42, prevPlayer: player, newPlayer: player, hole, holeResult, earlierHoles };
-}
+const save = (changes: ScoreChange[]) => saveRecordedScores(42, changes, -100, 55, "Talin frisbeegolfrata");
 
 beforeEach(() => vi.clearAllMocks());
 
-describe("saveSuperScore", () => {
-  it("records an ace that was entered alongside later holes", async () => {
-    // A scorekeeper enters holes 2, 3 and 4 in one go. Only hole 4 is
-    // commentated - but hole 3 was an ace, and it still happened.
-    await saveSuperScore(
-      change(3, H("5", 2), [
-        { hole: 1, holeResult: H("2", -1) },   // birdie, not notable
-        { hole: 2, holeResult: H("1", -2) },   // ACE
-      ]),
-      -100, 55, "Talin frisbeegolfrata",
-    );
-
+describe("saveRecordedScores", () => {
+  it("records an ace that was entered alongside other holes", async () => {
+    // A scorekeeper enters holes 1-3 in one go; the ace on hole 2 still happened.
+    await save([recorded(1, 2, -1), recorded(2, 1, -2), recorded(3, 5, 2)]);
     expect(scoreRepo.addAce).toHaveBeenCalledTimes(1);
     expect(scoreRepo.addAce).toHaveBeenCalledWith(expect.any(String), 42, -100, 7, 55);
     expect(scoreRepo.addEagle).not.toHaveBeenCalled();
   });
 
   it("records every notable score in the batch, not just one", async () => {
-    await saveSuperScore(
-      change(3, H("1", -2), [
-        { hole: 1, holeResult: H("2", -2) },   // eagle
-        { hole: 2, holeResult: H("2", -3) },   // albatross
-      ]),
-      -100, 55, "Talin frisbeegolfrata",
-    );
-
+    await save([recorded(1, 2, -2), recorded(2, 2, -3), recorded(3, 1, -2)]);
     expect(scoreRepo.addEagle).toHaveBeenCalledTimes(1);
     expect(scoreRepo.addAlbatross).toHaveBeenCalledTimes(1);
-    expect(scoreRepo.addAce).toHaveBeenCalledTimes(1);   // the commentated hole
-  });
-
-  it("still records a notable score on the commentated hole alone", async () => {
-    await saveSuperScore(change(5, H("1", -2)), -100, 55, "Talin frisbeegolfrata");
     expect(scoreRepo.addAce).toHaveBeenCalledTimes(1);
   });
 
-  it("writes nothing for an ordinary batch of holes", async () => {
-    await saveSuperScore(
-      change(3, H("4", 1), [{ hole: 1, holeResult: H("3", 0) }, { hole: 2, holeResult: H("4", 1) }]),
-      -100, 55, "Talin frisbeegolfrata",
-    );
-
+  it("writes nothing for ordinary holes or for corrections", async () => {
+    const correctedToAce: ScoreChange = {
+      kind: "corrected", holeNumber: 2,
+      previous: { strokes: 2, relativeToPar: -1, obCount: 0 }, current: { strokes: 1, relativeToPar: -2, obCount: 0 },
+    };
+    await save([recorded(1, 3, 0), correctedToAce, recorded(3, 4, 1)]);
     expect(scoreRepo.addAce).not.toHaveBeenCalled();
     expect(scoreRepo.addEagle).not.toHaveBeenCalled();
     expect(scoreRepo.addAlbatross).not.toHaveBeenCalled();

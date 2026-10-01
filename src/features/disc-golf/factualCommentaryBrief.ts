@@ -66,9 +66,6 @@ export function buildFactualCommentaryBrief(input: FactualBriefInput): FactualBr
   };
 }
 
-export function serializeFactualBrief(brief: FactualCommentaryBrief): string {
-  return JSON.stringify(brief);
-}
 
 function classifyChanges(changes: readonly ScoreChange[]): FactualCommentaryBrief["event"] {
   const hasRecorded = changes.some(change => change.kind === "recorded");

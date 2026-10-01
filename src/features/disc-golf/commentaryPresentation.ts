@@ -13,39 +13,6 @@ export interface CommentaryPost {
   text: string;
 }
 
-export interface CommentaryMessage<Post extends CommentaryPost> {
-  html: string;
-  published: { post: Post; text: string; firstFragment: boolean }[];
-}
-
-export function formatCommentaryMessages<Post extends CommentaryPost>(
-  posts: readonly Post[], metrixId: string, opening: string,
-): CommentaryMessage<Post>[] {
-  const messages: CommentaryMessage<Post>[] = [];
-  let message: CommentaryMessage<Post> = { html: escapeHtml(opening), published: [] };
-  let previousHeading = "";
-  for (const post of posts) {
-    const heading = formatHeading(post.brief, metrixId);
-    const footer = formatFooter(post.brief);
-    const available = TELEGRAM_MESSAGE_LIMIT - escapeHtml(opening).length - heading.length - footer.length - 8;
-    if (available <= 0) throw new Error("Commentary metadata exceeds Telegram message limit");
-    const fragments = splitEscapedText(post.text, available);
-    for (const [index, fragment] of fragments.entries()) {
-      let block = `${heading === previousHeading ? "" : `\n\n${heading}`}\n\n${fragment.html}\n${footer}`;
-      if (message.html.length + block.length > TELEGRAM_MESSAGE_LIMIT) {
-        messages.push(message);
-        message = { html: escapeHtml(opening), published: [] };
-        block = `\n\n${heading}\n\n${fragment.html}\n${footer}`;
-      }
-      message.html += block;
-      previousHeading = heading;
-      message.published.push({ post, text: fragment.text, firstFragment: index === 0 });
-    }
-  }
-  if (posts.length > 0) messages.push(message);
-  return messages;
-}
-
 export function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -105,10 +72,6 @@ function buildBatchBlocks<Post extends CommentaryPost>(
     }
   }
   return blocks;
-}
-
-function formatHeading(brief: FactualCommentaryBrief, metrixId: string): string {
-  return formatHoleHeading(brief.changes.map(change => change.holeLabel ?? String(change.holeNumber)), brief.courseName, metrixId);
 }
 
 function formatHoleHeading(labels: readonly string[], courseName: string, metrixId: string): string {

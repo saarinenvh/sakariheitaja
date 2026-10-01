@@ -16,7 +16,7 @@ vi.mock("../../db/repositories/PlayerRepository", () => ({ findByChatId: async (
 vi.mock("./services/CompetitionService", () => ({ markDone: mocks.markDone }));
 vi.mock("./services/CourseService", () => ({ getOrCreate: async () => ({ id: 2 }) }));
 vi.mock("./services/ScoreService", () => ({
-  saveRecordedScores: mocks.saveScores, saveSuperScore: mocks.saveScores, saveResults: mocks.saveResults,
+  saveRecordedScores: mocks.saveScores, saveResults: mocks.saveResults,
 }));
 vi.mock("./playerProfiles", () => ({ updateProfiles: vi.fn(), buildProfileSnippet: () => undefined }));
 vi.mock("./bagtags", () => ({

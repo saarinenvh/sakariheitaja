@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCompetitionFacts, buildDivisionStandings } from "./competitionFacts";
+import { buildDivisionStandings } from "./competitionFacts";
 import { parseMetrixRound } from "./metrixRound";
 
 function round() {
@@ -14,14 +14,13 @@ function round() {
   } }, "123");
 }
 
-describe("current competition facts", () => {
-  it("includes untracked division opponents with correctly directed gaps", () => {
-    const snapshot = round();
-    const facts = buildCompetitionFacts(snapshot, snapshot.players[1]);
-    expect(facts).toHaveLength(2);
-    expect(facts[0]).toMatchObject({ position: 1, roundRelativeToPar: -1, recordedHoles: 1 });
-    expect(facts[0].comparisonToPlayer).toBe("2 heittoa edellä kommentoitavaa pelaajaa samoilla kirjatuilla väylillä.");
-    expect(buildCompetitionFacts(snapshot, snapshot.players[0])[1].comparisonToPlayer).toContain("2 heittoa jäljessä");
+describe("division standings", () => {
+  it("lists the division's players with the gap to the leader, leaving other divisions out", () => {
+    const standings = buildDivisionStandings(round(), "");
+    expect(standings.map(standing => [standing.playerName, standing.position, standing.roundRelativeToPar, standing.leaderGap])).toEqual([
+      ["Leader", 1, -1, { kind: "leader" }],
+      ["Player", 2, 1, { kind: "behind", strokes: 2 }],
+    ]);
   });
 
   it("does not compare different holes, missing scores, DNF or provisional standings", () => {
@@ -32,15 +31,16 @@ describe("current competition facts", () => {
       { standing: { position: 1, fieldSize: 2, isProvisional: true } },
     ]) {
       const snapshot = round();
-      const changed = { ...snapshot, players: [{ ...snapshot.players[0], ...replacement }, snapshot.players[1]] };
-      expect(buildCompetitionFacts(changed, changed.players[1])[0].comparisonToPlayer).toContain("ei verrata");
+      const changed = { ...snapshot, players: [{ ...snapshot.players[0], ...replacement }, ...snapshot.players.slice(1)] };
+      const player = buildDivisionStandings(changed, "").find(standing => standing.playerName === "Player");
+      expect(player?.leaderGap.kind).not.toBe("behind");
     }
   });
 
-  it("reports ties without claiming a sole leader", () => {
+  it("reports tied leaders as both leading rather than one behind the other", () => {
     const snapshot = round();
     const tied = { ...snapshot, players: [snapshot.players[0], { ...snapshot.players[1], scorecard: snapshot.players[0].scorecard, standing: snapshot.players[0].standing }] };
-    expect(buildCompetitionFacts(tied, tied.players[1])[0].comparisonToPlayer).toContain("Sama kirjattu yhteistulos");
+    expect(buildDivisionStandings(tied, "").map(standing => standing.leaderGap)).toEqual([{ kind: "leader" }, { kind: "leader" }]);
   });
 
   it("orders division standings by place with unplaced players last, whatever the source order", () => {
