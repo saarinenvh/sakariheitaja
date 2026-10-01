@@ -71,8 +71,18 @@ describe("message checks", () => {
     result: { kind: "generated" as const, commentary: { opening, closing, lines: players.map(player => ({ brief: player, text })) } },
   });
 
+  const problems = (batch: Parameters<typeof runChecks>[0]) => runChecks(batch).filter(finding => finding.severity !== "info");
+
+  it("notes lines that start with the player's name or don't mention it", () => {
+    const info = (text: string) => runChecks(generated("Alku.", text, "Loppu.")).filter(finding => finding.severity === "info")
+      .map(finding => finding.check);
+    expect(info("Aatu heitti parin.")).toEqual(["name-first"]);
+    expect(info("Puuosuma ja silti pari, Aatu.")).toEqual([]);
+    expect(info("Puuosuma ja silti pari.")).toEqual(["name-missing"]);
+  });
+
   it("flags invented OB, unsupported movement, wrong hole numbers and ball-golf verbs", () => {
-    const findings = runChecks(generated("Väylällä 6 tuulee.", "Aatu lyönti meni outtiin ja nousi kärkeen.", "Tasaista."));
+    const findings = problems(generated("Väylällä 6 tuulee.", "Aatu lyönti meni outtiin ja nousi kärkeen.", "Tasaista."));
     expect(findings.map(finding => finding.check).sort()).toEqual(["false-ob", "golf-verb", "unsupported-movement", "wrong-hole", "wrong-place"]);
   });
 
@@ -87,7 +97,7 @@ describe("message checks", () => {
       changes: [{ kind: "recorded", holeNumber: 5, holeLabel: "5", score: { strokes: 5, relativeToPar: 2, obCount: 1 } }],
       movementSincePublication: { kind: "down", previousPosition: 1, currentPosition: 2, places: 1 },
     });
-    expect(runChecks(generated("Väylä 5 odottaa.", "Aatu heitti OB:n ja putosi kakkoseksi.", "Kärki vaihtui.", [withOb]))).toEqual([]);
+    expect(problems(generated("Väylä 5 odottaa.", "Aatu heitti OB:n ja putosi kakkoseksi.", "Kärki vaihtui.", [withOb]))).toEqual([]);
   });
 
   it("warns about place and lead claims that contradict the player's position, and accepts correct ones", () => {
@@ -104,7 +114,7 @@ describe("message checks", () => {
   it("counts sentences and comparisons and reports fallbacks", () => {
     expect(countSentences("Yksi. Kaksi! Kolme? HAHAHAA")).toBe(4);
     const twoComparisons = generated("Alku.", "Aatu on kuin juna, kuin raketti.", "Loppu.");
-    expect(runChecks(twoComparisons).map(finding => finding.check)).toEqual(["comparison-count"]);
+    expect(problems(twoComparisons).map(finding => finding.check)).toEqual(["comparison-count"]);
     const fallback = { context: context([brief()]), rawReply: null,
       result: { kind: "fallback" as const, reason: "unusable-response" as const, commentary: { opening: "", closing: "", lines: [] } } };
     expect(runChecks(fallback)).toEqual([{ check: "fallback", severity: "fail", detail: "unusable-response" }]);

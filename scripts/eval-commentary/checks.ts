@@ -16,6 +16,7 @@ export const CHECK_DESCRIPTIONS = {
   "comparison-count": "More than one \"kuin\" comparison across the player lines",
   "wrong-place": "Player line claims a place or the lead that doesn't match the player's position",
   "name-missing": "Player line does not mention the player's name",
+  "name-first": "Player line starts with the player's name",
 } as const;
 
 export type CheckId = keyof typeof CHECK_DESCRIPTIONS;
@@ -94,7 +95,9 @@ function checkPlayerLine(context: BatchCommentaryContext, brief: FactualCommenta
   }
   findings.push(...checkPlaceClaims(name, brief.standing.position, text));
   const firstName = name.split(/\s+/)[0].toLocaleLowerCase("fi");
-  if (!text.toLocaleLowerCase("fi").includes(firstName)) findings.push({ check: "name-missing", severity: "info", detail: name });
+  const lowercaseText = text.toLocaleLowerCase("fi");
+  if (!lowercaseText.includes(firstName)) findings.push({ check: "name-missing", severity: "info", detail: name });
+  else if (lowercaseText.trimStart().startsWith(firstName)) findings.push({ check: "name-first", severity: "info", detail: name });
   return findings;
 }
 
