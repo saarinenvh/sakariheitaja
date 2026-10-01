@@ -113,7 +113,8 @@ describe("Metrix round boundary", () => {
     const full = parseMetrixRound(input([score(3), score(3), score(3), score(3)]), "123");
     expect(hasTrackedRoundEnded(trackRoundPlayers(full, tracked))).toBe(true);
     expect(toFinalScores(trackRoundPlayers(full, tracked))).toEqual([{ id: 1, Sum: 12, Diff: 0 }]);
-    expect(full.players[0].round.status).toBe("active");
+    expect(full.players[0].round.status).toBe("complete");
+    expect(active.players[0].round.status).toBe("active");
     const dnf = input();
     dnf.Competition.Results[0].DNF = "1";
     expect(hasTrackedRoundEnded(trackRoundPlayers(parseMetrixRound(dnf, "123"), tracked))).toBe(true);
@@ -336,6 +337,16 @@ describe("round publication", () => {
       expect(test.contexts[0].holeFacts).toBe("Väylä 1: Par 3, 57 m, radan lyhyin.");
       expect(test.contexts[0].courseDifficulty).toContain("par-rating");
       expect(test.fetchCourse).toHaveBeenCalledTimes(1);
+    });
+
+    it("gives a round rating once a player's card is complete", async () => {
+      const test = harness();
+      test.fetchCourse.mockResolvedValue({ details: layout, statistics: null });
+      test.observe(input([score(3), score(3), score(3), []]));
+      test.observe(input([score(3), score(3), score(3), score(2)]));
+      await test.session.idle();
+      expect(firstPlayer(test.contexts[0]).round.progress.kind).toBe("complete");
+      expect(test.contexts[0].roundRatings.get("Matti")).toMatch(/^Kierroksen rating noin \d+\.$/);
     });
 
     it("still publishes when fetching the course data fails", async () => {

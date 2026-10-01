@@ -194,7 +194,7 @@ function normalizePlayer(
   if (scorecard.kind === "available" && scorecard.holes.length !== competition.Tracks.length) {
     scorecard = { kind: "unavailable" };
   }
-  const round = parseRoundState({ totalHoles: competition.Tracks.length, status: source.DNF ? "dnf" : "active" });
+  const round = parseRoundState({ totalHoles: competition.Tracks.length, status: resolveRoundStatus(source.DNF, scorecard) });
   const aggregateStanding = (competition.ShowPreviousRoundsSum ?? 0) !== 0
     || source.PreviousRoundsSum !== null || source.PreviousRoundsDiff !== null;
   const position = resolvePosition(source, fieldSize, rankedPosition, aggregateStanding);
@@ -204,6 +204,13 @@ function normalizePlayer(
     standing: parseStanding({ position, fieldSize, isProvisional: position === null || aggregateStanding }),
     totalStrokes: source.Sum, totalRelativeToPar: source.Diff,
   };
+}
+
+/** Metrix has no completion flag, so a full card without DNF counts as a complete round for commentary. */
+function resolveRoundStatus(dnf: boolean, scorecard: Scorecard): RoundState["status"] {
+  if (dnf) return "dnf";
+  const fullCard = scorecard.kind === "available" && scorecard.holes.length > 0 && scorecard.holes.every(hole => hole !== null);
+  return fullCard ? "complete" : "active";
 }
 
 function resolvePosition(
