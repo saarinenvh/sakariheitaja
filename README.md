@@ -95,6 +95,39 @@ Disable tracing after testing and delete the files when no longer needed.
 There is no automatic retention limit. Logging failures warn without stopping
 inference. No credentials, environment dump or endpoint URL are added to traces.
 
+## Commentary eval harness
+
+A dev tool for prompt and model work. It replays real Metrix rounds hole by hole through
+the real `RoundCommentary` and batch writer against a real Ollama, checks every message,
+and writes a readable report. Only Telegram, the database and the weather API are faked.
+It is not part of `npm test` or CI, because it calls a live model.
+
+```bash
+# Turn a public Metrix round into an anonymized fixture (every player name replaced)
+npm run eval:commentary:fixture -- --round=3628927 --track="Name A,Name B" --name=my-round
+
+# Replay all fixtures; reports land in .eval-results/ (Git-ignored)
+npm run eval:commentary -- --model=gemma4:26b-a4b-q3 --baseUrl=http://<ollama-host>:11434
+
+# Faster iteration: some holes, several runs, one fixture, a prompt variant
+npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round --prompt=/tmp/variant.md
+```
+
+- Fixtures live in `scripts/eval-commentary/fixtures/`. The same real first name maps to the
+  same fake first name, so first-name collisions survive. The round ID is not stored.
+  Each fixture has an editable start and halfway weather, so the weather change is exercised.
+- The replay assumes everyone plays in hole order. Places come from the bot's own derivation
+  from recorded totals, as when Metrix reports place 0.
+- Checks separate failures (fallback, invented OB, wrong hole number, ball-golf verbs) from
+  heuristic warnings (sentence limits, unsupported movement words, water imagery, more than
+  one `kuin` comparison) and info (player name missing). Language and humour still need a
+  human read of the report.
+- `--holes` only calls the model for those holes; the others publish the factual fallback,
+  so they don't add to the recent-message history.
+- The JSON next to each report keeps the full results for comparing a prompt change
+  against a baseline run.
+- `npm run typecheck:eval` type-checks the harness, which `npx tsc --noEmit` doesn't cover.
+
 ## Commands
 
 ### Competition

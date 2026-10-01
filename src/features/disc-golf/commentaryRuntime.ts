@@ -3,8 +3,8 @@ import { generateStructured, loadPrompt } from "../../shared/llm/ollamaClient";
 import { BatchCommentaryContext } from "./batchCommentaryContext";
 import { BatchCommentaryResult, buildBatchFallback, writeBatchCommentary } from "./batchCommentaryWriter";
 
-const COMMENTARY_MODEL_OPTIONS = { temperature: 0.9, num_predict: 800, num_ctx: 16384, repeat_penalty: 1.1 };
-const BATCH_PROMPT_FILE = "batch_commentator.md";
+export const COMMENTARY_MODEL_OPTIONS = { temperature: 0.9, num_predict: 800, num_ctx: 16384, repeat_penalty: 1.1 };
+export const BATCH_PROMPT_FILE = "batch_commentator.md";
 const MS_PER_SECOND = 1000;
 let systemPrompt: string | undefined;
 

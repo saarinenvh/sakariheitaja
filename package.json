@@ -10,7 +10,10 @@
     "dev:local": "ENV_FILE=.env.dev ts-node src/app.ts",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck:eval": "tsc -p tsconfig.eval.json --noEmit",
+    "eval:commentary": "tsc -p tsconfig.eval.json && node .eval-dist/scripts/eval-commentary/run.js",
+    "eval:commentary:fixture": "tsc -p tsconfig.eval.json && node .eval-dist/scripts/eval-commentary/createFixture.js"
   },
   "author": "",
   "license": "ISC",

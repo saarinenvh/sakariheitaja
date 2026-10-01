@@ -1,0 +1,2168 @@
+{
+  "description": "Club tour round on a 21-hole course: four-way battle for the win, two players share a first name.",
+  "courseName": "Härkälinnan frisbeegolfrata 2024",
+  "date": "2026-05-23",
+  "tracked": [
+    "Aatu Ahonen",
+    "Eero Heikkilä",
+    "Juho Järvinen",
+    "Eero Koskinen"
+  ],
+  "weather": {
+    "start": {
+      "temperatureC": 14,
+      "windSpeedMs": 4,
+      "description": "puolipilvistä",
+      "precipitationMmPerHour": null
+    },
+    "halfway": {
+      "temperatureC": 10,
+      "windSpeedMs": 8,
+      "description": "kevyt sade",
+      "precipitationMmPerHour": 0.6
+    }
+  },
+  "tracks": [
+    {
+      "Number": 1,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 2,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 3,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 4,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 5,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 6,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 7,
+      "NumberAlt": "",
+      "Par": 4
+    },
+    {
+      "Number": 8,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 9,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 10,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 11,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 12,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 13,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 14,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 15,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 16,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 17,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 18,
+      "NumberAlt": "",
+      "Par": 4
+    },
+    {
+      "Number": 19,
+      "NumberAlt": "",
+      "Par": 4
+    },
+    {
+      "Number": 20,
+      "NumberAlt": "",
+      "Par": 3
+    },
+    {
+      "Number": 21,
+      "NumberAlt": "",
+      "Par": 3
+    }
+  ],
+  "players": [
+    {
+      "Name": "Aatu Ahonen",
+      "ClassName": "",
+      "Group": "5",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 1
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 1
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Eero Heikkilä",
+      "ClassName": "",
+      "Group": "4",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 7,
+          "Diff": 3,
+          "PEN": 1
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Juho Järvinen",
+      "ClassName": "",
+      "Group": "5",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 6,
+          "Diff": 2,
+          "PEN": 1
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 1
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 1
+        }
+      ]
+    },
+    {
+      "Name": "Eero Koskinen",
+      "ClassName": "",
+      "Group": "5",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Lauri Laine",
+      "ClassName": "",
+      "Group": "3",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 6,
+          "Diff": 3,
+          "PEN": 1
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Mikko Lehtonen",
+      "ClassName": "",
+      "Group": "4",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 1
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 1
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Niilo Mäkinen",
+      "ClassName": "",
+      "Group": "3",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Onni Niemi",
+      "ClassName": "",
+      "Group": "5",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 1
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Paavo Ojala",
+      "ClassName": "",
+      "Group": "3",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Risto Peltonen",
+      "ClassName": "",
+      "Group": "4",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 1
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Santeri Rantanen",
+      "ClassName": "",
+      "Group": "2",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Topi Salminen",
+      "ClassName": "",
+      "Group": "3",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 1
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Urho Toivonen",
+      "ClassName": "",
+      "Group": "2",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 1
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Veeti Vainio",
+      "ClassName": "",
+      "Group": "2",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 6,
+          "Diff": 2,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 1,
+          "Diff": -2,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Aleksi Virtanen",
+      "ClassName": "",
+      "Group": "1",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 1
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 6,
+          "Diff": 2,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 1
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Elias Hämäläinen",
+      "ClassName": "",
+      "Group": "1",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 1
+        },
+        {
+          "Result": 7,
+          "Diff": 3,
+          "PEN": 0
+        },
+        {
+          "Result": 2,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 8,
+          "Diff": 5,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": -1,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 1
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 1
+        }
+      ]
+    },
+    {
+      "Name": "Jere Kallio",
+      "ClassName": "",
+      "Group": "1",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        }
+      ]
+    },
+    {
+      "Name": "Kalle Kettunen",
+      "ClassName": "",
+      "Group": "4",
+      "DNF": null,
+      "PlayerResults": [
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 5,
+          "Diff": 2,
+          "PEN": 1
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 7,
+          "Diff": 4,
+          "PEN": 0
+        },
+        {
+          "Result": 7,
+          "Diff": 4,
+          "PEN": 0
+        },
+        {
+          "Result": 7,
+          "Diff": 4,
+          "PEN": 0
+        },
+        {
+          "Result": 7,
+          "Diff": 4,
+          "PEN": 0
+        },
+        {
+          "Result": 7,
+          "Diff": 4,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 0,
+          "PEN": 0
+        },
+        {
+          "Result": 4,
+          "Diff": 1,
+          "PEN": 0
+        },
+        {
+          "Result": 3,
+          "Diff": 0,
+          "PEN": 0
+        }
+      ]
+    }
+  ]
+}
