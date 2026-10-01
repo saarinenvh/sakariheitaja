@@ -50,7 +50,8 @@ export function buildBatchResponseJsonSchema(playerNames: readonly string[]): Re
   };
 }
 
-const RESULT_LABEL_PATTERN = /(?:^|\s)tulo(?:s|kset|sta)\s*:[^\n.!?]*[.!?]?/giu;
+// Only a label that starts a line or a sentence: stripping from mid-sentence would cut the sentence short.
+const RESULT_LABEL_PATTERN = /(^|[.!?][ \t]+|\n)[ \t]*tulo(?:s|kset|sta)[ \t]*:[^\n.!?]*[.!?]?/gimu;
 
 const nonEmptyText = z.string().trim().min(1);
 const batchResponseSchema = z.object({
@@ -149,7 +150,7 @@ function matchPlayerLines(context: BatchCommentaryContext, response: BatchRespon
 
 /** The model tends to append "Tulos: birdie." although the result row is rendered separately. */
 function stripResultLabels(text: string): string {
-  return text.replace(RESULT_LABEL_PATTERN, " ").replace(/[ \t]+\n/g, "\n").replace(/\n{2,}/g, "\n").replace(/[ \t]{2,}/g, " ").trim();
+  return text.replace(RESULT_LABEL_PATTERN, "$1").replace(/[ \t]+\n/g, "\n").replace(/\n{2,}/g, "\n").replace(/[ \t]{2,}/g, " ").trim();
 }
 
 function spokenPlayerNames(context: BatchCommentaryContext): string[] {

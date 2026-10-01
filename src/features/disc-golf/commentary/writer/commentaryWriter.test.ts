@@ -76,6 +76,15 @@ describe("batch commentary writer", () => {
       .toEqual(["Ville lentää pönttöön!", "Tommi uimakouluun."]);
   });
 
+  it("leaves a label-like word inside a sentence alone instead of cutting the sentence", async () => {
+    const result = await writeBatchCommentary(context, "Sakke", async () => reply([
+      { name: "Ville", text: "Ville sanoi, että tulos: ihan sama, kunhan kiekko lentää." },
+      { name: "Tommi", text: "Tommi uimakouluun." },
+    ]));
+    expect(result.kind === "generated" && result.commentary.lines[0].text)
+      .toBe("Ville sanoi, että tulos: ihan sama, kunhan kiekko lentää.");
+  });
+
   it.each([
     ["invalid JSON", "not json"],
     ["a line that is only a result label", reply([{ name: "Ville", text: "Tulos: par." }, { name: "Tommi", text: "b" }])],
