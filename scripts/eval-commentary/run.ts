@@ -12,7 +12,7 @@ import type { BatchCommentaryContext } from "../../src/features/disc-golf/commen
 import type { BatchCommentaryResult } from "../../src/features/disc-golf/commentary/writer/commentaryWriter";
 import type { WeatherObservation } from "../../src/shared/weather";
 import type { CourseInfo } from "../../src/features/disc-golf/commentary/facts/holeFacts";
-import { parsePositiveIntegerFlag, parseFlags } from "./cliFlags";
+import { HoleRange, parseFlags, parseHoleRange, parsePositiveIntegerFlag } from "./cliFlags";
 import { CommentaryFixture, FixtureWeather, loadFixtures } from "./fixtureFile";
 import { EvalMeta, EvalRecord, renderConsoleSummary, renderMarkdownReport } from "./report";
 import { buildReplaySteps, REPLAY_ROUND_ID } from "./replay";
@@ -26,11 +26,6 @@ const DEFAULT_OUT_DIR = ".eval-results";
 const EVAL_CHAT_ID = -1;
 const PROMPT_HASH_LENGTH = 8;
 const RUN_DIR_PREFIX = "run";
-
-interface HoleRange {
-  first: number;
-  last: number;
-}
 
 interface EvalOptions {
   model: string;
@@ -71,6 +66,9 @@ async function main(): Promise<void> {
     }
   }
 
+  if (records.length === 0) {
+    throw new Error("No fixture updates matched the selection; check --holes and --fixture.");
+  }
   const paths = writeResults(options.outDir, meta, records, runtime.prompt);
   console.log(`\n${renderConsoleSummary(records)}\n\nResults: ${paths.directory}/ (report.md, results.json, prompt.md)`);
   if (records.some(record => record.findings.some(finding => finding.severity === "fail"))) process.exitCode = 1;
@@ -89,16 +87,6 @@ function parseOptions(flags: ReadonlyMap<string, string>): EvalOptions {
     outDir: flags.get("out") || DEFAULT_OUT_DIR,
     reversePlayers: flags.has("reverse-players"),
   };
-}
-
-function parseHoleRange(raw: string | undefined): HoleRange | null {
-  if (!raw) return null;
-  const match = /^(\d+)(?:-(\d+))?$/.exec(raw);
-  if (!match) throw new Error(`--holes must look like 5 or 3-8, got "${raw}"`);
-  const first = Number(match[1]);
-  const last = Number(match[2] ?? match[1]);
-  if (first < 1 || last < first) throw new Error(`--holes range "${raw}" is empty`);
-  return { first, last };
 }
 
 // The Ollama client reads its model, URL and timeout when first imported, so they are set before it loads.

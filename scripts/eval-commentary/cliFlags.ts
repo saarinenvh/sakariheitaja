@@ -23,3 +23,19 @@ export function parsePositiveIntegerFlag(flags: ReadonlyMap<string, string>, key
   if (!Number.isInteger(value) || value < 1) throw new Error(`--${key} must be a positive integer, got "${raw}"`);
   return value;
 }
+
+export interface HoleRange {
+  first: number;
+  last: number;
+}
+
+/** `--holes=5` or `--holes=3-8`; absent means every hole. A flag without a value is an error, not "all holes". */
+export function parseHoleRange(raw: string | undefined): HoleRange | null {
+  if (raw === undefined) return null;
+  const match = /^(\d+)(?:-(\d+))?$/.exec(raw);
+  if (!match) throw new Error(`--holes must look like 5 or 3-8, got "${raw}"`);
+  const first = Number(match[1]);
+  const last = Number(match[2] ?? match[1]);
+  if (first < 1 || last < first) throw new Error(`--holes range "${raw}" is empty`);
+  return { first, last };
+}

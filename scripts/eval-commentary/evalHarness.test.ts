@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseMetrixRound } from "../../src/features/disc-golf/metrix/metrixRound";
 import { buildAnonymizedFixture, buildFakeNames } from "./anonymize";
 import { countSentences, runChecks } from "./checks";
+import { parseHoleRange } from "./cliFlags";
 import { CommentaryFixture } from "./fixtureFile";
 import { buildReplaySteps, REPLAY_ROUND_ID } from "./replay";
 import { BatchCommentaryContext } from "../../src/features/disc-golf/commentary/writer/commentaryContext";
@@ -37,9 +38,31 @@ describe("fixture anonymization", () => {
   });
 });
 
+describe("hole range flag", () => {
+  it("parses single holes and ranges, and treats an absent flag as every hole", () => {
+    expect(parseHoleRange(undefined)).toBeNull();
+    expect(parseHoleRange("5")).toEqual({ first: 5, last: 5 });
+    expect(parseHoleRange("3-8")).toEqual({ first: 3, last: 8 });
+  });
+
+  it("rejects a flag without a value or an empty range instead of running every hole", () => {
+    expect(() => parseHoleRange("")).toThrow("--holes must look like");
+    expect(() => parseHoleRange("8-3")).toThrow("is empty");
+  });
+});
+
 describe("round replay", () => {
   const fixture: CommentaryFixture = buildAnonymizedFixture(metrixResponse, {
     name: "test", description: "d", trackedRealNames: ["Ville Saarinen", "Ville Liedes"], course: null,
+  });
+
+  it("keeps an OB reported in the OB field rather than PEN", () => {
+    const withObField = { Competition: { ...metrixResponse.Competition, Results: [
+      { Name: "Ville Saarinen", ClassName: "", Group: "1", PlayerResults: [{ Result: 4, Diff: 1, OB: 1 }, [], []] },
+    ] } };
+    const obFixture = buildAnonymizedFixture(withObField, { name: "ob", description: "d", trackedRealNames: ["Ville Saarinen"], course: null });
+    const round = parseMetrixRound(buildReplaySteps(obFixture)[1].payload, REPLAY_ROUND_ID);
+    expect(round.players[0].scorecard).toMatchObject({ kind: "available", holes: [{ strokes: 4, obCount: 1 }, null, null] });
   });
 
   it("cuts every card to the first holes, recomputes totals and lets the bot derive places", () => {
@@ -109,6 +132,11 @@ describe("message checks", () => {
     expect(claims("Aatu on nyt kärjessä.")).toEqual(["Aatu: \"kärjessä\", is 2"]);
     expect(claims("Aatu on kakkosena ja toisella sijalla.")).toEqual([]);
     expect(claims("Aatu teki bogin kolmosella.")).toEqual([]);
+  });
+
+  it("notices a result label at the start of a value in the raw JSON reply", () => {
+    const batch = { ...generated("Alku.", "Aatu heitti.", "Loppu."), rawReply: '{"opening":"Tulos: par","players":[],"closing":"x"}' };
+    expect(runChecks(batch).map(finding => finding.check)).toContain("result-label");
   });
 
   it("counts sentences and comparisons and reports fallbacks", () => {

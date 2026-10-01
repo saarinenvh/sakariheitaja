@@ -11,7 +11,8 @@ const optionalIntegerLike = z.union([integerLike, z.literal(""), z.null()]).opti
   .transform(value => (value === undefined || value === "" ? null : value));
 
 export const holeSchema = z.union([
-  z.object({ Result: integerLike, Diff: optionalIntegerLike, PEN: optionalIntegerLike }),
+  // Metrix reports OB as PEN or OB; keep both so the replay sees the same penalty as the bot.
+  z.object({ Result: integerLike, Diff: optionalIntegerLike, PEN: optionalIntegerLike, OB: optionalIntegerLike }),
   z.array(z.never()).length(0),
 ]);
 

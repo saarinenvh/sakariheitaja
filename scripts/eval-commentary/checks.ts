@@ -38,7 +38,8 @@ const LINE_MAX_SENTENCES = 2;
 const CLOSING_MAX_SENTENCES = 2;
 const MAX_COMPARISONS_PER_MESSAGE = 1;
 
-const RESULT_LABEL = /(?:^|\s)tulo(?:s|kset|sta)\s*:/iu;
+// Checked against the raw JSON reply, where a label can follow the opening quote of a value.
+const RESULT_LABEL = /(?:^|[\s"])tulo(?:s|kset|sta)\s*:/iu;
 const GOLF_VERB = /\blyö(?:n|d|m)\p{L}*/iu;
 const OB_WORD = /\b(?:ob|outti\p{L}*|out of bounds)\b/iu;
 const WATER_WORD = /järve\p{L}*|\bjärvi\p{L}*|veteen|vedessä|lammik\p{L}*|uimakoulu\p{L}*|sukel\p{L}*/iu;
