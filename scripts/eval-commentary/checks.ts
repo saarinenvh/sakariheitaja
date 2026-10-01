@@ -1,6 +1,7 @@
 import { BatchCommentaryContext } from "../../src/features/disc-golf/commentary/writer/commentaryContext";
 import { BatchCommentaryResult } from "../../src/features/disc-golf/commentary/writer/commentaryWriter";
 import { FactualCommentaryBrief } from "../../src/features/disc-golf/commentary/facts/playerBrief";
+import { selectCommentaryRating } from "../../src/features/disc-golf/commentary/facts/courseFacts";
 
 export type CheckSeverity = "fail" | "warn" | "info";
 
@@ -17,6 +18,7 @@ export const CHECK_DESCRIPTIONS = {
   "wrong-place": "Player line claims a place or the lead that doesn't match the player's position",
   "name-missing": "Player line does not mention the player's name",
   "name-first": "Player line starts with the player's name",
+  "ordinary-rating": "Commentary mentions a round rating between 750 and 979, which code keeps out of the model's input",
 } as const;
 
 export type CheckId = keyof typeof CHECK_DESCRIPTIONS;
@@ -56,6 +58,9 @@ const NUMBERED_PLACE = /\bsij\p{L}*\s+(\d{1,2})\b|\b(\d{1,2})\.\s*sij\p{L}*/giu;
 // Only the translative/essive forms: "kolmosella" usually means hole 3, not third place.
 const COLLOQUIAL_PLACE = /\b(ykkö|kakko|kolmo|nelo|vito)s(?:eksi|eks|ena)\b/giu;
 const COLLOQUIAL_PLACE_NUMBERS: Readonly<Record<string, number>> = { ykkö: 1, kakko: 2, kolmo: 3, nelo: 4, vito: 5 };
+// A round rating next to the word, either way round: "rating 962", "ratingilla noin 962", "962 ratingin".
+// The course's par-rating (courseDifficulty) is a different fact, so "par-rating" never counts.
+const RATING_MENTION = /(?<!par[- ]?)rating\p{L}*\s+(?:noin\s+)?(\d{3,4})(?!\d)|(?<!\d)(\d{3,4})\s+rating/giu;
 const LEAD_CLAIM = /(?<!\p{L})(?:kärkeen|kärjessä|johdossa|johtoon|johtaa)(?!\p{L})/iu;
 
 export function runChecks(batch: CheckedBatch): CheckFinding[] {
@@ -73,6 +78,7 @@ export function runChecks(batch: CheckedBatch): CheckFinding[] {
   findings.push(...checkSentenceLimit("closing", closing, CLOSING_MAX_SENTENCES));
   findings.push(...checkHoleNumbers(batch.context, opening, closing));
   for (const line of lines) findings.push(...checkPlayerLine(batch.context, line.brief, line.text));
+  findings.push(...checkOrdinaryRatings(batch.context, allText));
   const comparisons = lines.reduce((count, line) => count + (line.text.match(COMPARISON)?.length ?? 0), 0);
   if (comparisons > MAX_COMPARISONS_PER_MESSAGE) {
     findings.push({ check: "comparison-count", severity: "warn", detail: `${comparisons} comparisons` });
@@ -137,6 +143,18 @@ function checkHoleNumbers(context: BatchCommentaryContext, opening: string, clos
     }
   }
   return findings;
+}
+
+/** The model never sees an ordinary rating, so one in the text is either a leak or invented. */
+function checkOrdinaryRatings(context: BatchCommentaryContext, text: string): CheckFinding[] {
+  const ordinary = new Set([...context.roundRatings.values()].filter(rating => selectCommentaryRating(rating) === null));
+  for (const match of text.matchAll(RATING_MENTION)) {
+    const rating = Number(match[1] ?? match[2]);
+    if (selectCommentaryRating(rating) === null) ordinary.add(rating);
+  }
+  return [...ordinary]
+    .filter(rating => new RegExp(`(?<!\\d)${rating}(?!\\d)`, "u").test(text))
+    .map(rating => ({ check: "ordinary-rating", severity: "fail", detail: `mentions ${rating}` }));
 }
 
 function matchOf(pattern: RegExp, text: string): string {

@@ -1,18 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { HoleScore } from "../../metrix/scorecard";
 import {
+  buildRoundRatings,
   computeRating,
   CourseCoordinates,
   CourseRatingAnchors,
   describeCourseDifficulty,
   describeHoleHistory,
   describeHoleLength,
-  describeRoundRating,
   describeTodayFieldAverage,
   describeWindOnHole,
   HoleHistoryFacts,
   HoleLayoutFacts,
   holeBearingDeg,
+  selectCommentaryRating,
 } from "./courseFacts";
 import { RoundPlayer } from "../../metrix/metrixRound";
 
@@ -67,17 +68,42 @@ describe("course rating", () => {
     expect(describeCourseDifficulty(LINEAR_ANCHORS, coursePar)).toBe(expected);
   });
 
-  it("describes a round rating", () => {
-    expect(describeRoundRating(LINEAR_ANCHORS, -12)).toBe("Kierroksen rating noin 1012.");
-  });
-
   it("returns nothing when anchors or the stroke count are missing or degenerate", () => {
     expect(describeCourseDifficulty(null, 57)).toBeNull();
     expect(describeCourseDifficulty(REAL_ANCHORS, null)).toBeNull();
-    expect(describeRoundRating(null, 55)).toBeNull();
-    expect(describeRoundRating(REAL_ANCHORS, null)).toBeNull();
     expect(computeRating({ value1: 900, result1: 60, value2: 1000, result2: 60 }, 57)).toBeNull();
     expect(computeRating({ ...REAL_ANCHORS, value2: Number.NaN }, 57)).toBeNull();
+  });
+});
+
+describe("round ratings", () => {
+  const finished = (name: string, totalStrokes: number): RoundPlayer =>
+    player(3, { name, totalStrokes, round: { totalHoles: TOTAL_HOLES, status: "complete" } });
+
+  it("rates finished rounds only", () => {
+    const ratings = buildRoundRatings(LINEAR_ANCHORS, [
+      finished("Ville", 12),
+      player(3, { name: "Kesken", totalStrokes: 3 }),
+      player(3, { name: "Luovutti", totalStrokes: 40, round: { totalHoles: TOTAL_HOLES, status: "dnf" } }),
+    ]);
+    expect(ratings).toEqual(new Map([["Ville", 988]]));
+  });
+
+  it("rates nothing when the layout has no rating anchors", () => {
+    expect(buildRoundRatings(null, [finished("Ville", 12)]).size).toBe(0);
+  });
+
+  it.each([
+    [1000, "tonnin rundi"],
+    [999, "melkein tonnin rundi"],
+    [980, "melkein tonnin rundi"],
+    [749, "surkea rundi"],
+  ] as const)("passes rating %d to the commentary as %s", (rating, tier) => {
+    expect(selectCommentaryRating(rating)).toEqual({ rating, tier });
+  });
+
+  it.each([979, 750, undefined])("keeps rating %s out of the commentary", rating => {
+    expect(selectCommentaryRating(rating)).toBeNull();
   });
 });
 

@@ -21,6 +21,7 @@ import { env } from "../../../shared/env";
 import { fetchCurrentWeather, WeatherObservation } from "../../../shared/weather";
 import { CourseLocationResult, fetchCourseLocation } from "../metrix/courseLocation";
 import { CourseInfo } from "../commentary/facts/holeFacts";
+import { buildRoundRatings } from "../commentary/facts/courseFacts";
 import { CourseDetails, fetchCourseDetails } from "../metrix/metrixCourse";
 import { CourseStatistics, fetchCourseStatistics } from "../metrix/courseStatistics";
 
@@ -155,7 +156,9 @@ export class Orchestrator {
 
   async sendTopList(): Promise<void> {
     if (!this.snapshot) return;
-    const message = formatTopList(this.snapshot.name, toLegacyResults(this.snapshot.players), toLegacyTracked(this.trackedPlayers));
+    const { details } = await this.fetchCourseInfo();
+    const ratings = buildRoundRatings(details?.rating ?? null, this.snapshot.players);
+    const message = formatTopList(this.snapshot.name, toLegacyResults(this.snapshot.players), toLegacyTracked(this.trackedPlayers), ratings);
     await bot.api.sendMessage(this.chatId, message);
   }
 

@@ -339,14 +339,16 @@ describe("round publication", () => {
       expect(test.fetchCourse).toHaveBeenCalledTimes(1);
     });
 
-    it("gives a round rating once a player's card is complete", async () => {
+    it("rates a round once the player's card is complete and shows it in the result row", async () => {
       const test = harness();
       test.fetchCourse.mockResolvedValue({ details: layout, statistics: null });
       test.observe(input([score(3), score(3), score(3), []]));
       test.observe(input([score(3), score(3), score(3), score(2)]));
       await test.session.idle();
       expect(firstPlayer(test.contexts[0]).round.progress.kind).toBe("complete");
-      expect(test.contexts[0].roundRatings.get("Matti")).toMatch(/^Kierroksen rating noin \d+\.$/);
+      const rating = test.contexts[0].roundRatings.get("Matti");
+      expect(rating).toEqual(expect.any(Number));
+      expect(test.send.mock.calls.at(-1)?.[0]).toContain(`| rating ${rating}</blockquote>`);
     });
 
     it("still publishes when fetching the course data fails", async () => {
@@ -425,7 +427,7 @@ describe("round publication", () => {
       standing: { position: null, fieldSize: null, isProvisional: true }, movementSincePublication: { kind: "unknown" }, limitations: [],
     };
     const post = { brief, text: `<Matti> & ${"😀".repeat(4000)}` };
-    const messages = formatBatchCommentaryMessages("Avaus & alku", [post], "Loppu", "123");
+    const messages = formatBatchCommentaryMessages("Avaus & alku", [post], "Loppu", "123", new Map());
     expect(messages.length).toBeGreaterThan(1);
     expect(messages.every(message => message.html.length <= TELEGRAM_MESSAGE_LIMIT)).toBe(true);
     expect(messages[0].html).toContain("🎙️ <i>Avaus &amp; alku</i>");

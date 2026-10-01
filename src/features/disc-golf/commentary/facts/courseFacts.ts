@@ -1,4 +1,4 @@
-import { RoundPlayer } from "../../metrix/metrixRound";
+import { completedRoundStrokes, RoundPlayer } from "../../metrix/metrixRound";
 
 export interface CourseCoordinates { latitude: number; longitude: number }
 export interface CourseRatingAnchors { value1: number; result1: number; value2: number; result2: number }
@@ -18,6 +18,18 @@ const DIFFICULTY_CLASSES = [
   { minRating: MA2_RATING_MIN, label: "MA2-taso (keskitaso)" },
 ] as const;
 const LOWEST_DIFFICULTY_CLASS = "MA3-taso (harrastetaso)";
+
+// A 1000-rated round ("tonnin rundi") is the big milestone on the amateur scene.
+const THOUSAND_RATING_MIN = 1000;
+const NEAR_THOUSAND_RATING_MIN = 980;
+const ROAST_RATING_BELOW = 750;
+
+export type RoundRatingTier = "tonnin rundi" | "melkein tonnin rundi" | "surkea rundi";
+
+export interface CommentaryRoundRating {
+  rating: number;
+  tier: RoundRatingTier;
+}
 
 const FULL_CIRCLE_DEG = 360;
 const HALF_CIRCLE_DEG = 180;
@@ -43,11 +55,28 @@ export function describeCourseDifficulty(anchors: CourseRatingAnchors | null, co
   return `Radan par-rating noin ${parRating}: ${classifyDifficulty(parRating)}.`;
 }
 
-export function describeRoundRating(anchors: CourseRatingAnchors | null, totalStrokes: number | null): string | null {
-  if (anchors === null || totalStrokes === null) return null;
-  const rating = computeRating(anchors, totalStrokes);
-  if (rating === null) return null;
-  return `Kierroksen rating noin ${rating}.`;
+/** Ratings of every finished round, keyed by full player name; empty when the layout has no rating anchors. */
+export function buildRoundRatings(anchors: CourseRatingAnchors | null, players: readonly RoundPlayer[]): Map<string, number> {
+  const ratings = new Map<string, number>();
+  if (anchors === null) return ratings;
+  for (const player of players) {
+    const strokes = completedRoundStrokes(player);
+    const rating = strokes === null ? null : computeRating(anchors, strokes);
+    if (rating !== null) ratings.set(player.name, rating);
+  }
+  return ratings;
+}
+
+/**
+ * The model only ever sees exceptional ratings: the result rows show every rating, and an ordinary one
+ * in the commentary text would just read as a number. Gating here keeps it out however the prompt is worded.
+ */
+export function selectCommentaryRating(rating: number | undefined): CommentaryRoundRating | null {
+  if (rating === undefined) return null;
+  if (rating >= THOUSAND_RATING_MIN) return { rating, tier: "tonnin rundi" };
+  if (rating >= NEAR_THOUSAND_RATING_MIN) return { rating, tier: "melkein tonnin rundi" };
+  if (rating < ROAST_RATING_BELOW) return { rating, tier: "surkea rundi" };
+  return null;
 }
 
 export function describeHoleLength(hole: HoleLayoutFacts, layout: readonly HoleLayoutFacts[]): string | null {

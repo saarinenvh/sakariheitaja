@@ -17,6 +17,7 @@ import { CommentaryFixture, FixtureWeather, loadFixtures } from "./fixtureFile";
 import { EvalMeta, EvalRecord, renderConsoleSummary, renderMarkdownReport } from "./report";
 import { buildReplaySteps, REPLAY_ROUND_ID } from "./replay";
 import { runChecks } from "./checks";
+import { selectCommentaryRating } from "../../src/features/disc-golf/commentary/facts/courseFacts";
 
 const DEFAULT_RUNS = 1;
 const DEFAULT_BASE_URL = "http://localhost:11434";
@@ -163,7 +164,7 @@ async function writeEvaluated(context: BatchCommentaryContext, runtime: Runtime)
     record: {
       holes: holes.join(", "),
       facts: describeFacts(context),
-      courseFacts: [context.holeFacts, context.courseDifficulty, ...context.roundRatings.values()].filter(Boolean).join(" · "),
+      courseFacts: [context.holeFacts, context.courseDifficulty, describeRatings(context)].filter(Boolean).join(" · "),
       outcome: result.kind === "generated" ? "generated" : `fallback (${result.reason})`,
       durationMs: Date.now() - startedAt,
       message: "",
@@ -190,6 +191,17 @@ function isInRange(holes: readonly string[], range: HoleRange | null): boolean {
     const number = Number.parseInt(hole, 10);
     return number >= range.first && number <= range.last;
   });
+}
+
+/** Ratings of this update's finished players, marked with the tier the model got, if any. */
+function describeRatings(context: BatchCommentaryContext): string | null {
+  const ratings = context.players.flatMap(brief => {
+    const rating = context.roundRatings.get(brief.playerName);
+    if (rating === undefined) return [];
+    const name = context.spokenNames.get(brief.playerName) ?? brief.playerName;
+    return [`${name} rating ${rating} (${selectCommentaryRating(rating)?.tier ?? "not given to the model"})`];
+  });
+  return ratings.length > 0 ? ratings.join(", ") : null;
 }
 
 function describeFacts(context: BatchCommentaryContext): string {

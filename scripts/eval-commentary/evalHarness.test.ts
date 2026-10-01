@@ -139,6 +139,27 @@ describe("message checks", () => {
     expect(runChecks(batch).map(finding => finding.check)).toContain("result-label");
   });
 
+  it("fails a published ordinary rating and accepts an exceptional one", () => {
+    const rated = (text: string) => {
+      const batch = generated("Alku.", text, "Loppu.");
+      return runChecks({ ...batch, context: { ...batch.context, roundRatings: new Map([["Aatu Ahonen", 962]]) } })
+        .filter(finding => finding.check === "ordinary-rating").map(finding => finding.detail);
+    };
+    expect(rated("Aatu veti 962 ratingin kierroksen.")).toEqual(["mentions 962"]);
+    expect(rated("Aatu, ratingilla noin 900 ei juhlita.")).toEqual(["mentions 900"]);
+    expect(rated("Aatu, rating 1004, TONNIN RUNDI!")).toEqual([]);
+    expect(rated("Aatu heitti 96 metriä.")).toEqual([]);
+    // An invented rating counts whichever side of the word it is on.
+    expect(rated("Aatu veti 900 ratingin kierroksen.")).toEqual(["mentions 900"]);
+  });
+
+  it("doesn't take the course's par-rating for a round rating", () => {
+    const parRating = (text: string) => runChecks(generated("Alku.", text, "Loppu."))
+      .filter(finding => finding.check === "ordinary-rating");
+    expect(parRating("Radan par-rating noin 935, Aatu.")).toEqual([]);
+    expect(parRating("935 par-ratingin rata ei armahda Aatua.")).toEqual([]);
+  });
+
   it("counts sentences and comparisons and reports fallbacks", () => {
     expect(countSentences("Yksi. Kaksi! Kolme? HAHAHAA")).toBe(4);
     const twoComparisons = generated("Alku.", "Aatu on kuin juna, kuin raketti.", "Loppu.");

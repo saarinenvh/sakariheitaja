@@ -24,8 +24,8 @@ export interface BatchCommentaryContext {
   firstMessage: boolean;
   holeFacts: string | null;
   courseDifficulty: string | null;
-  /** Round rating text for players who finished in this update, keyed by full player name. */
-  roundRatings: ReadonlyMap<string, string>;
+  /** Ratings of the division's finished rounds, keyed by full player name; the result rows show all of them. */
+  roundRatings: ReadonlyMap<string, number>;
   recentMessages: readonly string[];
   spokenNames: ReadonlyMap<string, string>;
 }

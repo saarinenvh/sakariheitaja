@@ -7,6 +7,7 @@ import { holeScoreName } from "../presentation";
 import { buildFactualFallback } from "./factualFallback";
 import { LeaderGap } from "../facts/standings";
 import { FactualCommentaryBrief } from "../facts/playerBrief";
+import { selectCommentaryRating } from "../facts/courseFacts";
 
 export interface BatchCommentaryLine {
   brief: FactualCommentaryBrief;
@@ -101,7 +102,7 @@ function serializeBatchContext(context: BatchCommentaryContext): string {
       position: brief.standing.position,
       provisional: brief.standing.isProvisional,
       positionChange: describeMovement(brief.movementSincePublication),
-      roundRating: context.roundRatings.get(brief.playerName) ?? null,
+      roundRating: selectCommentaryRating(context.roundRatings.get(brief.playerName)),
     })),
     standings: context.standings.map(standing => ({
       name: speak(standing.playerName),

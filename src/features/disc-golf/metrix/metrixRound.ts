@@ -173,6 +173,11 @@ export function toBagtagPlayers(players: readonly TrackedRoundPlayer[]): RoundBa
   }));
 }
 
+/** Total strokes of a finished round, or null while the round is unfinished or abandoned. */
+export function completedRoundStrokes(player: RoundPlayer): number | null {
+  return player.round.status === "complete" ? finalTotals(player).strokes : null;
+}
+
 function finalTotals(player: RoundPlayer): FinalTotals {
   const card = player.scorecard;
   const complete = card.kind === "available" && card.holes.length === player.round.totalHoles

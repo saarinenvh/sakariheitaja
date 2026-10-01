@@ -20,12 +20,21 @@ describe("formatTopList", () => {
       { ...player("MA3_6", "MA3", 6, 16), id: 2 },
     ];
 
-    const message = formatTopList("Tiistaikisa", results, tracked);
+    const message = formatTopList("Tiistaikisa", results, tracked, new Map());
 
     // Both sit at "6." - without the division label the section reads as a
     // single ranking in which two different people share sixth place.
     const others = message.split("Sarja Muut Sankarit")[1];
     expect(others).toContain("MPO6 (MPO)");
     expect(others).toContain("MA3_6 (MA3)");
+  });
+
+  it("shows the rating after the score for finished rounds only", () => {
+    const results = [player("Ville", "MA3", 1, -5), player("Tommi", "MA3", 2, 3)];
+
+    const message = formatTopList("Tiistaikisa", results, [], new Map([["Ville", 962]]));
+
+    expect(message).toContain("1. Ville\t\t\t\t-5 (rating 962)\n");
+    expect(message).toContain("2. Tommi\t\t\t\t3\n");
   });
 });

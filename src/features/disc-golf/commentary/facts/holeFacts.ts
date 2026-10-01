@@ -1,6 +1,6 @@
 import { WeatherObservation } from "../../../../shared/weather";
 import {
-  describeCourseDifficulty, describeHoleHistory, describeHoleLength, describeRoundRating, describeTodayFieldAverage,
+  buildRoundRatings, describeCourseDifficulty, describeHoleHistory, describeHoleLength, describeTodayFieldAverage,
   describeWindOnHole,
 } from "./courseFacts";
 import { CourseStatistics } from "../../metrix/courseStatistics";
@@ -18,8 +18,8 @@ export interface CourseCommentaryFacts {
   /** Facts about this update's hole(s), one sentence group per hole. */
   holeFacts: string | null;
   courseDifficulty: string | null;
-  /** Round rating text for players whose round is complete, keyed by full player name. */
-  roundRatings: ReadonlyMap<string, string>;
+  /** Ratings of the division's finished rounds, keyed by full player name. */
+  roundRatings: ReadonlyMap<string, number>;
 }
 
 export interface CourseFactsInput {
@@ -35,7 +35,7 @@ export function buildCourseCommentaryFacts(input: CourseFactsInput): CourseComme
   return {
     holeFacts: describeUpdatedHoles(input),
     courseDifficulty: details ? describeCourseDifficulty(details.rating, coursePar(details)) : null,
-    roundRatings: buildRoundRatings(input.briefs, details),
+    roundRatings: buildRoundRatings(details?.rating ?? null, input.divisionPlayers),
   };
 }
 
@@ -74,15 +74,4 @@ function coursePar(details: CourseDetails): number | null {
     total += hole.par;
   }
   return total;
-}
-
-function buildRoundRatings(briefs: readonly FactualCommentaryBrief[], details: CourseDetails | null): Map<string, string> {
-  const ratings = new Map<string, string>();
-  if (!details?.rating) return ratings;
-  for (const brief of briefs) {
-    if (brief.round.progress.kind !== "complete") continue;
-    const rating = describeRoundRating(details.rating, brief.round.recordedStrokes);
-    if (rating) ratings.set(brief.playerName, rating);
-  }
-  return ratings;
 }
