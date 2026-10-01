@@ -40,8 +40,9 @@ export type LeaderGap =
   | { kind: "not-compared" }
   | { kind: "no-leader" };
 
+/** One division's standings in place order (players without a place last), so list order never contradicts position. */
 export function buildDivisionStandings(round: MetrixRound, division: string): DivisionStanding[] {
-  const players = round.players.filter(player => player.division === division);
+  const players = round.players.filter(player => player.division === division).sort(compareByPosition);
   const leader = players.find(player => player.standing.position === 1 && player.round.status !== "dnf") ?? null;
   return players.map(player => {
     const summary = analyzeRound(player.scorecard, player.round);
@@ -53,6 +54,10 @@ export function buildDivisionStandings(round: MetrixRound, division: string): Di
       leaderGap: compareToLeader(leader, player),
     };
   });
+}
+
+function compareByPosition(first: RoundPlayer, second: RoundPlayer): number {
+  return (first.standing.position ?? Number.POSITIVE_INFINITY) - (second.standing.position ?? Number.POSITIVE_INFINITY);
 }
 
 type TotalComparison =

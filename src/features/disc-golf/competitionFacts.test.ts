@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCompetitionFacts } from "./competitionFacts";
+import { buildCompetitionFacts, buildDivisionStandings } from "./competitionFacts";
 import { parseMetrixRound } from "./metrixRound";
 
 function round() {
@@ -41,5 +41,20 @@ describe("current competition facts", () => {
     const snapshot = round();
     const tied = { ...snapshot, players: [snapshot.players[0], { ...snapshot.players[1], scorecard: snapshot.players[0].scorecard, standing: snapshot.players[0].standing }] };
     expect(buildCompetitionFacts(tied, tied.players[1])[0].comparisonToPlayer).toContain("Sama kirjattu yhteistulos");
+  });
+
+  it("orders division standings by place with unplaced players last, whatever the source order", () => {
+    const shuffled = parseMetrixRound({ Competition: {
+      ID: 123, Name: "Training", Date: "2026-09-28", CourseName: "Test", HasSubcompetitions: 0,
+      Tracks: [1, 2].map(Number => ({ Number, Par: 3 })),
+      Results: [
+        { Name: "Not started", OrderNumber: null, PlayerResults: [[], []] },
+        { Name: "Third", OrderNumber: 0, PlayerResults: [{ Result: 4, Diff: 1, PEN: 0 }, []] },
+        { Name: "Leader", OrderNumber: 0, PlayerResults: [{ Result: 2, Diff: -1, PEN: 0 }, []] },
+        { Name: "Second", OrderNumber: 0, PlayerResults: [{ Result: 3, Diff: 0, PEN: 0 }, []] },
+      ],
+    } }, "123");
+    expect(buildDivisionStandings(shuffled, "").map(standing => [standing.playerName, standing.position]))
+      .toEqual([["Leader", 1], ["Second", 2], ["Third", 3], ["Not started", null]]);
   });
 });
