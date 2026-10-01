@@ -58,8 +58,9 @@ const NUMBERED_PLACE = /\bsij\p{L}*\s+(\d{1,2})\b|\b(\d{1,2})\.\s*sij\p{L}*/giu;
 // Only the translative/essive forms: "kolmosella" usually means hole 3, not third place.
 const COLLOQUIAL_PLACE = /\b(ykkö|kakko|kolmo|nelo|vito)s(?:eksi|eks|ena)\b/giu;
 const COLLOQUIAL_PLACE_NUMBERS: Readonly<Record<string, number>> = { ykkö: 1, kakko: 2, kolmo: 3, nelo: 4, vito: 5 };
-// A rating-like number right after "rating", e.g. "rating 962" or "ratingilla noin 962".
-const RATING_MENTION = /rating\p{L}*\s+(?:noin\s+)?(\d{3,4})\b/giu;
+// A round rating next to the word, either way round: "rating 962", "ratingilla noin 962", "962 ratingin".
+// The course's par-rating (courseDifficulty) is a different fact, so "par-rating" never counts.
+const RATING_MENTION = /(?<!par[- ]?)rating\p{L}*\s+(?:noin\s+)?(\d{3,4})(?!\d)|(?<!\d)(\d{3,4})\s+rating/giu;
 const LEAD_CLAIM = /(?<!\p{L})(?:kärkeen|kärjessä|johdossa|johtoon|johtaa)(?!\p{L})/iu;
 
 export function runChecks(batch: CheckedBatch): CheckFinding[] {
@@ -148,7 +149,7 @@ function checkHoleNumbers(context: BatchCommentaryContext, opening: string, clos
 function checkOrdinaryRatings(context: BatchCommentaryContext, text: string): CheckFinding[] {
   const ordinary = new Set([...context.roundRatings.values()].filter(rating => selectCommentaryRating(rating) === null));
   for (const match of text.matchAll(RATING_MENTION)) {
-    const rating = Number(match[1]);
+    const rating = Number(match[1] ?? match[2]);
     if (selectCommentaryRating(rating) === null) ordinary.add(rating);
   }
   return [...ordinary]

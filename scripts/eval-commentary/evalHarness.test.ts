@@ -149,6 +149,15 @@ describe("message checks", () => {
     expect(rated("Aatu, ratingilla noin 900 ei juhlita.")).toEqual(["mentions 900"]);
     expect(rated("Aatu, rating 1004, TONNIN RUNDI!")).toEqual([]);
     expect(rated("Aatu heitti 96 metriä.")).toEqual([]);
+    // An invented rating counts whichever side of the word it is on.
+    expect(rated("Aatu veti 900 ratingin kierroksen.")).toEqual(["mentions 900"]);
+  });
+
+  it("doesn't take the course's par-rating for a round rating", () => {
+    const parRating = (text: string) => runChecks(generated("Alku.", text, "Loppu."))
+      .filter(finding => finding.check === "ordinary-rating");
+    expect(parRating("Radan par-rating noin 935, Aatu.")).toEqual([]);
+    expect(parRating("935 par-ratingin rata ei armahda Aatua.")).toEqual([]);
   });
 
   it("counts sentences and comparisons and reports fallbacks", () => {
