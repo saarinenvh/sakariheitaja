@@ -122,6 +122,18 @@ describe("poll to publication", () => {
     expect(orchestrator.following).toBe(false);
   });
 
+  it("posts the results before the bagtag announcement at round end", async () => {
+    mocks.getData.mockResolvedValue(response([3, 3, null]));
+    await new Orchestrator(1, "123", -100, true).init();
+    await poll(response([3, 3, 3]));
+    await vi.waitFor(() => expect(mocks.send.mock.calls.map(call => call[1])).toContain("Tags"));
+    const texts = mocks.send.mock.calls.map(call => call[1]);
+    const endIndex = texts.findIndex(text => text.startsWith("Dodii"));
+    expect(texts.slice(endIndex)).toEqual([
+      expect.stringContaining("lopputulokset"), expect.stringContaining("Test round TOP-5"), "Tags",
+    ]);
+  });
+
   it("rejects parent competitions before starting a poller", async () => {
     const parent = response([null, null, null]);
     parent.Competition.SubCompetitions = [{ ID: "124" }];
