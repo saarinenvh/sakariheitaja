@@ -4,7 +4,7 @@
 //   npm run eval:commentary -- --model=gemma4:26b-a4b-q3 --baseUrl=http://172.31.0.1:11434
 //   npm run eval:commentary -- --model=... --runs=3 --holes=1-6 --fixture=harkalinna-top4 --prompt=/tmp/variant.md
 import { createHash } from "crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import type { OllamaMessage, OllamaOptions } from "../../src/shared/llm/ollamaClient";
 import type { BatchCommentaryContext } from "../../src/features/disc-golf/batchCommentaryContext";
@@ -23,6 +23,7 @@ const DEFAULT_PROMPT_PATH = join("src", "bot", "system-prompts", "batch_commenta
 const DEFAULT_OUT_DIR = ".eval-results";
 const EVAL_CHAT_ID = -1;
 const PROMPT_HASH_LENGTH = 8;
+const RUN_DIR_PREFIX = "run";
 
 interface HoleRange {
   first: number;
@@ -66,8 +67,8 @@ async function main(): Promise<void> {
     }
   }
 
-  const paths = writeResults(options.outDir, meta, records);
-  console.log(`\n${renderConsoleSummary(records)}\n\nReport: ${paths.markdown}\nData:   ${paths.json}`);
+  const paths = writeResults(options.outDir, meta, records, runtime.prompt);
+  console.log(`\n${renderConsoleSummary(records)}\n\nResults: ${paths.directory}/ (report.md, results.json, prompt.md)`);
   if (records.some(record => record.findings.some(finding => finding.severity === "fail"))) process.exitCode = 1;
 }
 
@@ -170,6 +171,7 @@ async function writeEvaluated(context: BatchCommentaryContext, runtime: Runtime)
       durationMs: Date.now() - startedAt,
       message: "",
       findings: runChecks({ context, result, rawReply }),
+      rejectedReply: result.kind === "fallback" ? rawReply : null,
     },
   };
 }
@@ -222,14 +224,30 @@ function buildMeta(options: EvalOptions, prompt: string, fixtures: readonly Comm
   };
 }
 
-function writeResults(outDir: string, meta: EvalMeta, records: readonly EvalRecord[]): { markdown: string; json: string } {
+interface ResultPaths {
+  directory: string;
+  markdown: string;
+  json: string;
+}
+
+/** Each eval invocation gets the next free `runN/` folder with its report, data and the exact prompt used. */
+function writeResults(outDir: string, meta: EvalMeta, records: readonly EvalRecord[], prompt: string): ResultPaths {
   mkdirSync(outDir, { recursive: true });
-  const stem = `${meta.startedAt.replace(/[:.]/g, "-")}-${meta.model.replace(/[^\w.-]+/g, "_")}`;
-  const markdown = join(outDir, `${stem}.md`);
-  const json = join(outDir, `${stem}.json`);
-  writeFileSync(markdown, renderMarkdownReport(meta, records));
-  writeFileSync(json, `${JSON.stringify({ meta, records }, null, 2)}\n`);
-  return { markdown, json };
+  const directory = join(outDir, `${RUN_DIR_PREFIX}${nextRunNumber(outDir)}`);
+  mkdirSync(directory);
+  const paths = { directory, markdown: join(directory, "report.md"), json: join(directory, "results.json") };
+  writeFileSync(paths.markdown, renderMarkdownReport(meta, records));
+  writeFileSync(paths.json, `${JSON.stringify({ meta, records }, null, 2)}\n`);
+  writeFileSync(join(directory, "prompt.md"), `${prompt}\n`);
+  return paths;
+}
+
+function nextRunNumber(outDir: string): number {
+  const numbers = readdirSync(outDir)
+    .map(entry => new RegExp(`^${RUN_DIR_PREFIX}(\\d+)$`).exec(entry))
+    .filter((match): match is RegExpExecArray => match !== null)
+    .map(match => Number(match[1]));
+  return Math.max(0, ...numbers) + 1;
 }
 
 function signed(value: number): string {

@@ -9,6 +9,8 @@ export interface EvalRecord {
   durationMs: number;
   message: string;
   findings: CheckFinding[];
+  /** The model's unprocessed reply, kept only when the writer rejected it. */
+  rejectedReply: string | null;
 }
 
 export interface EvalMeta {
@@ -83,6 +85,9 @@ function renderMessages(records: readonly EvalRecord[]): string[] {
     const marks = record.findings.map(finding => `${SEVERITY_MARK[finding.severity]} ${finding.check}: ${finding.detail}`);
     lines.push(`**Run ${record.run}** · ${seconds(record.durationMs)} · ${record.outcome}${marks.length ? ` · ${marks.join(" · ")}` : ""}`, "");
     lines.push(...record.message.split("\n").map(line => `> ${line}`), "");
+    if (record.rejectedReply !== null) {
+      lines.push("<details><summary>Rejected model reply</summary>", "", "```json", record.rejectedReply, "```", "", "</details>", "");
+    }
   }
   return lines;
 }

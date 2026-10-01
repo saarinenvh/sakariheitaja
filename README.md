@@ -106,7 +106,8 @@ It is not part of `npm test` or CI, because it calls a live model.
 # Turn a public Metrix round into an anonymized fixture (every player name replaced)
 npm run eval:commentary:fixture -- --round=3628927 --track="Name A,Name B" --name=my-round
 
-# Replay all fixtures; reports land in .eval-results/ (Git-ignored)
+# Replay all fixtures; each invocation writes .eval-results/runN/ (Git-ignored)
+# with report.md, results.json and prompt.md (the exact prompt used)
 npm run eval:commentary -- --model=gemma4:26b-a4b-q3 --baseUrl=http://<ollama-host>:11434
 
 # Faster iteration: some holes, several runs, one fixture, a prompt variant
@@ -124,8 +125,8 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
   human read of the report.
 - `--holes` only calls the model for those holes; the others publish the factual fallback,
   so they don't add to the recent-message history.
-- The JSON next to each report keeps the full results for comparing a prompt change
-  against a baseline run.
+- `results.json` keeps the full results, and `prompt.md` the exact prompt, for comparing a
+  prompt change against a baseline run. Rejected model replies are kept with fallbacks.
 - `npm run typecheck:eval` type-checks the harness, which `npx tsc --noEmit` doesn't cover.
 
 ## Commands
