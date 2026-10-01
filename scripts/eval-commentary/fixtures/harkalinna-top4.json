@@ -1,5 +1,5 @@
 {
-  "description": "Club tour round on a 21-hole course: four-way battle for the win, two players share a first name.",
+  "description": "Real Metrix round, all player names anonymized.",
   "courseName": "Härkälinnan frisbeegolfrata 2024",
   "date": "2026-05-23",
   "tracked": [
@@ -2169,7 +2169,260 @@
   ],
   "course": {
     "courseId": "38619",
-    "detailsResponse": null,
+    "detailsResponse": {
+      "course": {
+        "ID": "38619",
+        "ParentID": null,
+        "Name": "Härkälinnan frisbeegolfrata 2024",
+        "Fullname": "Härkälinnan frisbeegolfrata 2024",
+        "Type": "2",
+        "CountryCode": "FI",
+        "Area": "Hämeenlinna",
+        "City": "Hauho",
+        "Location": null,
+        "Lat": "61.19467051271624",
+        "Lng": "24.60602787211019",
+        "Enddate": null,
+        "RatingValue1": "887.89",
+        "RatingResult1": "67.38",
+        "RatingValue2": "1000",
+        "RatingResult2": "56.25"
+      },
+      "baskets": [
+        {
+          "Number": "1",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "66",
+          "Unit": "m",
+          "TeeLat": "61.19494664237696",
+          "TeeLng": "24.606016874313354",
+          "BasketLat": "61.19552953590846",
+          "BasketLng": "24.606218664074095"
+        },
+        {
+          "Number": "2",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "100",
+          "Unit": "m",
+          "TeeLat": "61.1954154514848",
+          "TeeLng": "24.605505389880104",
+          "BasketLat": "61.19621928424523",
+          "BasketLng": "24.604663176249428"
+        },
+        {
+          "Number": "3",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "97",
+          "Unit": "m",
+          "TeeLat": "61.19627873086961",
+          "TeeLng": "24.60464171857731",
+          "BasketLat": "61.19699208161265",
+          "BasketLng": "24.604972439188646"
+        },
+        {
+          "Number": "4",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "46",
+          "Unit": "m",
+          "TeeLat": "61.196226045173674",
+          "TeeLng": "24.605428392470376",
+          "BasketLat": "61.19612782878694",
+          "BasketLng": "24.606254512846963"
+        },
+        {
+          "Number": "5",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "97",
+          "Unit": "m",
+          "TeeLat": "61.19618238702165",
+          "TeeLng": "24.606095100466387",
+          "BasketLat": "61.195365629780845",
+          "BasketLng": "24.606722737375872"
+        },
+        {
+          "Number": "6",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "98",
+          "Unit": "m",
+          "TeeLat": "61.19512525099024",
+          "TeeLng": "24.606690550867693",
+          "BasketLat": "61.195742994935",
+          "BasketLng": "24.60799946886696"
+        },
+        {
+          "Number": "7",
+          "NumberAlt": null,
+          "Par": "4",
+          "Length": "138",
+          "Unit": "m",
+          "TeeLat": "61.19565770046675",
+          "TeeLng": "24.60851445299782",
+          "BasketLat": "61.19447389279141",
+          "BasketLng": "24.60775270563759"
+        },
+        {
+          "Number": "8",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "61",
+          "Unit": "m",
+          "TeeLat": "61.19404358767133",
+          "TeeLng": "24.608408713726682",
+          "BasketLat": "61.193785104933006",
+          "BasketLng": "24.609401131062192"
+        },
+        {
+          "Number": "9",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "106",
+          "Unit": "m",
+          "TeeLat": "61.193654864164095",
+          "TeeLng": "24.609825771415753",
+          "BasketLat": "61.193703976250575",
+          "BasketLng": "24.611601393783612"
+        },
+        {
+          "Number": "10",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "58",
+          "Unit": "m",
+          "TeeLat": "61.193943856679205",
+          "TeeLng": "24.610927754999217",
+          "BasketLat": "61.19430831489079",
+          "BasketLng": "24.610166007638988"
+        },
+        {
+          "Number": "11",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "76",
+          "Unit": "m",
+          "TeeLat": "61.19450475870301",
+          "TeeLng": "24.609559828401622",
+          "BasketLat": "61.1949855239185",
+          "BasketLng": "24.610557610155162"
+        },
+        {
+          "Number": "12",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "73",
+          "Unit": "m",
+          "TeeLat": "61.195036188192326",
+          "TeeLng": "24.613312726116174",
+          "BasketLat": "61.1948940274277",
+          "BasketLng": "24.614514355754846"
+        },
+        {
+          "Number": "13",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "78",
+          "Unit": "m",
+          "TeeLat": "61.19478553551161",
+          "TeeLng": "24.614886496741594",
+          "BasketLat": "61.19450121107865",
+          "BasketLng": "24.61621150799495"
+        },
+        {
+          "Number": "14",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "60",
+          "Unit": "m",
+          "TeeLat": "61.19483206108362",
+          "TeeLng": "24.615830634314836",
+          "BasketLat": "61.19511379780199",
+          "BasketLng": "24.614907954413713"
+        },
+        {
+          "Number": "15",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "84",
+          "Unit": "m",
+          "TeeLat": "61.19528352793352",
+          "TeeLng": "24.61479172524726",
+          "BasketLat": "61.19603308638201",
+          "BasketLng": "24.614979479878304"
+        },
+        {
+          "Number": "16",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "63",
+          "Unit": "m",
+          "TeeLat": "61.19575954266666",
+          "TeeLng": "24.614597712183087",
+          "BasketLat": "61.19551528983785",
+          "BasketLng": "24.613597248220533"
+        },
+        {
+          "Number": "17",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "70",
+          "Unit": "m",
+          "TeeLat": "61.195750496299404",
+          "TeeLng": "24.613150010084965",
+          "BasketLat": "61.1952128789499",
+          "BasketLng": "24.612838873839237"
+        },
+        {
+          "Number": "18",
+          "NumberAlt": null,
+          "Par": "4",
+          "Length": "103",
+          "Unit": "m",
+          "TeeLat": "61.19508805177493",
+          "TeeLng": "24.610410982674445",
+          "BasketLat": "61.195491267244755",
+          "BasketLng": "24.608978683060492"
+        },
+        {
+          "Number": "19",
+          "NumberAlt": null,
+          "Par": "4",
+          "Length": "168",
+          "Unit": "m",
+          "TeeLat": "61.19571492410315",
+          "TeeLng": "24.608254493413444",
+          "BasketLat": "61.19432594686961",
+          "BasketLng": "24.60702886408046"
+        },
+        {
+          "Number": "20",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "80",
+          "Unit": "m",
+          "TeeLat": "61.19440077211878",
+          "TeeLng": "24.60672933791491",
+          "BasketLat": "61.19498234393306",
+          "BasketLng": "24.60723359320971"
+        },
+        {
+          "Number": "21",
+          "NumberAlt": null,
+          "Par": "3",
+          "Length": "54",
+          "Unit": "m",
+          "TeeLat": "61.19506677865547",
+          "TeeLng": "24.60700292323443",
+          "BasketLat": "61.194792795783556",
+          "BasketLng": "24.606176802857842"
+        }
+      ],
+      "Errors": []
+    },
     "statistics": {
       "holes": [
         {
