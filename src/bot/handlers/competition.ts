@@ -4,6 +4,7 @@ import * as competitionService from "../../features/disc-golf/services/Competiti
 import * as registry from "../../state/competitionRegistry";
 import { competition as MSG } from "../../config/messages";
 import { HTML_NO_PREVIEW } from "../../config/bot";
+import { telegramMessenger } from "../messenger";
 
 export const competition = new Composer();
 
@@ -20,7 +21,7 @@ competition.command("follow", async ctx => {
   const chatId = ctx.chat.id;
   const result = await competitionService.start(chatId, ctx.chat.title ?? "", metrixId);
 
-  const orchestrator = await new Orchestrator(result.insertId, metrixId, chatId).init();
+  const orchestrator = await new Orchestrator(result.insertId, metrixId, chatId, telegramMessenger).init();
 
   if (!orchestrator.following) {
     await ctx.reply(orchestrator.initializationError ?? MSG.followInvalid);

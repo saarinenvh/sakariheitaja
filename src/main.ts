@@ -8,6 +8,7 @@ const log = moduleLogger("main");
 
 import { dataSource } from "./db/dataSource";
 import { bot } from "./bot/bot";
+import { telegramMessenger } from "./bot/messenger";
 import * as registry from "./state/competitionRegistry";
 import { Orchestrator } from "./features/disc-golf/following/orchestrator";
 import * as competitionService from "./features/disc-golf/services/CompetitionService";
@@ -55,7 +56,7 @@ async function init(): Promise<void> {
 
   const unfinished = await competitionService.getUnfinished();
   for (const i of unfinished) {
-    const orchestrator = await new Orchestrator(i.id, i.metrixId, i.chatId, true).init();
+    const orchestrator = await new Orchestrator(i.id, i.metrixId, i.chatId, telegramMessenger, true).init();
     registry.add(i.chatId, orchestrator);
   }
 }

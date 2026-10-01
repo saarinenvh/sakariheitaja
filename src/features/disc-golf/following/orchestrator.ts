@@ -1,4 +1,3 @@
-import { bot } from "../../../bot/bot";
 import Poller from "./poller";
 import { formatTopList, truncateCourseName } from "./topList";
 import * as playerRepo from "../../../db/repositories/PlayerRepository";
@@ -6,7 +5,7 @@ import * as competitionService from "../services/CompetitionService";
 import * as courseService from "../services/CourseService";
 import * as scoreService from "../services/ScoreService";
 import { competition as MSG } from "../../../config/messages";
-import { HTML_NO_PREVIEW } from "../../../config/bot";
+import { ChatMessenger } from "../../chatMessenger";
 import { updateProfiles } from "../scores/playerProfiles";
 import { computeAndApplySwaps, formatBagtagAnnouncement, getMissingTagPlayers } from "../scores/bagtags";
 import { escapeHtml } from "../commentary/presentation";
@@ -43,16 +42,16 @@ export class Orchestrator {
   private courseInfo: Promise<CourseInfo> | null = null;
 
   constructor(
-    public id: number, public metrixId: string, public chatId: number, private playersAnnounced = false,
+    public id: number, public metrixId: string, public chatId: number,
+    private readonly messenger: ChatMessenger, private playersAnnounced = false,
   ) {
     this.commentary = new RoundCommentary(chatId, metrixId, {
       write: writeRoundCommentary,
       fetchWeather: () => this.fetchCourseWeather(),
       fetchCourse: () => this.fetchCourseInfo(),
       send: async html => {
-        const sent = await bot.api.sendMessage(chatId, html, HTML_NO_PREVIEW);
+        await messenger.sendHtml(chatId, html);
         log.info({ metrixId, chars: html.length }, "commentary message sent");
-        return sent;
       },
       saveScores: (playerId, courseName, changes) => scoreService.saveRecordedScores(playerId, changes, chatId, id, courseName),
       onError: error => log.error({ metrixId, err: error }, "commentary delivery failed"),
@@ -72,7 +71,7 @@ export class Orchestrator {
     }
     this.trackedPlayers = await this.refreshTrackedPlayers(this.snapshot);
     if (this.trackedPlayers.length === 0 && !this.playersAnnounced) {
-      await bot.api.sendMessage(this.chatId, MSG.followNoPlayers);
+      await this.messenger.sendText(this.chatId, MSG.followNoPlayers);
       this.following = false;
       return this;
     }
@@ -161,7 +160,7 @@ export class Orchestrator {
     const { details } = await this.fetchCourseInfo();
     const ratings = buildRoundRatings(details?.rating ?? null, this.snapshot.players);
     const message = formatTopList(this.snapshot.name, toLegacyResults(this.snapshot.players), toLegacyTracked(this.trackedPlayers), ratings);
-    await bot.api.sendMessage(this.chatId, message);
+    await this.messenger.sendText(this.chatId, message);
   }
 
   private enqueuePoll(input: unknown): Promise<void> {
@@ -197,7 +196,7 @@ export class Orchestrator {
   private async handleRoundEnd(round: MetrixRound, tracked: TrackedRoundPlayer[]): Promise<void> {
     this.stopFollowing();
     log.info({ metrixId: this.metrixId, round: round.name }, "tracked scorecards are finished");
-    await bot.api.sendMessage(this.chatId, MSG.endSoon);
+    await this.messenger.sendText(this.chatId, MSG.endSoon);
     await competitionService.markDone(this.id);
     const completed = toLegacyTracked(tracked).filter(player => !player.DNF);
     const results = toLegacyResults(round.players);
@@ -207,7 +206,7 @@ export class Orchestrator {
     const participants = toBagtagPlayers(tracked);
     const bagtags = computeAndApplySwaps(this.chatId, participants, participants);
     await this.sendTopList();
-    await bot.api.sendMessage(this.chatId, formatBagtagAnnouncement(bagtags), HTML_NO_PREVIEW);
+    await this.messenger.sendHtml(this.chatId, formatBagtagAnnouncement(bagtags));
   }
 
   private async refreshTrackedPlayers(round: MetrixRound): Promise<TrackedRoundPlayer[]> {
@@ -225,7 +224,7 @@ export class Orchestrator {
     if (missingTags.length > 0) {
       message += `\n🏷️ Ilman tägiä: ${missingTags.map(escapeHtml).join(", ")}\nAseta: /bagtag set [nimi] [numero]`;
     }
-    await bot.api.sendMessage(this.chatId, message, HTML_NO_PREVIEW);
+    await this.messenger.sendHtml(this.chatId, message);
     this.playersAnnounced = true;
   }
 
