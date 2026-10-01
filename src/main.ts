@@ -45,8 +45,8 @@ bot.on("message:group_chat_created", ctx => {
 
 // ── Error handling ────────────────────────────────────────────────────────────
 
-bot.catch(err => {
-  log.warn({ err }, "bot error");
+bot.catch(botError => {
+  log.warn({ err: botError.error, updateId: botError.ctx.update.update_id }, "bot error");
 });
 
 // ── Startup ───────────────────────────────────────────────────────────────────
