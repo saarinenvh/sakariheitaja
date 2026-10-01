@@ -25,22 +25,30 @@ export type BatchCommentaryResult =
 
 export type StructuredCommentaryModel = (messages: OllamaMessage[], jsonSchema: Record<string, unknown>) => Promise<unknown>;
 
-export const BATCH_RESPONSE_JSON_SCHEMA: Record<string, unknown> = {
-  type: "object",
-  properties: {
-    opening: { type: "string" },
-    players: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: { name: { type: "string" }, text: { type: "string" } },
-        required: ["name", "text"],
+/**
+ * Ollama constrains generation to this schema, so the model can only name the update's players,
+ * spelled exactly as given, and must write one line for each of them.
+ */
+export function buildBatchResponseJsonSchema(playerNames: readonly string[]): Record<string, unknown> {
+  return {
+    type: "object",
+    properties: {
+      opening: { type: "string" },
+      players: {
+        type: "array",
+        minItems: playerNames.length,
+        maxItems: playerNames.length,
+        items: {
+          type: "object",
+          properties: { name: { type: "string", enum: [...playerNames] }, text: { type: "string" } },
+          required: ["name", "text"],
+        },
       },
+      closing: { type: "string" },
     },
-    closing: { type: "string" },
-  },
-  required: ["opening", "players", "closing"],
-};
+    required: ["opening", "players", "closing"],
+  };
+}
 
 const RESULT_LABEL_PATTERN = /(?:^|\s)tulo(?:s|kset|sta)\s*:[^\n.!?]*[.!?]?/giu;
 
@@ -63,7 +71,7 @@ export async function writeBatchCommentary(
   ];
   let reply: unknown;
   try {
-    reply = await generate(messages, BATCH_RESPONSE_JSON_SCHEMA);
+    reply = await generate(messages, buildBatchResponseJsonSchema(spokenPlayerNames(context)));
   } catch {
     return { kind: "fallback", commentary: buildBatchFallback(context), reason: "generation-failed" };
   }
@@ -138,6 +146,10 @@ function matchPlayerLines(context: BatchCommentaryContext, response: BatchRespon
 /** The model tends to append "Tulos: birdie." although the result row is rendered separately. */
 function stripResultLabels(text: string): string {
   return text.replace(RESULT_LABEL_PATTERN, " ").replace(/[ \t]+\n/g, "\n").replace(/\n{2,}/g, "\n").replace(/[ \t]{2,}/g, " ").trim();
+}
+
+function spokenPlayerNames(context: BatchCommentaryContext): string[] {
+  return context.players.map(brief => context.spokenNames.get(brief.playerName) ?? brief.playerName);
 }
 
 function normalizeName(name: string): string {

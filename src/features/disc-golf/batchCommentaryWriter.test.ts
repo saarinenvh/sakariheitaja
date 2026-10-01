@@ -38,7 +38,10 @@ const reply = (players: { name: string; text: string }[], overrides: Record<stri
 
 describe("batch commentary writer", () => {
   it("sends compact facts with spoken names and returns lines in the brief order", async () => {
-    const result = await writeBatchCommentary(context, "Sakke", async messages => {
+    const result = await writeBatchCommentary(context, "Sakke", async (messages, jsonSchema) => {
+      expect(jsonSchema).toMatchObject({ properties: { players: {
+        minItems: 2, maxItems: 2, items: { properties: { name: { enum: ["Ville", "Tommi"] } } },
+      } } });
       const input = JSON.parse(messages[1].content);
       expect(input.players[0]).toEqual({
         name: "Ville", holes: [{ hole: "2", result: "birdie", ob: 0 }], roundTotal: -1,

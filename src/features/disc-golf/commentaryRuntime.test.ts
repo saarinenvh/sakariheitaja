@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { generateStructured, loadPrompt } from "../../shared/llm/ollamaClient";
 import { BatchCommentaryContext } from "./batchCommentaryContext";
-import { BATCH_RESPONSE_JSON_SCHEMA } from "./batchCommentaryWriter";
+import { buildBatchResponseJsonSchema } from "./batchCommentaryWriter";
 import { writeRoundCommentary } from "./commentaryRuntime";
 
 vi.mock("../../shared/llm/ollamaClient", async importOriginal => {
@@ -37,7 +37,7 @@ it("asks for a structured batch reply with the batch prompt and a 16k context", 
   const result = await writeRoundCommentary(context);
   const [messages, jsonSchema, options] = vi.mocked(generateStructured).mock.calls[0];
   expect(messages[0].content).toBe(loadPrompt("batch_commentator.md"));
-  expect(jsonSchema).toBe(BATCH_RESPONSE_JSON_SCHEMA);
+  expect(jsonSchema).toEqual(buildBatchResponseJsonSchema(["Testaaja"]));
   expect(options).toMatchObject({ num_ctx: 16384 });
   expect(result).toMatchObject({ kind: "generated", commentary: { opening: "Avaus.", closing: "Loppu." } });
 });
