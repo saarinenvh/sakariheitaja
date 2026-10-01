@@ -5,6 +5,7 @@ import { getRandom, formatDate } from "../shared/utils";
 import { randomGoodMorning, giphySearchWords, citys } from "../config/phrases";
 import Logger from "js-logger";
 import { HTML_OPTIONS } from "../config/bot";
+import { readConfig } from "../config";
 
 export async function sendMorningGreeting(api: Bot["api"], chatId: number): Promise<void> {
   const greeting = randomGoodMorning[getRandom(randomGoodMorning.length)];
@@ -20,8 +21,8 @@ export async function sendMorningGreeting(api: Bot["api"], chatId: number): Prom
 }
 
 export function startMorningGreeter(bot: Bot): void {
-  const chatId = process.env.MORNING_CHAT_ID;
-  if (!chatId) {
+  const chatId = readConfig().telegram.morningChatId;
+  if (chatId === undefined) {
     Logger.info("MORNING_CHAT_ID not set, skipping morning greeting");
     return;
   }
@@ -33,7 +34,7 @@ export function startMorningGreeter(bot: Bot): void {
   Logger.info(`MS to next morning ${millisTill09}`);
 
   setTimeout(async () => {
-    await sendMorningGreeting(bot.api, parseInt(chatId));
+    await sendMorningGreeting(bot.api, chatId);
     startMorningGreeter(bot);
   }, millisTill09);
 }

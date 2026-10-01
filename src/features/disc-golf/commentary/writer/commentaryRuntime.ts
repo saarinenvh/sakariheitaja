@@ -1,6 +1,7 @@
 import Logger from "js-logger";
 import { generateStructured, loadPrompt } from "../../../../shared/llm/ollamaClient";
 import { BatchCommentaryContext } from "./commentaryContext";
+import { readConfig } from "../../../../config";
 import { BatchCommentaryResult, buildBatchFallback, writeBatchCommentary } from "./commentaryWriter";
 
 export const COMMENTARY_MODEL_OPTIONS = { temperature: 0.9, num_predict: 800, num_ctx: 16384, repeat_penalty: 1.1 };
@@ -9,7 +10,7 @@ const MS_PER_SECOND = 1000;
 let systemPrompt: string | undefined;
 
 export async function writeRoundCommentary(context: BatchCommentaryContext): Promise<BatchCommentaryResult> {
-  if (process.env.LLM_ENABLED !== "true") {
+  if (!readConfig().llmEnabled) {
     return { kind: "fallback", commentary: buildBatchFallback(context), reason: "disabled" };
   }
   systemPrompt ??= loadPrompt(BATCH_PROMPT_FILE);

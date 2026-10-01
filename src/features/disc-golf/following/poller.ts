@@ -1,13 +1,13 @@
 import EventEmitter from "events";
 import { getData } from "../../../shared/http";
 import Logger from "js-logger";
-import { env } from "../../../shared/env";
+import { readConfig } from "../../../config";
 import { loggerSettings } from "../../../shared/logger";
 Logger.useDefaults(loggerSettings);
 
-const INTERVAL_ACTIVE  = parseInt(env("POLL_INTERVAL_ACTIVE")  ?? "30000");
-const INTERVAL_IDLE    = parseInt(env("POLL_INTERVAL_IDLE")    ?? "60000");
-const INTERVAL_DORMANT = parseInt(env("POLL_INTERVAL_DORMANT") ?? "120000");
+const {
+  activeIntervalMs: INTERVAL_ACTIVE, idleIntervalMs: INTERVAL_IDLE, dormantIntervalMs: INTERVAL_DORMANT,
+} = readConfig().polling;
 const ERROR_BASE       = 60_000;
 const ERROR_MAX        = 600_000;
 const IDLE_THRESHOLD    = 3;

@@ -1,6 +1,7 @@
 import "reflect-metadata";
-import dotenv from "dotenv";
-dotenv.config({ path: process.env.ENV_FILE ?? ".env" });
+import { loadEnvironmentFile, readConfig, requireStartupConfig } from "./config";
+loadEnvironmentFile();
+requireStartupConfig(readConfig());
 
 import Logger from "js-logger";
 import { loggerSettings } from "./shared/logger";

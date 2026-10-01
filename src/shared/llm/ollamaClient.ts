@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import Logger from "js-logger";
-import { env } from "../env";
+import { readConfig } from "../../config";
 import { finishOllamaTrace, startOllamaTrace } from "./ollamaTrace";
 
 export interface OllamaMessage {
@@ -28,10 +28,7 @@ export interface OllamaTool {
 
 export type ToolHandler = (name: string, args: Record<string, unknown>) => Promise<string>;
 
-const baseUrl = env("OLLAMA_BASE_URL") ?? "http://127.0.0.1:11434";
-const model   = env("BOT_OLLAMA_MODEL") ?? env("OLLAMA_MODEL") ?? "llama3";
-
-const timeoutMs = Number(env("BOT_OLLAMA_TIMEOUT_MS") ?? "120000");
+const { baseUrl, model, timeoutMs } = readConfig().ollama;
 
 async function callOllama(
   messages: OllamaMessage[],

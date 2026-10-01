@@ -17,7 +17,7 @@ import {
   TrackedRoundPlayer, trackRoundPlayers, UnsupportedRoundError,
 } from "../metrix/metrixRound";
 import Logger from "js-logger";
-import { env } from "../../../shared/env";
+import { readConfig } from "../../../config";
 import { fetchCurrentWeather, WeatherObservation } from "../../../shared/weather";
 import { CourseLocationResult, fetchCourseLocation } from "../metrix/courseLocation";
 import { CourseInfo } from "../commentary/facts/holeFacts";
@@ -26,7 +26,6 @@ import { CourseDetails, fetchCourseDetails } from "../metrix/metrixCourse";
 import { CourseStatistics, fetchCourseStatistics } from "../metrix/courseStatistics";
 
 const BASE_URL = "https://discgolfmetrix.com/api.php?content=result&id=";
-const DEFAULT_COUNTRY_CODE = "FI";
 
 export class Orchestrator {
   following = true;
@@ -91,7 +90,7 @@ export class Orchestrator {
     if (!round?.courseId) return null;
     const layoutLocation = (await this.fetchCourseInfo()).details?.location ?? null;
     const location = layoutLocation ? { kind: "found" as const, location: { ...layoutLocation, city: null } } : this.courseLocation
-      ?? await fetchCourseLocation(round.courseId, round.courseName, env("BOT_COMMENTARY_COUNTRY_CODE") ?? DEFAULT_COUNTRY_CODE);
+      ?? await fetchCourseLocation(round.courseId, round.courseName, readConfig().metrix.commentaryCountryCode);
     if (!layoutLocation && location.kind !== "failed") this.courseLocation = location;
     if (location.kind !== "found") {
       Logger.warn(`${this.metrixId}: no course location for weather (${location.kind})`);
@@ -129,7 +128,7 @@ export class Orchestrator {
   }
 
   private async loadCourseDetails(courseId: string): Promise<CourseDetails | null> {
-    const integrationCode = env("BOT_METRIX_INTEGRATION_CODE");
+    const integrationCode = readConfig().metrix.integrationCode;
     if (!integrationCode) return null;
     const result = await fetchCourseDetails(courseId, integrationCode);
     if (result.kind === "found") return result.details;

@@ -1,10 +1,12 @@
 import { join } from "path";
 import { createJsonStore } from "../../../shared/jsonStore";
+import { readConfig } from "../../../config";
 import { MetrixPlayerResult } from "../../../types/metrix";
 import Logger from "js-logger";
 
-const BAGTAGS_PATH = process.env.DATA_DIR
-  ? join(process.env.DATA_DIR, "bagtags.json")
+const DATA_DIR = readConfig().dataDir;
+const BAGTAGS_PATH = DATA_DIR
+  ? join(DATA_DIR, "bagtags.json")
   : join(__dirname, "../../../bot/system-prompts/bagtags.json");
 
 type BagtagStore = Record<string, Record<string, number>>; // chatId → name → tagNumber

@@ -7,6 +7,7 @@ import { fun as MSG } from "../../config/messages";
 import { heckle, llmHeckle, recordMessage, getRecentMessages } from "../llmHeckler";
 import { llmAnswer } from "../llmAsker";
 import { sendMorningGreeting } from "../../scheduler/morningGreeter";
+import { readConfig } from "../../config";
 
 let games: Record<string, string> = {};
 let gamesDate = new Date().toLocaleDateString();
@@ -84,7 +85,7 @@ fun.command("apua", async ctx => {
 // /heckle [message]
 // Dev command (only active when LLM_ENABLED=true): forces an LLM heckler response
 // using the chat's message buffer. Optional argument overrides the trigger message.
-if (process.env.LLM_ENABLED === "true") {
+if (readConfig().llmEnabled) {
   fun.command("heckle", async ctx => {
     const trigger = ctx.match?.trim() || ctx.message?.text || "Sakke";
     const reply = await llmHeckle(ctx.chat.id, trigger);
@@ -103,7 +104,7 @@ if (process.env.LLM_ENABLED === "true") {
 // serving sakke-gateway. Nothing downstream needs the answer, so it is
 // dispatched and forgotten.
 async function answerMention(ctx: Context, text: string): Promise<void> {
-  if (process.env.LLM_ENABLED === "true") {
+  if (readConfig().llmEnabled) {
     const senderName = ctx.from?.first_name ?? ctx.from?.username;
     const answer = await llmAnswer(text, senderName, getRecentMessages(ctx.chat!.id));
     if (answer) {

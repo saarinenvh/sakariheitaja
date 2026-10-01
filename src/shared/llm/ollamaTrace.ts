@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import Logger from "js-logger";
+import { readConfig } from "../../config";
 
 interface OllamaTrace {
   id: string;
@@ -12,7 +13,7 @@ interface OllamaTrace {
 const TRACE_DIRECTORY = "logs/ollama";
 
 export async function startOllamaTrace(request: unknown): Promise<OllamaTrace | undefined> {
-  if (process.env.BOT_OLLAMA_TRACE !== "true") return undefined;
+  if (!readConfig().ollama.trace) return undefined;
   const trace = { id: randomUUID(), startedAt: new Date().toISOString(), request };
   await saveTrace(trace, { state: "pending" });
   return trace;

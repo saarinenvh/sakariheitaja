@@ -1,8 +1,7 @@
 import Logger from "js-logger";
-import { env } from "./env";
+import { readConfig } from "../config";
 
-const TOURNAMENT_URL = env("CHALLONGE_TOURNAMENT_URL") ?? "https://challonge.com/yvept9b5";
-const API_KEY = env("CHALLONGE_API_KEY");
+const { tournamentUrl: TOURNAMENT_URL, apiKey: API_KEY } = readConfig().challonge;
 
 // Extract tournament slug from URL, e.g. "yvept9b5" from "https://challonge.com/fi/yvept9b5"
 function tournamentSlug(): string {
