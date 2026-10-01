@@ -263,7 +263,9 @@ POLL_INTERVAL_DORMANT=120000
 `BOT_METRIX_INTEGRATION_CODE` is the personal integration code from Metrix user preferences.
 With it, commentary gets each hole's par, length and wind relative to the throwing direction,
 the course's par-rating difficulty, round ratings at the finish, and exact course coordinates for
-the weather. Without it, commentary still gets the public course statistics (historical hole
+the weather. Every finished round's rating is shown in its result row and in the TOP-5 list. Only
+exceptional ratings reach the model: 1000 or more, 980–999, and below 750; code keeps the rest out
+of its input. Without it, commentary still gets the public course statistics (historical hole
 averages and difficulty) and today's field average; nothing else depends on it. Course data is
 fetched once per round and is never allowed to delay commentary. `BOT_COMMENTARY_COUNTRY_CODE`
 (default `FI`) is only used to find the course for the weather when there's no integration code.

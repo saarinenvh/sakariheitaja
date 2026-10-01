@@ -142,7 +142,7 @@ export class RoundCommentary {
         recentMessages: [...(this.recentMessages.get(division) ?? [])],
       });
       const result = await this.delivery.write(context);
-      await this.deliverBatch(division, result, pending);
+      await this.deliverBatch(division, result, pending, context.roundRatings);
     }
   }
 
@@ -171,10 +171,12 @@ export class RoundCommentary {
     return byDivision;
   }
 
-  private async deliverBatch(division: string, result: BatchCommentaryResult, pending: readonly PendingBrief[]): Promise<void> {
+  private async deliverBatch(
+    division: string, result: BatchCommentaryResult, pending: readonly PendingBrief[], roundRatings: ReadonlyMap<string, number>,
+  ): Promise<void> {
     const { opening, lines, closing } = result.commentary;
     const posts: PendingPost[] = pending.map((entry, index) => ({ ...entry, text: lines[index].text }));
-    for (const message of formatBatchCommentaryMessages(opening, posts, closing, this.metrixId)) {
+    for (const message of formatBatchCommentaryMessages(opening, posts, closing, this.metrixId, roundRatings)) {
       if (!this.active) return;
       await this.delivery.send(message.html);
       if (!this.active) return;

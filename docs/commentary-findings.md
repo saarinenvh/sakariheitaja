@@ -191,8 +191,9 @@ Owner verification on the dev bot:
 4. With the integration code, hole facts such as length, wind and difficulty appear
    in openings or lines without being listed mechanically.
 5. Correct and remove a score; it's described as an edit.
-6. Finish a round: round ratings appear in the final message when the layout has
-   rating data.
+6. Finish a round on a layout with rating data: the result row and the TOP-5 show
+   `rating N`. The commentary mentions a rating only when it's 1000 or more,
+   980–999 or below 750.
 7. Disable tracing and delete private logs when finished.
 
 State remains in memory, with no durable outbox or retry guarantee. Output

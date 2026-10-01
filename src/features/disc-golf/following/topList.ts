@@ -5,7 +5,10 @@ export function truncateCourseName(rawName: string): string {
   return name.length > 38 ? `${name.slice(0, 37)}...` : name;
 }
 
-export function formatTopList(competitionName: string, results: MetrixPlayerResult[], trackedPlayers: TrackedPlayer[]): string {
+/** `roundRatings` holds finished rounds' ratings by player name; those rows show the rating after the score. */
+export function formatTopList(
+  competitionName: string, results: MetrixPlayerResult[], trackedPlayers: TrackedPlayer[], roundRatings: ReadonlyMap<string, number>,
+): string {
   const divisions = [...new Set(results.map(r => r.ClassName))];
   const rankings: Record<string, MetrixPlayerResult[]> = {};
 
@@ -32,7 +35,9 @@ export function formatTopList(competitionName: string, results: MetrixPlayerResu
     message += `Sarja ${division}\n`;
     for (const player of players) {
       const suffix = division === OTHERS ? ` (${player.ClassName})` : "";
-      message += `${player.OrderNumber}. ${player.Name}${suffix}\t\t\t\t${player.Diff}\n`;
+      const rating = roundRatings.get(player.Name);
+      const ratingPart = rating === undefined ? "" : ` (rating ${rating})`;
+      message += `${player.OrderNumber}. ${player.Name}${suffix}\t\t\t\t${player.Diff}${ratingPart}\n`;
     }
     message += "\n";
   }

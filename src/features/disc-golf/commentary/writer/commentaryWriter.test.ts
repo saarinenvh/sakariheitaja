@@ -31,7 +31,7 @@ const context: BatchCommentaryContext = {
   scorecardTable: "Väylä | Par | Ville | Tommi", playOrderKnown: true, leadHistory: "Ville on johtanut kaikki 2 pelattua väylää.",
   weather: { current: "Sää: 8 °C.", changeSinceStart: null }, recentMessages: ["Aiempi viesti"],
   firstMessage: false, holeFacts: "Väylä 2: Par 3, 57 m, radan lyhyin.", courseDifficulty: "Radan par-rating noin 982: MA1-taso (vaativa).",
-  roundRatings: new Map([["Ville Saarinen", "Kierroksen rating noin 1012."]]),
+  roundRatings: new Map([["Ville Saarinen", 1012], ["tommi Virtanen", 900]]),
   spokenNames: new Map([["Ville Saarinen", "Ville"], ["tommi Virtanen", "Tommi"]]),
 };
 
@@ -48,8 +48,9 @@ describe("batch commentary writer", () => {
       expect(input.players[0]).toEqual({
         name: "Ville", holes: [{ hole: "2", result: "birdie", ob: 0 }], roundTotal: -1,
         progress: "2/3", position: 1, provisional: false, positionChange: "ei tiedossa",
-        roundRating: "Kierroksen rating noin 1012.",
+        roundRating: { rating: 1012, tier: "tonnin rundi" },
       });
+      // An ordinary rating stays in the result row and never reaches the model.
       expect(input.players[1].roundRating).toBeNull();
       expect(input).toMatchObject({ holeFacts: "Väylä 2: Par 3, 57 m, radan lyhyin.", course: "Radan par-rating noin 982: MA1-taso (vaativa)." });
       expect(input.players[1].holes).toEqual([{ hole: "2", result: "tuplabogi", ob: 1 }]);

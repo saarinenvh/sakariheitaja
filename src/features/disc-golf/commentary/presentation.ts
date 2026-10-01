@@ -27,14 +27,18 @@ interface MessageBlock<Post> {
   post: Post | null;
 }
 
-/** One Telegram message per batch: heading, opening, each player's line with its result row, closing. */
+/**
+ * One Telegram message per batch: heading, opening, each player's line with its result row, closing.
+ * `roundRatings` holds finished rounds' ratings by full player name; their result rows show them.
+ */
 export function formatBatchCommentaryMessages<Post extends CommentaryPost>(
   opening: string, posts: readonly Post[], closing: string, metrixId: string,
+  roundRatings: ReadonlyMap<string, number>,
 ): BatchCommentaryMessage<Post>[] {
   if (posts.length === 0) return [];
   const labels = [...new Set(posts.flatMap(post => post.brief.changes.map(change => change.holeLabel ?? String(change.holeNumber))))];
   const heading = formatHoleHeading(labels, posts[0].brief.courseName, metrixId);
-  const blocks = buildBatchBlocks(opening, posts, closing, TELEGRAM_MESSAGE_LIMIT - heading.length - BLOCK_SEPARATOR.length);
+  const blocks = buildBatchBlocks(opening, posts, closing, roundRatings, TELEGRAM_MESSAGE_LIMIT - heading.length - BLOCK_SEPARATOR.length);
   const messages: BatchCommentaryMessage<Post>[] = [];
   let message: BatchCommentaryMessage<Post> = { html: heading, posts: [] };
   for (const block of blocks) {
@@ -50,7 +54,7 @@ export function formatBatchCommentaryMessages<Post extends CommentaryPost>(
 }
 
 function buildBatchBlocks<Post extends CommentaryPost>(
-  opening: string, posts: readonly Post[], closing: string, maxBlockLength: number,
+  opening: string, posts: readonly Post[], closing: string, roundRatings: ReadonlyMap<string, number>, maxBlockLength: number,
 ): MessageBlock<Post>[] {
   const blocks: MessageBlock<Post>[] = [];
   if (opening.trim()) {
@@ -59,7 +63,7 @@ function buildBatchBlocks<Post extends CommentaryPost>(
     }
   }
   for (const post of posts) {
-    const footer = formatFooter(post.brief);
+    const footer = formatFooter(post.brief, roundRatings.get(post.brief.playerName) ?? null);
     const fragments = splitEscapedText(post.text, maxBlockLength - footer.length - 1);
     fragments.forEach((fragment, index) => {
       const isLast = index === fragments.length - 1;
@@ -81,7 +85,7 @@ function formatHoleHeading(labels: readonly string[], courseName: string, metrix
   return `⛳ ${escapeHtml(label)} · <a href="https://discgolfmetrix.com/${encodeURIComponent(metrixId)}">${escapeHtml(shortCourse)}</a>`;
 }
 
-function formatFooter(brief: FactualCommentaryBrief): string {
+function formatFooter(brief: FactualCommentaryBrief, rating: number | null): string {
   const changes = brief.changes.map(change => {
     const result = describeChange(change);
     return brief.changes.length === 1 ? result : `${change.holeLabel ?? change.holeNumber}: ${result}`;
@@ -91,7 +95,8 @@ function formatFooter(brief: FactualCommentaryBrief): string {
   const qualifier = brief.standing.isProvisional && brief.standing.position !== null ? " (alustava)" : "";
   const movement = brief.movementSincePublication;
   const arrow = movement.kind === "up" ? " ↑" : movement.kind === "down" ? " ↓" : "";
-  return `<blockquote>${escapeHtml(`${changes} | ${brief.playerName} | ${total === null ? "?" : signed(total)} | ${standing}${qualifier}${arrow}`)}</blockquote>`;
+  const ratingPart = rating === null ? "" : ` | rating ${rating}`;
+  return `<blockquote>${escapeHtml(`${changes} | ${brief.playerName} | ${total === null ? "?" : signed(total)} | ${standing}${qualifier}${arrow}${ratingPart}`)}</blockquote>`;
 }
 
 function describeChange(change: ScoreChange): string {
