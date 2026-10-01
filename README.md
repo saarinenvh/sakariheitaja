@@ -5,7 +5,7 @@ A Telegram bot that follows and commentates disc golf competitions live from [Di
 ## Features
 
 - **Live commentary** — polls the Metrix API and sends hole-by-hole commentary as results come in
-- **LLM commentary** — commentary, heckling and replies to name mentions use the configured Ollama model with per-purpose prompts in `src/bot/system-prompts/`. Round commentary uses validated facts and the ordered story of previously delivered comments. `LLM_ENABLED=false` uses a deterministic factual fallback
+- **LLM commentary** — commentary, heckling and replies to name mentions use the configured Ollama model with per-purpose prompts in `src/bot/system-prompts/`. Round commentary writes one message per score update from facts computed in code (results, standings, lead history, course and hole facts, weather); `LLM_ENABLED=false` uses a deterministic factual fallback
 - **Smart polling** — adaptive intervals (30s active → 60s idle → 120s dormant) with exponential backoff on errors
 - **Player tracking** — follow specific players per chat group
 - **Score history** — query best scores by course name or ID
@@ -16,22 +16,40 @@ A Telegram bot that follows and commentates disc golf competitions live from [Di
 
 ## Commentary flow
 
-Start reading at `Orchestrator.onPollResult` in
-`src/features/disc-golf/orchestrator.ts`. Its steps are:
+Code computes every fact; the model only writes the message. Start reading at
+`Orchestrator.onPollResult` in `src/features/disc-golf/following/orchestrator.ts`:
 
-1. `metrixRound.ts` validates the response and matches tracked players.
-2. `roundCommentary.ts` compares scorecards and queues captured updates in order.
-3. `factualCommentaryBrief.ts` builds facts; ranking movement uses the last
-   successful publication when the queued update is processed.
-4. `competitionFacts.ts` captures current same-division opponents and comparable
-   score gaps from the same poll. `commentaryWriter.ts` translates internal facts
-   into explicit Finnish score descriptions, separate round totals, competition
-   facts and the player's own `narrativeHistory`.
-5. `commentaryPresentation.ts` keeps the opening, course/hole heading, commentary
-   and deterministic result footer. It escapes HTML and splits oversized posts
-   into valid Telegram messages.
-6. Acknowledged messages advance rankings and append the text actually delivered
-   to the story. Each successful fragment counts, even if a later fragment fails.
+1. `metrix/metrixRound.ts` validates the response and matches tracked players.
+   Metrix reports ties and early-round places as 0 or not at all; those players get
+   a shared place derived from recorded totals.
+2. `commentary/roundCommentary.ts` compares scorecards (`metrix/scorecard.ts`) and
+   queues each poll's changes in order. Updates are grouped by division, and each
+   division's update becomes one message.
+3. `commentary/facts/` builds the facts: each player's brief with movement since the
+   last delivered message (`playerBrief.ts`), division standings with gaps to the
+   leader (`standings.ts`), the scorecard table, lead history, weather, and course
+   and hole facts (`holeFacts.ts`, `courseFacts.ts`).
+4. `commentary/writer/` sends compact JSON facts and the three latest delivered
+   messages to Ollama with a JSON response schema: an opening, one line per player
+   and a closing. Player names are an enum in the schema. Unusable replies, errors
+   and timeouts fall back to factual lines (`factualFallback.ts`).
+5. `commentary/presentation.ts` builds the Telegram message: hole heading, opening,
+   each player's line with a deterministic result row, closing. It escapes HTML and
+   splits oversized messages at block boundaries.
+6. Only acknowledged sends advance rankings and the recent-message history.
+
+The prompt is `src/bot/system-prompts/batch_commentator.md`. The model may invent
+throw imagery as comic colour; results, OB entries, places and gaps must match the
+facts. A code-derived `firstMessage` flag marks each division's first delivered
+message, so the opening welcomes the audience even when following starts mid-round.
+
+Course and hole facts are optional enrichment. Each part is present only when
+Metrix has it: layout data needs `BOT_METRIX_INTEGRATION_CODE` (see Environment
+variables), the course statistics are read from the public course page, and today's
+field average comes from the round itself. Course data is fetched once per round
+with timeouts; a failure, a hang or data that can't be composed drops those facts,
+never the message. Weather is fetched at the first update and rechecked once past
+halfway; a change is reported only when it's significant.
 
 Only individual Metrix rounds are supported, including training rounds and a
 single round selected from a larger event. The adapter accepts missing or empty
@@ -39,34 +57,17 @@ single round selected from a larger event. The adapter accepts missing or empty
 nonempty `Tracks` layout, and verifies the requested ID. It does not guess
 undocumented `Type` codes. The contract follows the
 [Metrix result API](https://discgolfmetrix.com/?u=rule&ID=38).
-Layout changes establish a fresh baseline. Short/missing cards stay unavailable;
-unknown ranks remain unknown. `PEN` and `OB` normalize to OB counts. Rankings with
-previous-round totals are treated conservatively as provisional. The published
-ranking survives temporary missing scorecards for the same player.
+Layout changes establish a fresh baseline. Short/missing cards stay unavailable.
+`PEN` and `OB` normalize to OB counts. Rankings with previous-round totals are
+treated conservatively as provisional. The published ranking survives temporary
+missing scorecards for the same player.
 
-State belongs to one chat and followed round; narrative history belongs to each
-tracked player and resets on identity or division changes. The complete ordered history is supplied without a
-six-hole reset or summarization. Its text still consumes model context tokens:
-the current request window is 16384 tokens, so long-round context retention and
-memory/latency need owner verification with the configured model. Generation
-allows up to 350 tokens. The prompt asks for one paragraph of 1–3 short sentences,
-or 4–5 for exceptional events; output is not cut by sentence count.
-Competition facts include untracked opponents in the same division. Gaps are
-withheld for DNF, provisional standings, missing scores or different recorded
-hole sets. They describe recorded scores, not predicted final margins.
-The commentary prompt loads persona, disc-golf vocabulary/humour inspiration,
-then task-specific commentator rules. Imagined throw descriptions are permitted
-as comic colour; scores, OB entries and competition claims must match supplied
-facts. The shared persona is unchanged; this exception belongs to commentary.
-
-See [implementation findings and the owner test checklist](docs/commentary-findings.md).
-
-State is in memory. Restarting or following again seeds the current scorecard,
-with no replay, previous ranking claim, or restored story. Failed sends are
-logged and are not retried automatically; ambiguous Telegram timeouts can have
-delivered a message without acknowledgment. This change does not add an outbox.
-Score writes remain separate from ranking/history acknowledgment; a failed DB
-write cannot undo a successful publication.
+State belongs to one chat and followed round, and is in memory. Restarting or
+following again seeds the current scorecard, with no replay or previous ranking
+claim. Failed sends are logged and not retried automatically; ambiguous Telegram
+timeouts can have delivered a message without acknowledgment. Score writes remain
+separate from ranking/history acknowledgment; a failed DB write cannot undo a
+successful publication.
 
 Monitoring ends once every tracked player has all layout slots recorded and
 known final totals, or has DNF status. This does not certify tournament results
@@ -75,6 +76,9 @@ otherwise monitoring continues. DNF players remain eligible for the existing
 bag-tag allocation rules. Historical score tables are unchanged. Existing ace,
 eagle and albatross rows cannot be reconciled to later corrections because those
 tables do not identify the hole; corrections do not insert duplicate awards.
+
+See [implementation findings and the owner test checklist](docs/commentary-findings.md),
+and the commentary eval harness below for prompt and model work.
 
 ## Local Ollama diagnostics
 
@@ -203,13 +207,21 @@ Only registered when `LLM_ENABLED=true`:
 ```
 src/
 ├── bot/
-│   ├── handlers/         # one file per command group
-│   └── system-prompts/   # persona, commentator, heckler, asker + context notes
-├── features/disc-golf/   # polling, change detection, scoring, divisions, bag tags
-├── shared/llm/           # Ollama client
-├── scheduler/            # morning greeter
-├── db/                   # entities and repositories
-└── state/                # runtime state
+│   ├── handlers/            # one file per command group
+│   └── system-prompts/      # persona, batch commentator, heckler, asker + context notes
+├── features/disc-golf/
+│   ├── following/           # orchestrator, poller, top list
+│   ├── metrix/              # Metrix round, scorecard, course layout/statistics/location
+│   ├── commentary/
+│   │   ├── facts/           # facts computed in code for the model
+│   │   └── writer/          # model context, structured call, fallback
+│   ├── scores/              # bag tags, player profiles
+│   └── services/            # database services
+├── shared/llm/              # Ollama client
+├── scheduler/               # morning greeter
+├── db/                      # entities and repositories
+└── state/                   # runtime state
+scripts/eval-commentary/     # commentary eval harness and its fixtures
 ```
 
 ## Setup

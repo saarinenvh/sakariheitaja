@@ -1,7 +1,11 @@
-# Commentary findings — 2026-09-28
+# Commentary findings — 2026-09-28 to 2026-10-01
 
 Ticket: https://trello.com/c/BC6lEHJc
 Single implementation PR: https://github.com/saarinenvh/sakariheitaja/pull/35
+
+The sections up to "Follow-up: first names and prompt experiments" record the
+per-player design and are kept as evidence. The batch format replaced it; see
+"Batch format, eval harness and course facts" for what shipped.
 
 ## Evidence from owner testing
 
@@ -118,57 +122,78 @@ unchanged by this follow-up. Findings from those experiments:
 A batch format (one call per update: situation opening, very short line per
 player, closing situation) is being explored on a separate spike branch.
 
+## Batch format, eval harness and course facts
+
+Per-player calls couldn't vary structure relative to each other, and the model had
+no view of the round as a whole. Shared hole context had already been tried and
+caused recaps. The batch format (one call per division update) was spiked on
+`spike/BC6lEHJc-batch-commentary` and adopted by the owner on 2026-10-01.
+
+Agreed decisions:
+
+- One message per division update: an opening that doesn't know this hole's results
+  yet, a line of one or two sentences per player, and a closing reacting to the
+  hole. Code inserts the result rows. The model returns JSON under a response schema;
+  player names are an enum, which stopped misspelled names causing fallbacks.
+- The model gets compact facts rather than code-written prose: hole results,
+  round totals, places and movement, standings sorted by place with gaps to the
+  leader, the full scorecard table, lead history, whether hole order is play
+  order, the current hole, weather at the start and a halfway recheck, the three
+  latest delivered messages, and a code-derived `firstMessage` flag.
+- Course and hole facts are optional enrichment: par, length and wind relative to
+  the throwing direction from the Metrix course API (personal integration code),
+  historical difficulty and aces from the public course page, today's field
+  average, the course's par-rating class and round ratings at the finish. Any of
+  them may be missing on community-edited layouts; failures and hangs drop only
+  those facts.
+- Metrix ties and early-round places (0 or missing) become shared places derived
+  from recorded totals.
+- The owner tunes the prompt (`batch_commentator.md`) with the eval harness.
+
+Eval harness (`npm run eval:commentary`, see README): replays anonymized real rounds
+hole by hole through the real `RoundCommentary` and writer against a live Ollama,
+runs deterministic checks and writes a report per run. It runs on the dev PC's
+5080 with the production model `gemma4:26b-a4b-q3`. Findings it produced:
+
+- Fallbacks came from misspelled names in the JSON reply, not prompt issues; the
+  name enum fixed them.
+- Place errors ("nousi kolmannelle sijalle" for a player in 7th) came from the
+  standings list keeping Metrix's final-result order; sorting by place removed them.
+- Putting the line before the name in the schema didn't stop lines opening with
+  the name (33 of 36); reverted.
+- Player lines vary in structure mostly when something notable happened, which
+  points to per-player story facts as the next improvement.
+
+Open for later: per-player story facts (streaks, first bogey, worst hole), the
+player-line structure, and the q3 quantization's occasional broken words.
+
 ## Code reading path
 
-`Orchestrator.onPollResult` validates the response and calls
-`RoundCommentary.observe`. That captures updates and current competition facts.
-The publication queue builds the factual brief using last acknowledged standings,
-adds that player's history, and calls the runtime writer. The writer serializes
-explicit descriptions, the model generates prose, and the formatter creates the
-Telegram message. Successful delivery advances standings and appends history.
-
-The internal unions distinguish new scores, edits and removals; they prevent
-mixing up required data in code. The model no longer receives those unions as
-its event-description contract.
+See "Commentary flow" in the README; it follows the code from
+`Orchestrator.onPollResult` through facts, writer and presentation.
 
 ## Verification and remaining limits
 
-Automated tests cover isolation, full-history retention, delivery failures,
-same-poll facts, score-gap direction and ties, noncomparable scores, training
-payload shape, explicit score wording and the requested context size. Mocked
-tests cannot establish fluent Finnish or compliance with the length target.
+Automated tests cover the reply schema and its fallbacks, standings order and gaps,
+shared places for ties, lead history, the scorecard table, weather and course facts
+with every missing-data path, course-data failure, hang and composition errors, the
+first-message flag, delivery acknowledgment and isolation. They can't establish
+fluent Finnish; that is what the eval harness and owner testing are for.
 
-Local verification for this chunk: all 183 tests passed, along with lint,
-TypeScript checking, the application build, Docker build and diff whitespace
-checks. A writer-contract regression reproducer fails on archived pre-phase-4
-commit `b32063e`: the old serialized input has no explicit event description.
-The new writer assertions pass with explicit birdie, zero-OB and separate total
-descriptions. The prior poll regression also demonstrates the old unchanged-sum
-detector missing offsetting score corrections. Live quality is not yet verified.
+Owner verification on the dev bot:
 
-Owner verification:
+1. Follow a real or training round with `BOT_OLLAMA_TRACE=true`, with and without
+   `BOT_METRIX_INTEGRATION_CODE`. The log shows whether course data was found.
+2. The first message welcomes the audience; later openings lead into the next hole
+   without knowing its results; closings react to the standings.
+3. Results, OB mentions, places and leads match the result rows. Ties show a shared
+   place, not "sija ?".
+4. With the integration code, hole facts such as length, wind and difficulty appear
+   in openings or lines without being listed mechanically.
+5. Correct and remove a score; it's described as an edit.
+6. Finish a round: round ratings appear in the final message when the layout has
+   rating data.
+7. Disable tracing and delete private logs when finished.
 
-1. Restart the development bot with `BOT_OLLAMA_TRACE=true`; follow a training
-   round. Initial scores establish a baseline without replaying old commentary.
-2. Enter scores for three players over at least two updates. Each player's second
-   request must contain only their own first published comment, plus current
-   competition facts. The first batch has empty histories.
-3. Check par, birdie, bogi and a large over-par score with zero OB; then an explicit
-   OB. Confirm hole and round totals are not confused and zero OB is not invented.
-4. Try ties, changes in position and different recorded-hole counts. Unknown
-   movement must not become a rise/fall; unavailable comparisons must not become
-   a claimed margin or sole lead.
-5. Correct and remove scores. These should be described as edits, not fresh play.
-6. Evaluate short natural Finnish with varied openings, usually 1–3 sentences in
-   one paragraph. Exceptional results can be longer. Keep opinions and roasting.
-7. Continue a full round. Inspect provider input counts, completion reasons,
-   latency and memory at the 16k request setting. This does not prove the server
-   honored the entire window; investigate provider behavior if retention degrades.
-8. Disable tracing and delete private logs when finished.
-
-Output validation checks usability and player naming, not semantic truth. History
-can retain earlier model mistakes; current facts must override it. State remains
-in memory, with no durable outbox or retry guarantee. Large competition fields
-and long histories still consume context. Course entities may still appear in
-the deterministic heading; removing course metadata from the writer does not
-claim to fix general HTML entity decoding.
+State remains in memory, with no durable outbox or retry guarantee. Output
+validation checks structure and player names, not semantic truth.
