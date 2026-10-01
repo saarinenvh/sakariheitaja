@@ -127,10 +127,9 @@ async function replayFixture(fixture: CommentaryFixture, run: number, runtime: R
   const session = new RoundCommentary(EVAL_CHAT_ID, REPLAY_ROUND_ID, {
     write: async context => {
       const evaluated = await writeEvaluated(context, runtime);
-      if (evaluated.record) {
-        current = { ...evaluated.record, fixture: fixture.name, run };
-        records.push(current);
-      }
+      // Holes outside --holes still publish a fallback; it must not be appended to the previous record.
+      current = evaluated.record ? { ...evaluated.record, fixture: fixture.name, run } : null;
+      if (current) records.push(current);
       return evaluated.result;
     },
     fetchWeather: async () => toObservation(weather[Math.min(weatherRequests++, weather.length - 1)], fixture.date),
