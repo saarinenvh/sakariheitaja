@@ -72,3 +72,7 @@ instructions/
 
 # Python virtualenvs
 sakke-venv/
+
+# Commentary eval harness build output and reports
+.eval-dist/
+.eval-results/

@@ -1,0 +1,11 @@
+{
+  // Dev tools under scripts/ (e.g. the commentary eval harness). They import app code from src/,
+  // so this build compiles both into .eval-dist; tsconfig.build.json and the Docker image never see them.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./.eval-dist"
+  },
+  "include": ["src/**/*", "scripts/**/*"],
+  "exclude": ["node_modules", "dist", ".eval-dist", "**/*.test.ts"]
+}

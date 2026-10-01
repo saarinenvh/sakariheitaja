@@ -17,8 +17,8 @@ export const competition = {
 
   endSoon:          "Dodii, ne kisat oli sit siinä, tässä olis sit vielä lopputulokset!",
 
-  scoreFound:       (name: string, diff: number, order: number) =>
-    `${name} on tuloksessa ${diff} ja sijalla ${order}! Hienosti`,
+  scoreFound:       (name: string, diff: number | null, order: number | null) =>
+    `${name} on tuloksessa ${diff ?? "?"} ja sijalla ${order ?? "?"}! Hienosti`,
   scoreNotFound:    "Eihän tommone äijä oo ees jäällä, urpo",
 };
 
