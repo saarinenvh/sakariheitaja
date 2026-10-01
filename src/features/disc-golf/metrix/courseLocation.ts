@@ -92,7 +92,8 @@ export function parseCourseCoordinates(course: MetrixCourse): Coordinates | null
 }
 
 function buildCoursesListUrl(parentName: string, countryCode: string): string {
-  const country = encodeURIComponent(countryCode);
+  // Metrix matches country codes case-sensitively: "fi" finds nothing.
+  const country = encodeURIComponent(countryCode.trim().toUpperCase());
   const name = encodeURIComponent(parentName);
   return `${COURSES_LIST_URL}&country_code=${country}&name=${name}`;
 }

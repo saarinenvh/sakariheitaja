@@ -56,6 +56,12 @@ describe("course location fetch", () => {
     );
   });
 
+  it("sends the country code in upper case, which Metrix requires", async () => {
+    mocks.getData.mockResolvedValue({ courses: [parent] });
+    await fetchCourseLocation("3433", "Meilahti", " fi ");
+    expect(mocks.getData.mock.calls[0][0]).toContain("country_code=FI&");
+  });
+
   it("reports a missing course as not found", async () => {
     mocks.getData.mockResolvedValue({ courses: [] });
     await expect(fetchCourseLocation("3433", "Meilahti", "FI")).resolves.toEqual({ kind: "not-found" });
