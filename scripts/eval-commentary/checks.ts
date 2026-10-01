@@ -7,7 +7,7 @@ export type CheckSeverity = "fail" | "warn" | "info";
 export const CHECK_DESCRIPTIONS = {
   "fallback": "Model reply unusable or failed; factual fallback published",
   "result-label": "Model wrote a \"Tulos:\" label (stripped before publishing)",
-  "golf-verb": "Ball-golf verb (lyönti/lyödä) instead of heitto",
+  "golf-verb": "Ball-golf verb (lyönti/lyödä) instead of heitto; check it isn't a heartbeat",
   "false-ob": "Player line mentions OB/outti although the hole had no OB",
   "water-imagery": "Player line uses lake/water imagery although the hole had no OB",
   "unsupported-movement": "Player line claims rising/falling although movement is unknown or unchanged",
@@ -42,7 +42,8 @@ const GOLF_VERB = /\blyö(?:n|d|m)\p{L}*/iu;
 const OB_WORD = /\b(?:ob|outti\p{L}*|out of bounds)\b/iu;
 const WATER_WORD = /järve\p{L}*|\bjärvi\p{L}*|veteen|vedessä|lammik\p{L}*|uimakoulu\p{L}*|sukel\p{L}*/iu;
 const MOVEMENT_WORD = /\b(?:nous\p{L}*|nouse\p{L}*|kiipe\p{L}*|johtoon|putos\p{L}*|putoa\p{L}*|tippu\p{L}*|karkas\p{L}*)/iu;
-const HOLE_NUMBER = /(\d{1,2})\.?\s*väyl|väyl\p{L}*\s+(\d{1,2})\b/giu;
+// "par-3 väylä" names a par, not a hole number.
+const HOLE_NUMBER = /(?<!par[- ]?)(?<!\d)(\d{1,2})\.?\s*väyl|väyl\p{L}*\s+(\d{1,2})\b/giu;
 const COMPARISON = /\bkuin\b/giu;
 const ORDINAL_PLACE = /\b(ensimmäi|toise|kolmanne|neljänne|viidenne|kuudenne|seitsemänne|kahdeksanne|yhdeksänne|kymmenenne)\p{L}*\s+sij\p{L}*/giu;
 const ORDINAL_PLACE_NUMBERS: Readonly<Record<string, number>> = {
@@ -65,7 +66,7 @@ export function runChecks(batch: CheckedBatch): CheckFinding[] {
     findings.push({ check: "result-label", severity: "warn", detail: "present in the raw reply" });
   }
   const allText = [opening, ...lines.map(line => line.text), closing].join("\n");
-  if (GOLF_VERB.test(allText)) findings.push({ check: "golf-verb", severity: "fail", detail: matchOf(GOLF_VERB, allText) });
+  if (GOLF_VERB.test(allText)) findings.push({ check: "golf-verb", severity: "warn", detail: matchOf(GOLF_VERB, allText) });
   findings.push(...checkSentenceLimit("opening", opening, OPENING_MAX_SENTENCES));
   findings.push(...checkSentenceLimit("closing", closing, CLOSING_MAX_SENTENCES));
   findings.push(...checkHoleNumbers(batch.context, opening, closing));

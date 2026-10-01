@@ -76,6 +76,12 @@ describe("message checks", () => {
     expect(findings.map(finding => finding.check).sort()).toEqual(["false-ob", "golf-verb", "unsupported-movement", "wrong-hole", "wrong-place"]);
   });
 
+  it("doesn't read a par as a hole number", () => {
+    expect(runChecks(generated("Väylällä 5 odottaa radan vaikein par-3 väylä, ja par 4 väylät tulee perässä.", "Aatu heitti.", "Loppu.", [
+      brief({ changes: [{ kind: "recorded", holeNumber: 5, holeLabel: "5", score: { strokes: 3, relativeToPar: 0, obCount: 0 } }] }),
+    ])).filter(finding => finding.check === "wrong-hole")).toEqual([]);
+  });
+
   it("accepts a real OB, the right hole and known movement without findings", () => {
     const withOb = brief({
       changes: [{ kind: "recorded", holeNumber: 5, holeLabel: "5", score: { strokes: 5, relativeToPar: 2, obCount: 1 } }],
