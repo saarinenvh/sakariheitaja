@@ -72,7 +72,7 @@ describe("message checks", () => {
 
   it("flags invented OB, unsupported movement, wrong hole numbers and ball-golf verbs", () => {
     const findings = runChecks(generated("Väylällä 6 tuulee.", "Aatu lyönti meni outtiin ja nousi kärkeen.", "Tasaista."));
-    expect(findings.map(finding => finding.check).sort()).toEqual(["false-ob", "golf-verb", "unsupported-movement", "wrong-hole"]);
+    expect(findings.map(finding => finding.check).sort()).toEqual(["false-ob", "golf-verb", "unsupported-movement", "wrong-hole", "wrong-place"]);
   });
 
   it("accepts a real OB, the right hole and known movement without findings", () => {
@@ -81,6 +81,17 @@ describe("message checks", () => {
       movementSincePublication: { kind: "down", previousPosition: 1, currentPosition: 2, places: 1 },
     });
     expect(runChecks(generated("Väylä 5 odottaa.", "Aatu heitti OB:n ja putosi kakkoseksi.", "Kärki vaihtui.", [withOb]))).toEqual([]);
+  });
+
+  it("warns about place and lead claims that contradict the player's position, and accepts correct ones", () => {
+    const second = brief({ standing: { position: 2, fieldSize: 18, isProvisional: false } });
+    const claims = (text: string) => runChecks(generated("Alku.", text, "Loppu.", [second]))
+      .filter(finding => finding.check === "wrong-place").map(finding => finding.detail);
+    expect(claims("Aatu nousi kolmannelle sijalle.")).toEqual(["Aatu: says 3, is 2"]);
+    expect(claims("Aatu kiipesi sijalle 4.")).toEqual(["Aatu: says 4, is 2"]);
+    expect(claims("Aatu on nyt kärjessä.")).toEqual(["Aatu: \"kärjessä\", is 2"]);
+    expect(claims("Aatu on kakkosena ja toisella sijalla.")).toEqual([]);
+    expect(claims("Aatu teki bogin kolmosella.")).toEqual([]);
   });
 
   it("counts sentences and comparisons and reports fallbacks", () => {
