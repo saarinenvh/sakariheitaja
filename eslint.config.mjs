@@ -4,6 +4,25 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
+// The layer rules from the structure design (sakke-workspace docs/roadmap/sakariheitaja-structure).
+// They warn while the restructure moves code into place, and become errors when it's done.
+const LAYER_RULE = "warn";
+const SOURCE_FILES = ["src/**/*.ts"];
+const TEST_FILES = ["**/*.test.ts"];
+
+const noHttpOutsideIntegrations = {
+  group: ["**/shared/http", "./http"],
+  message: "HTTP belongs in an integration client (src/integrations/<system>/).",
+};
+const noBotFromBelow = {
+  group: ["**/bot/*"],
+  message: "Only the Telegram layer imports the bot; features send through ChatMessenger.",
+};
+const noUpwardImports = {
+  group: ["**/features/**", "**/scheduler/*", "**/state/*", "**/config/*"],
+  message: "shared/, util/ and db/ sit below the features and UI text; they must not import them.",
+};
+
 export default tseslint.config(
   {
     ignores: ["dist/**", "node_modules/**", ".eval-dist/**"],
@@ -12,16 +31,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     rules: {
-      // CLAUDE.md states "Prefer explicit types over any" as a coding
-      // guideline, and the honest tension is that this codebase doesn't
-      // follow it yet: 24 existing `any`s across 14 files as of 2026-09-25
-      // (external API response shapes in shared/http.ts, challonge.ts,
-      // giphy.ts, ollamaClient.ts; logger formatting). Off for this first
-      // lint rollout rather than blocking adoption on an unplanned typing
-      // pass - but unlike the gateway's equivalent decision, this one
-      // contradicts a documented project guideline rather than just being
-      // silent on the subject, so it's worth resolving deliberately rather
-      // than leaving indefinitely.
+      // Off until the remaining `any`s in external response handling are typed.
       "@typescript-eslint/no-explicit-any": "off",
 
       // A prefixed underscore is the convention for an intentionally-unused
@@ -30,6 +40,35 @@ export default tseslint.config(
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+    },
+  },
+  {
+    files: ["src/features/**/*.ts"],
+    ignores: TEST_FILES,
+    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noBotFromBelow, noHttpOutsideIntegrations] }] },
+  },
+  {
+    files: ["src/shared/**/*.ts", "src/util/**/*.ts", "src/db/**/*.ts"],
+    ignores: [...TEST_FILES, "src/shared/http.ts"],
+    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noBotFromBelow, noUpwardImports, noHttpOutsideIntegrations] }] },
+  },
+  {
+    files: ["src/bot/**/*.ts", "src/scheduler/**/*.ts", "src/state/**/*.ts"],
+    ignores: TEST_FILES,
+    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noHttpOutsideIntegrations] }] },
+  },
+  {
+    files: SOURCE_FILES,
+    ignores: [...TEST_FILES, "src/shared/http.ts", "src/integrations/**"],
+    rules: {
+      "no-restricted-globals": [LAYER_RULE, { name: "fetch", message: "HTTP belongs in an integration client (src/integrations/<system>/)." }],
+    },
+  },
+  {
+    files: SOURCE_FILES,
+    ignores: [...TEST_FILES, "src/config.ts"],
+    rules: {
+      "no-restricted-properties": [LAYER_RULE, { object: "process", property: "env", message: "Read configuration through readConfig() in src/config.ts." }],
     },
   },
 );
