@@ -275,6 +275,11 @@ treated as unset, so a blank poll interval uses its default. A value that can't 
 used (a poll interval, timeout or port that isn't a positive integer) stops the bot
 at startup with an error naming the variable.
 
+Logs use pino with pino-pretty, in the same format as sakke-gateway: the time, the
+level and `[module] message`, followed by the event's fields (`metrixId`, `err`, …).
+Each module gets its logger from `moduleLogger(name)` in `src/shared/logger.ts`.
+Tests log nothing.
+
 ### Run locally
 
 ```bash

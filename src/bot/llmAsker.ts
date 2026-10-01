@@ -1,6 +1,8 @@
 import { generate, loadPrompt, loadContext } from "../shared/llm/ollamaClient";
 import { fetchBracketData, findParticipantsByName, findPlayerMatch, formatFullBracket, type BracketData } from "../shared/challonge";
-import Logger from "js-logger";
+import { moduleLogger } from "../shared/logger";
+
+const log = moduleLogger("asker");
 
 // Cached separately from the match-play context below: this is the model's
 // general identity/knowledge, safe to keep loaded for every question. The
@@ -85,7 +87,7 @@ export function resolveTargetPlayer(data: BracketData, question: string, senderN
   }
 
   if (sawAmbiguous) {
-    Logger.warn(`Bracket name lookup ambiguous for question "${question}" / sender "${senderName}" - falling back to full bracket rather than guessing`);
+    log.warn({ question, senderName }, "bracket name lookup ambiguous; using the full bracket rather than guessing");
   }
   return null;
 }
@@ -120,15 +122,15 @@ export async function llmAnswer(question: string, senderName?: string, recentMes
         const targeted = target ? findPlayerMatch(data, target.id) : null;
 
         if (targeted) {
-          Logger.info(`Targeted bracket lookup for ${target!.name}: ${targeted}`);
+          log.info({ player: target!.name, result: targeted }, "targeted bracket lookup");
           userContent += `\n\n[Bracket-tieto]\n${targeted}`;
         } else {
           const bracket = formatFullBracket(data);
-          Logger.info(`Full bracket fetched (${bracket.length} chars): ${bracket.slice(0, 300)}`);
+          log.info({ chars: bracket.length, preview: bracket.slice(0, 300) }, "full bracket fetched");
           userContent += `\n\n[Bracket data]\n${bracket}`;
         }
       } catch (err: any) {
-        Logger.warn(`Bracket fetch failed: ${err.message}`);
+        log.warn({ err }, "bracket fetch failed");
         userContent += `\n\n[Bracket data ei ollut saatavilla juuri nyt - älä keksi vastausta bracketista, sano ettet saanut haettua tietoa.]`;
       }
     }
@@ -149,7 +151,7 @@ export async function llmAnswer(question: string, senderName?: string, recentMes
     );
     return answer;
   } catch (err: any) {
-    Logger.warn(`LLM asker failed: ${err.message}`);
+    log.warn({ err }, "LLM asker failed");
     return null;
   }
 }

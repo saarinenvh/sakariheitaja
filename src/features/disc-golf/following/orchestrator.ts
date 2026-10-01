@@ -16,7 +16,7 @@ import {
   hasTrackedRoundEnded, MetrixRound, parseMetrixRound, toBagtagPlayers, toFinalScores, toLegacyResults, toLegacyTracked,
   TrackedRoundPlayer, trackRoundPlayers, UnsupportedRoundError,
 } from "../metrix/metrixRound";
-import Logger from "js-logger";
+import { moduleLogger } from "../../../shared/logger";
 import { readConfig } from "../../../config";
 import { fetchCurrentWeather, WeatherObservation } from "../../../shared/weather";
 import { CourseLocationResult, fetchCourseLocation } from "../metrix/courseLocation";
@@ -24,6 +24,8 @@ import { CourseInfo } from "../commentary/facts/holeFacts";
 import { buildRoundRatings } from "../commentary/facts/courseFacts";
 import { CourseDetails, fetchCourseDetails } from "../metrix/metrixCourse";
 import { CourseStatistics, fetchCourseStatistics } from "../metrix/courseStatistics";
+
+const log = moduleLogger("orchestrator");
 
 const BASE_URL = "https://discgolfmetrix.com/api.php?content=result&id=";
 
@@ -49,11 +51,11 @@ export class Orchestrator {
       fetchCourse: () => this.fetchCourseInfo(),
       send: async html => {
         const sent = await bot.api.sendMessage(chatId, html, HTML_NO_PREVIEW);
-        Logger.info(`${metrixId}: commentary message sent (${html.length} chars)`);
+        log.info({ metrixId, chars: html.length }, "commentary message sent");
         return sent;
       },
       saveScores: (playerId, courseName, changes) => scoreService.saveRecordedScores(playerId, changes, chatId, id, courseName),
-      onError: error => Logger.error(`${metrixId}: commentary delivery failed`, error),
+      onError: error => log.error({ metrixId, err: error }, "commentary delivery failed"),
     });
   }
 
@@ -63,7 +65,7 @@ export class Orchestrator {
       const input = await getData<unknown>(`${BASE_URL}${this.metrixId}`);
       this.snapshot = parseMetrixRound(input, this.metrixId);
     } catch (error) {
-      Logger.error(`Orchestrator ${this.metrixId}: invalid initial round`, error);
+      log.error({ metrixId: this.metrixId, err: error }, "invalid initial round");
       this.initializationError = error instanceof UnsupportedRoundError ? error.message : MSG.followInvalid;
       this.following = false;
       return this;
@@ -79,9 +81,9 @@ export class Orchestrator {
     const initialDelay = this.msUntilStart(this.snapshot.date);
     this.poller = new Poller(this.metrixId, BASE_URL);
     this.poller.on("data", (input: unknown) => this.enqueuePoll(input));
-    this.poller.on("fetchError", (error: Error) => Logger.error(`${this.metrixId}: ${error.message}`));
+    this.poller.on("fetchError", (error: Error) => log.error({ metrixId: this.metrixId, err: error }, "poll failed"));
     this.poller.start(initialDelay);
-    Logger.info(`Started following: ${this.snapshot.name} (${this.metrixId})`);
+    log.info({ metrixId: this.metrixId, round: this.snapshot.name }, "started following");
     return this;
   }
 
@@ -93,15 +95,16 @@ export class Orchestrator {
       ?? await fetchCourseLocation(round.courseId, round.courseName, readConfig().metrix.commentaryCountryCode);
     if (!layoutLocation && location.kind !== "failed") this.courseLocation = location;
     if (location.kind !== "found") {
-      Logger.warn(`${this.metrixId}: no course location for weather (${location.kind})`);
+      log.warn({ metrixId: this.metrixId, location: location.kind }, "no course location for weather");
       return null;
     }
     const weather = await fetchCurrentWeather(location.location);
     if (weather.kind === "failed") {
-      Logger.warn(`${this.metrixId}: weather unavailable: ${weather.reason}`);
+      log.warn({ metrixId: this.metrixId, reason: weather.reason }, "weather unavailable");
       return null;
     }
-    Logger.info(`${this.metrixId}: weather ${weather.observation.temperatureC} °C, ${weather.observation.description}`);
+    const { temperatureC, description } = weather.observation;
+    log.info({ metrixId: this.metrixId, temperatureC, description }, "weather observed");
     return weather.observation;
   }
 
@@ -118,12 +121,12 @@ export class Orchestrator {
       this.loadCourseDetails(courseId).catch(error => this.reportCourseDataFailure("details", error)),
       this.loadCourseStatistics(courseId).catch(error => this.reportCourseDataFailure("statistics", error)),
     ]);
-    Logger.info(`${this.metrixId}: course data ${details ? "with" : "without"} layout details, ${statistics ? "with" : "without"} statistics`);
+    log.info({ metrixId: this.metrixId }, `course data ${details ? "with" : "without"} layout details, ${statistics ? "with" : "without"} statistics`);
     return { details, statistics };
   }
 
   private reportCourseDataFailure(part: string, error: unknown): null {
-    Logger.warn(`${this.metrixId}: course ${part} unavailable: ${error instanceof Error ? error.message : String(error)}`);
+    log.warn({ metrixId: this.metrixId, err: error }, `course ${part} unavailable`);
     return null;
   }
 
@@ -132,14 +135,14 @@ export class Orchestrator {
     if (!integrationCode) return null;
     const result = await fetchCourseDetails(courseId, integrationCode);
     if (result.kind === "found") return result.details;
-    Logger.warn(`${this.metrixId}: course details unavailable: ${result.reason}`);
+    log.warn({ metrixId: this.metrixId, reason: result.reason }, "course details unavailable");
     return null;
   }
 
   private async loadCourseStatistics(courseId: string): Promise<CourseStatistics | null> {
     const result = await fetchCourseStatistics(courseId);
     if (result.kind === "found") return result.statistics;
-    if (result.kind === "failed") Logger.warn(`${this.metrixId}: course statistics unavailable: ${result.reason}`);
+    if (result.kind === "failed") log.warn({ metrixId: this.metrixId, reason: result.reason }, "course statistics unavailable");
     return null;
   }
 
@@ -163,7 +166,7 @@ export class Orchestrator {
 
   private enqueuePoll(input: unknown): Promise<void> {
     this.pollQueue = this.pollQueue.then(() => this.onPollResult(input)).catch(error => {
-      Logger.error(`Orchestrator ${this.metrixId}: rejected poll`, error);
+      log.error({ metrixId: this.metrixId, err: error }, "rejected poll");
       this.poller?.reportChanges(false);
     });
     return this.pollQueue;
@@ -175,7 +178,7 @@ export class Orchestrator {
     const tracked = await this.refreshTrackedPlayers(round);
     if (!this.following) return;
     const changed = this.commentary.observe(round, tracked);
-    if (changed) Logger.info(`${this.metrixId}: score changes detected, commentary queued`);
+    if (changed) log.info({ metrixId: this.metrixId }, "score changes detected, commentary queued");
     this.snapshot = round;
     this.trackedPlayers = tracked;
     this.poller?.reportChanges(changed);
@@ -188,12 +191,12 @@ export class Orchestrator {
     void this.commentary.idle().then(async () => {
       if (!this.following) return;
       await this.handleRoundEnd(round, tracked);
-    }).catch(error => Logger.error(`${this.metrixId}: end handler failed`, error));
+    }).catch(error => log.error({ metrixId: this.metrixId, err: error }, "end handler failed"));
   }
 
   private async handleRoundEnd(round: MetrixRound, tracked: TrackedRoundPlayer[]): Promise<void> {
     this.stopFollowing();
-    Logger.info(`Tracked scorecards in ${round.name}, ${this.metrixId} are finished`);
+    log.info({ metrixId: this.metrixId, round: round.name }, "tracked scorecards are finished");
     await bot.api.sendMessage(this.chatId, MSG.endSoon);
     await competitionService.markDone(this.id);
     const completed = toLegacyTracked(tracked).filter(player => !player.DNF);

@@ -1,6 +1,8 @@
-import Logger from "js-logger";
+import { moduleLogger } from "../../shared/logger";
 import { dataSource } from "../dataSource";
 import { Course } from "../entities/Course";
+
+const log = moduleLogger("courses");
 
 function repo() {
   return dataSource.getRepository(Course);
@@ -16,8 +18,8 @@ export async function upsert(name: string): Promise<void> {
     [name, name]
   );
   if (result.affectedRows > 0) {
-    Logger.info(`Course: ${name} - added successfully`);
+    log.info({ course: name }, "course added");
   } else {
-    Logger.debug(`Course: ${name} - already exists, nothing to do`);
+    log.debug({ course: name }, "course already exists");
   }
 }

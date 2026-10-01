@@ -2,7 +2,9 @@ import { join } from "path";
 import { createJsonStore } from "../../../shared/jsonStore";
 import { readConfig } from "../../../config";
 import { MetrixPlayerResult } from "../../../types/metrix";
-import Logger from "js-logger";
+import { moduleLogger } from "../../../shared/logger";
+
+const log = moduleLogger("bagtags");
 
 const DATA_DIR = readConfig().dataDir;
 const BAGTAGS_PATH = DATA_DIR
@@ -137,7 +139,7 @@ export function computeAndApplySwaps(
   if (swaps.length > 0) {
     store[chatKey] = updatedTags;
     save(store);
-    Logger.info(`Bagtag swaps applied for chat ${chatId}: ${swaps.map(s => `${s.playerName} ${s.from}→${s.to}`).join(", ")}`);
+    log.info({ chatId, swaps: swaps.map(s => `${s.playerName} ${s.from}→${s.to}`) }, "bagtag swaps applied");
   }
 
   return { swaps, unchanged, noTag };

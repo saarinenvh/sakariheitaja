@@ -1,9 +1,9 @@
 import EventEmitter from "events";
 import { getData } from "../../../shared/http";
-import Logger from "js-logger";
+import { moduleLogger } from "../../../shared/logger";
 import { readConfig } from "../../../config";
-import { loggerSettings } from "../../../shared/logger";
-Logger.useDefaults(loggerSettings);
+
+const log = moduleLogger("poller");
 
 const {
   activeIntervalMs: INTERVAL_ACTIVE, idleIntervalMs: INTERVAL_IDLE, dormantIntervalMs: INTERVAL_DORMANT,
@@ -29,7 +29,7 @@ export default class Poller extends EventEmitter {
 
   start(initialDelay: number = 0): void {
     this.running = true;
-    Logger.info(`Poller ${this.metrixId}: starting${initialDelay > 0 ? ` in ${Math.round(initialDelay / 1000)}s` : " now"}`);
+    log.info({ metrixId: this.metrixId, delayS: Math.round(initialDelay / 1000) }, "starting");
     this._schedule(initialDelay);
   }
 
@@ -39,7 +39,7 @@ export default class Poller extends EventEmitter {
       clearTimeout(this._timeoutId);
       this._timeoutId = null;
     }
-    Logger.info(`Poller ${this.metrixId}: stopped`);
+    log.info({ metrixId: this.metrixId }, "stopped");
   }
 
   reportChanges(hadChanges: boolean): void {
@@ -65,7 +65,7 @@ export default class Poller extends EventEmitter {
       if (data === undefined) {
         hadError = true;
         this.errorCount++;
-        Logger.warn(`Poller ${this.metrixId}: invalid/empty response (attempt ${this.errorCount}), backing off`);
+        log.warn({ metrixId: this.metrixId, attempt: this.errorCount }, "invalid or empty response, backing off");
       } else {
         this.errorCount = 0;
         this.emit("data", data);
@@ -73,14 +73,16 @@ export default class Poller extends EventEmitter {
     } catch (err: any) {
       hadError = true;
       this.errorCount++;
-      Logger.error(`Poller ${this.metrixId}: fetch error (attempt ${this.errorCount}): ${err.message}`);
+      log.error({ metrixId: this.metrixId, attempt: this.errorCount, err }, "fetch error");
       this.emit("fetchError", err);
     }
 
     if (!this.running) return;
 
     const nextInterval = hadError ? this._errorInterval() : this._activeInterval();
-    Logger.debug(`Poller ${this.metrixId}: next poll in ${Math.round(nextInterval / 1000)}s [noChange=${this.noChangeCount}, errors=${this.errorCount}]`);
+    log.debug({
+      metrixId: this.metrixId, nextPollS: Math.round(nextInterval / 1000), noChange: this.noChangeCount, errors: this.errorCount,
+    }, "next poll scheduled");
     this._schedule(nextInterval);
   }
 

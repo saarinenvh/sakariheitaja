@@ -1,5 +1,7 @@
-import Logger from "js-logger";
+import { moduleLogger } from "../../shared/logger";
 import { dataSource } from "../dataSource";
+
+const log = moduleLogger("scores");
 
 export interface ScoreRow {
   courseId: number;
@@ -22,7 +24,7 @@ export async function addResult(
     "INSERT INTO scores (player_id, chat_id, course_id, competition_id, diff, sum) VALUES (?, ?, ?, ?, ?, ?)",
     [playerId, chatId, courseId, competitionId, diff, sum]
   );
-  Logger.info(`Score for player ${playerId} - added successfully`);
+  log.info({ playerId }, "score added");
 }
 
 export async function findByCourseName(name: string, chatId: number): Promise<ScoreRow[]> {
@@ -57,7 +59,7 @@ export async function addAce(date: string, playerId: number, chatId: number, cou
     "INSERT INTO aces (date, player_id, chat_id, course_id, competition_id) VALUES (?, ?, ?, ?, ?)",
     [date, playerId, chatId, courseId, competitionId]
   );
-  Logger.info(`ACE for player ${playerId} - added successfully`);
+  log.info({ playerId }, "ace added");
 }
 
 export async function addEagle(date: string, playerId: number, chatId: number, courseId: number, competitionId: number): Promise<void> {
@@ -65,7 +67,7 @@ export async function addEagle(date: string, playerId: number, chatId: number, c
     "INSERT INTO eagles (date, player_id, chat_id, course_id, competition_id) VALUES (?, ?, ?, ?, ?)",
     [date, playerId, chatId, courseId, competitionId]
   );
-  Logger.info(`EAGLE for player ${playerId} - added successfully`);
+  log.info({ playerId }, "eagle added");
 }
 
 export async function addAlbatross(date: string, playerId: number, chatId: number, courseId: number, competitionId: number): Promise<void> {
@@ -73,5 +75,5 @@ export async function addAlbatross(date: string, playerId: number, chatId: numbe
     "INSERT INTO albatrosses (date, player_id, chat_id, course_id, competition_id) VALUES (?, ?, ?, ?, ?)",
     [date, playerId, chatId, courseId, competitionId]
   );
-  Logger.info(`ALBATROSS for player ${playerId} - added successfully`);
+  log.info({ playerId }, "albatross added");
 }

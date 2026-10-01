@@ -1,8 +1,10 @@
 import { readFileSync } from "fs";
 import { join } from "path";
-import Logger from "js-logger";
+import { moduleLogger } from "../logger";
 import { readConfig } from "../../config";
 import { finishOllamaTrace, startOllamaTrace } from "./ollamaTrace";
+
+const log = moduleLogger("ollama");
 
 export interface OllamaMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -114,7 +116,7 @@ export async function generate(
   const history = [...messages];
 
   const truncated = history.at(-1)?.content.slice(0, 80) ?? "";
-  Logger.debug(`LLM request → model=${model} url=${baseUrl} input="${truncated}..."`);
+  log.debug({ model, url: baseUrl, input: truncated }, "LLM request");
 
   const MAX_TOOL_ROUNDS = 3;
 
@@ -122,7 +124,7 @@ export async function generate(
     const { content, toolCalls } = await callOllama(history, options, tools);
 
     if (toolCalls?.length && toolHandler) {
-      Logger.debug(`LLM tool calls: ${toolCalls.map(tc => tc.function.name).join(", ")}`);
+      log.debug({ tools: toolCalls.map(tc => tc.function.name) }, "LLM tool calls");
       history.push({ role: "assistant", content: content ?? "" });
 
       for (const tc of toolCalls) {
@@ -136,7 +138,7 @@ export async function generate(
 
     const result = stripArtifacts(content);
     const ms = Date.now() - start;
-    Logger.debug(`LLM response ← ${ms}ms "${result.slice(0, 80)}..."`);
+    log.debug({ durationMs: ms, output: result.slice(0, 80) }, "LLM response");
     return result;
   }
 

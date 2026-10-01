@@ -1,5 +1,5 @@
 import { Composer, Context } from "grammy";
-import Logger from "js-logger";
+import { moduleLogger } from "../../shared/logger";
 import { getRandom } from "../../shared/utils";
 import { searchGiphy } from "../../shared/giphy";
 import { sakariNames, randomQuote } from "../../config/phrases";
@@ -8,6 +8,8 @@ import { heckle, llmHeckle, recordMessage, getRecentMessages } from "../llmHeckl
 import { llmAnswer } from "../llmAsker";
 import { sendMorningGreeting } from "../../scheduler/morningGreeter";
 import { readConfig } from "../../config";
+
+const log = moduleLogger("fun");
 
 let games: Record<string, string> = {};
 let gamesDate = new Date().toLocaleDateString();
@@ -133,7 +135,7 @@ fun.on("message:text", async ctx => {
     // difference: with the LLM enabled but failing AND the fallback coin flip
     // lost, this no longer falls through to the jallu/random-quote branches.
     void answerMention(ctx, text).catch(err =>
-      Logger.warn(`Mention reply failed: ${err.message}`),
+      log.warn({ err }, "mention reply failed"),
     );
     return;
   }

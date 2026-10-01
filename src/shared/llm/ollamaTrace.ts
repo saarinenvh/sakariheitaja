@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import Logger from "js-logger";
+import { moduleLogger } from "../logger";
 import { readConfig } from "../../config";
+
+const log = moduleLogger("ollama-trace");
 
 interface OllamaTrace {
   id: string;
@@ -33,6 +35,6 @@ async function saveTrace(trace: OllamaTrace, outcome: object): Promise<void> {
     const filename = `${trace.startedAt.replace(/[:.]/g, "-")}-${trace.id}.json`;
     await writeFile(join(TRACE_DIRECTORY, filename), JSON.stringify({ ...trace, ...outcome }, null, 2), { mode: 0o600 });
   } catch {
-    Logger.warn("Could not write Ollama trace to logs/ollama; inference continues without this diagnostic.");
+    log.warn("could not write Ollama trace to logs/ollama; inference continues without it");
   }
 }

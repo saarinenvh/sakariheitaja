@@ -1,6 +1,8 @@
-import Logger from "js-logger";
+import { moduleLogger } from "../../../shared/logger";
 import { z } from "zod";
 import { parseOrThrow } from "../../../util/validation";
+
+const log = moduleLogger("course-statistics");
 
 const MAX_CODE_POINT = 0x10ffff;
 const COURSE_PAGE_URL = "https://discgolfmetrix.com/course/";
@@ -144,7 +146,7 @@ async function fetchCoursePage(courseId: string): Promise<CoursePageResult> {
     return { kind: "fetched", html: await response.text() };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    Logger.error(`fetchCourseStatistics ${url} failed: ${message}`);
+    log.error({ url, reason: message }, "fetchCourseStatistics failed");
     return { kind: "failed", reason: `Metrix course page request failed: ${message}` };
   }
 }

@@ -1,5 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, renameSync } from "fs";
-import Logger from "js-logger";
+import { moduleLogger } from "./logger";
+
+const log = moduleLogger("json-store");
 
 // Small persistence helper for the bot's JSON-file state (bag tags, player
 // profiles). These files are the only durable state outside MariaDB, and both
@@ -36,9 +38,9 @@ export function createJsonStore<T extends object>(path: string, empty: () => T) 
       const quarantined = `${path}.corrupt-${Date.now()}`;
       try {
         renameSync(path, quarantined);
-        Logger.error(`${path} is not valid JSON, moved to ${quarantined} and starting fresh: ${err.message}`);
+        log.error({ path, quarantined, err }, "store is not valid JSON; moved aside, starting fresh");
       } catch (moveErr: any) {
-        Logger.error(`${path} is not valid JSON and could not be moved aside (${moveErr.message}); starting fresh WITHOUT overwriting it`);
+        log.error({ path, err: moveErr }, "store is not valid JSON and could not be moved aside; starting fresh WITHOUT overwriting it");
       }
       cache = empty();
     }
