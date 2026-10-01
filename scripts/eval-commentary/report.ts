@@ -23,6 +23,7 @@ export interface EvalMeta {
   promptHash: string;
   runs: number;
   holeRange: string;
+  playerOrder: "input" | "reversed";
   fixtures: string[];
 }
 
@@ -36,7 +37,7 @@ export function renderMarkdownReport(meta: EvalMeta, records: readonly EvalRecor
     `- Started: ${meta.startedAt}`,
     `- Model: \`${meta.model}\` at ${meta.baseUrl}`,
     `- Prompt: \`${meta.promptPath}\` (sha256 ${meta.promptHash})`,
-    `- Fixtures: ${meta.fixtures.join(", ")} · runs: ${meta.runs} · holes: ${meta.holeRange}`,
+    `- Fixtures: ${meta.fixtures.join(", ")} · runs: ${meta.runs} · holes: ${meta.holeRange} · player order: ${meta.playerOrder}`,
     "",
     ...renderSummary(records),
     "",

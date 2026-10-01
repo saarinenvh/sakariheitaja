@@ -3,6 +3,7 @@
 // Usage:
 //   npm run eval:commentary -- --model=gemma4:26b-a4b-q3 --baseUrl=http://172.31.0.1:11434
 //   npm run eval:commentary -- --model=... --runs=3 --holes=1-6 --fixture=harkalinna-top4 --prompt=/tmp/variant.md
+//   --reverse-players sends the update's players to the model in reverse order (to test position effects)
 import { createHash } from "crypto";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
@@ -39,6 +40,7 @@ interface EvalOptions {
   fixtureNames: string[];
   holeRange: HoleRange | null;
   outDir: string;
+  reversePlayers: boolean;
 }
 
 type StructuredGenerate = (messages: OllamaMessage[], jsonSchema: Record<string, unknown>, options: OllamaOptions) => Promise<string>;
@@ -48,6 +50,7 @@ interface Runtime {
   modelOptions: OllamaOptions;
   prompt: string;
   holeRange: HoleRange | null;
+  reversePlayers: boolean;
 }
 
 async function main(): Promise<void> {
@@ -84,6 +87,7 @@ function parseOptions(flags: ReadonlyMap<string, string>): EvalOptions {
     fixtureNames: (flags.get("fixture") ?? "").split(",").map(name => name.trim()).filter(Boolean),
     holeRange: parseHoleRange(flags.get("holes")),
     outDir: flags.get("out") || DEFAULT_OUT_DIR,
+    reversePlayers: flags.has("reverse-players"),
   };
 }
 
@@ -112,6 +116,7 @@ async function loadRuntime(options: EvalOptions): Promise<Runtime> {
     modelOptions: COMMENTARY_MODEL_OPTIONS,
     prompt: readFileSync(options.promptPath, "utf-8").trim(),
     holeRange: options.holeRange,
+    reversePlayers: options.reversePlayers,
   };
 }
 
@@ -159,10 +164,12 @@ async function writeEvaluated(context: BatchCommentaryContext, runtime: Runtime)
   }
   let rawReply: string | null = null;
   const startedAt = Date.now();
-  const result = await writeBatchCommentary(context, runtime.prompt, async (messages, jsonSchema) => {
+  const modelContext = runtime.reversePlayers ? { ...context, players: [...context.players].reverse() } : context;
+  const modelResult = await writeBatchCommentary(modelContext, runtime.prompt, async (messages, jsonSchema) => {
     rawReply = await runtime.generate(messages, jsonSchema, runtime.modelOptions);
     return rawReply;
   });
+  const result = restorePlayerOrder(modelResult, context);
   return {
     result,
     record: {
@@ -176,6 +183,13 @@ async function writeEvaluated(context: BatchCommentaryContext, runtime: Runtime)
       rejectedReply: result.kind === "fallback" ? rawReply : null,
     },
   };
+}
+
+/** RoundCommentary pairs lines with players by position, so lines go back to the original order. */
+function restorePlayerOrder(result: BatchCommentaryResult, context: BatchCommentaryContext): BatchCommentaryResult {
+  const order = new Map(context.players.map((brief, index) => [brief, index]));
+  const lines = [...result.commentary.lines].sort((first, second) => (order.get(first.brief) ?? 0) - (order.get(second.brief) ?? 0));
+  return { ...result, commentary: { ...result.commentary, lines } };
 }
 
 function updatedHoles(context: BatchCommentaryContext): string[] {
@@ -232,6 +246,7 @@ function buildMeta(options: EvalOptions, prompt: string, fixtures: readonly Comm
     promptHash: createHash("sha256").update(prompt).digest("hex").slice(0, PROMPT_HASH_LENGTH),
     runs: options.runs,
     holeRange: options.holeRange ? `${options.holeRange.first}-${options.holeRange.last}` : "all",
+    playerOrder: options.reversePlayers ? "reversed" : "input",
     fixtures: fixtures.map(fixture => fixture.name),
   };
 }
