@@ -122,11 +122,11 @@ describe("Metrix round boundary", () => {
     expect(hasTrackedRoundEnded(trackRoundPlayers(incompleteMetadata, tracked))).toBe(false);
   });
 
-  it("gives tied players reported at place 0 a shared place from recorded totals", () => {
+  it("gives tied players reported at place 0 or without a place a shared place from recorded totals", () => {
     const raw = input([score(3), score(3), [], []], "0");
     const results = raw.Competition.Results;
     results[1] = { ...results[1], Name: "Teppo", OrderNumber: 0, PlayerResults: [score(2), score(4), [], []] };
-    results[2] = { ...results[2], Name: "Tommi", OrderNumber: 3, PlayerResults: [score(4), score(3), [], []] };
+    results[2] = { ...results[2], Name: "Tommi", OrderNumber: null, PlayerResults: [score(4), score(3), [], []] };
     results[3] = { ...results[3], Name: "Aloittamaton", OrderNumber: 0 };
     results[4] = { ...results[4], ClassName: "MPO", OrderNumber: 0, PlayerResults: [score(1, -2), [], [], []] };
     const players = parseMetrixRound(raw, "123").players;

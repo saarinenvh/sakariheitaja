@@ -10,7 +10,7 @@ const positiveInteger = integerSchema.pipe(z.number().int().positive());
 const identifier = positiveInteger.transform(String);
 const optionalIdentifier = identifier.nullish().catch(null).transform(value => value ?? null);
 const optionalText = z.string().nullish().transform(value => value ?? "");
-// Metrix reports tied players, and many players early in a round, with place 0.
+// Metrix reports tied players, and many players early in a round, with place 0 or no place at all.
 const METRIX_UNRANKED = 0;
 const dnfSchema = z.union([
   z.literal("1"), z.literal(1), z.literal(true), z.literal("DNF"),
@@ -209,8 +209,8 @@ function normalizePlayer(
 function resolvePosition(
   source: z.output<typeof playerSchema>, fieldSize: number, rankedPosition: number | null, aggregateStanding: boolean,
 ): number | null {
-  if (source.DNF || source.OrderNumber === null || source.OrderNumber > fieldSize) return null;
-  if (source.OrderNumber === METRIX_UNRANKED) return aggregateStanding ? null : rankedPosition;
+  if (source.DNF || (source.OrderNumber !== null && source.OrderNumber > fieldSize)) return null;
+  if (source.OrderNumber === null || source.OrderNumber === METRIX_UNRANKED) return aggregateStanding ? null : rankedPosition;
   return source.OrderNumber;
 }
 
