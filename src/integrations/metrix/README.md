@@ -42,7 +42,7 @@ event or series throws `UnsupportedRoundError`.
 | `Tracks[].NumberAlt` (e.g. `"10A"`) | the hole label, else the hole `Number`; duplicate labels are rejected | `normalize.ts` |
 | `PlayerResults` entry `[]` | `null`: hole not recorded yet | `rawSchema.ts` `scorecardSchema` |
 | `PlayerResults` `null` or `[]` | `Scorecard { kind: "unavailable" }` | `normalize.ts` `parseScorecard` |
-| `PlayerResults` with a different length from `Tracks` | `Scorecard { kind: "unavailable" }` | `normalize.ts` |
+| `PlayerResults` with a different length from `Tracks` | `Scorecard { kind: "unavailable" }`, and it doesn't count when places are derived | `normalize.ts` `matchLayout` |
 | hole `Result` | `strokes`, a positive integer | `rawSchema.ts` |
 | hole `Diff` empty or missing | `relativeToPar: null`; totals that need it stay unknown | `rawSchema.ts` |
 | hole `PEN` and/or `OB` | one `obCount`; when both are sent they must agree | `rawSchema.ts` |

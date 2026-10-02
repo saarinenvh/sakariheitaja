@@ -42,7 +42,9 @@ export function parseMetrixRound(input: unknown, expectedId: string): MetrixRoun
     || (source.HasSubcompetitions ?? 0) !== 0) throw new UnsupportedRoundError();
   const holeLabels = source.Tracks.map(track => track.NumberAlt || String(track.Number));
   if (new Set(holeLabels).size !== holeLabels.length) throw new Error("Metrix returned duplicate hole labels");
-  const parsed = source.Results.map(player => ({ source: player, scorecard: parseScorecard(player.PlayerResults) }));
+  const parsed = source.Results.map(player => ({
+    source: player, scorecard: matchLayout(parseScorecard(player.PlayerResults), source.Tracks.length),
+  }));
   const tiedPositions = rankByRecordedTotals(parsed);
   const players = parsed.map((player, index) => normalizePlayer(player, source, tiedPositions[index]));
   return {
@@ -67,10 +69,13 @@ export function parseRoundState(input: unknown): RoundState {
   return parseOrThrow(roundStateSchema, input, "Metrix round state");
 }
 
-function normalizePlayer({ source, scorecard: parsedCard }: ParsedPlayer, competition: RawCompetition, rankedPosition: number | null): RoundPlayer {
+/** A card whose length doesn't match the layout can't be read hole by hole, so it counts as no card at all. */
+function matchLayout(scorecard: Scorecard, holeCount: number): Scorecard {
+  return scorecard.kind === "available" && scorecard.holes.length !== holeCount ? { kind: "unavailable" } : scorecard;
+}
+
+function normalizePlayer({ source, scorecard }: ParsedPlayer, competition: RawCompetition, rankedPosition: number | null): RoundPlayer {
   const fieldSize = competition.Results.filter(player => player.ClassName === source.ClassName).length;
-  const scorecard: Scorecard = parsedCard.kind === "available" && parsedCard.holes.length !== competition.Tracks.length
-    ? { kind: "unavailable" } : parsedCard;
   const round = parseRoundState({ totalHoles: competition.Tracks.length, status: resolveRoundStatus(source.DNF, scorecard) });
   const aggregateStanding = (competition.ShowPreviousRoundsSum ?? 0) !== 0
     || source.PreviousRoundsSum !== null || source.PreviousRoundsDiff !== null;

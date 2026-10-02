@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ValidationError } from "../../../util/validation";
-import { parseRoundState, parseScorecard, parseStanding } from "./normalize";
+import { parseMetrixRound, parseRoundState, parseScorecard, parseStanding } from "./normalize";
 
 describe("parseScorecard", () => {
   it("normalizes scores and empty hole slots without retaining extra source fields", () => {
@@ -98,4 +98,21 @@ describe("standing and round metadata validation", () => {
       expect(() => parseRoundState(input)).toThrow(ValidationError);
     },
   );
+});
+
+describe("parseMetrixRound places", () => {
+  const hole = (strokes: number) => ({ Result: String(strokes), Diff: strokes - 3 });
+  const round = (cards: unknown[]) => ({
+    Competition: {
+      ID: "123", Name: "Kierros", Date: "2026-10-02", CourseName: "Testirata",
+      Tracks: Array.from({ length: 4 }, (_, index) => ({ Number: String(index + 1), Par: "3" })),
+      Results: cards.map((card, index) => ({ Name: `Pelaaja ${index}`, ClassName: "MA3", OrderNumber: 0, PlayerResults: card })),
+    },
+  });
+
+  it("doesn't rank a player whose card doesn't match the layout", () => {
+    const players = parseMetrixRound(round([[hole(2), hole(2)], [hole(3), hole(3), [], []]]), "123").players;
+    expect(players[0].scorecard).toEqual({ kind: "unavailable" });
+    expect(players.map(player => player.standing.position)).toEqual([null, 1]);
+  });
 });
