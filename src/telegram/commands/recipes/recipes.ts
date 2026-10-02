@@ -1,20 +1,15 @@
-import { Composer } from "grammy";
+import { CommandContext, Context } from "grammy";
 import { recipes } from "../../../integrations/recipes";
 import { formatRecipe } from "../../../features/recipes/recipes";
 import { getRandom } from "../../../shared/utils";
-import { recipe as MSG } from "../../messages";
+import { recipeMessages as MSG } from "./messages";
 
-export const recipe = new Composer();
-
-// /mitatanaansyotaisiin
-// Fetches a random Finnish recipe from the S-cloud recipe API and sends the
-// name, cook time, description, ingredient list, step-by-step instructions,
-// and a photo of the dish.
-recipe.command("mitatanaansyotaisiin", async ctx => {
+/** A random recipe: the text, then its photo. */
+export async function suggestRecipe(ctx: CommandContext<Context>): Promise<unknown> {
   const results = await recipes.getRecipes();
   if (!results?.length) return ctx.reply(MSG.notFound);
   const { text, photoUrl } = formatRecipe(results[getRandom(results.length)]);
 
   await ctx.reply(text);
   await ctx.replyWithPhoto(photoUrl);
-});
+}

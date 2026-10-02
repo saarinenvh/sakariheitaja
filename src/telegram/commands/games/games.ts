@@ -1,161 +1,49 @@
-import { Composer, Context } from "grammy";
-import { moduleLogger } from "../../../shared/logger";
+import { CommandContext, Context } from "grammy";
+import { announcePlan, todaysPlans } from "../../../features/games/todaysPlans";
 import { getRandom } from "../../../shared/utils";
-import { giphy } from "../../../integrations/giphy";
-import { sakariNames, randomQuote } from "../chatter/phrases";
-import { fun as MSG } from "../../messages";
-import { heckle, llmHeckle, recordMessage, getRecentMessages } from "../../../features/heckler/heckler";
-import { llmAnswer } from "../../../features/match-play-asker/matchPlayAsker";
-import { sendMorningGreeting } from "../../../features/morning-greeting/morningGreeting";
-import { readConfig } from "../../../config";
-import { morningGreetingDependencies } from "../../dependencies";
+import { gameMessages as MSG } from "./messages";
 
-const log = moduleLogger("fun");
+type Command = CommandContext<Context>;
 
-let games: Record<string, string> = {};
-let gamesDate = new Date().toLocaleDateString();
+const MAX_REPEATS = 100;
+const COUNTDOWN_STEP_MS = 1000;
 
-// The rollover check used to live inside /hep only, and /pelei read `games`
-// directly - so until somebody posted a new plan, /pelei presented yesterday's
-// as today's. Both commands go through here now.
-function expireIfNewDay(): void {
-  const today = new Date().toLocaleDateString();
-  if (today !== gamesDate) {
-    games = {};
-    gamesDate = today;
-  }
+export async function cheer(ctx: Command): Promise<unknown> {
+  return ctx.reply("Hyvä Vade" + "e".repeat(getRandom(MAX_REPEATS)) + "!".repeat(getRandom(MAX_REPEATS)));
 }
 
-export const fun = new Composer();
+export async function cheerIsit(ctx: Command): Promise<unknown> {
+  return ctx.reply("Hyvä isi" + "t".repeat(getRandom(MAX_REPEATS)) + "!".repeat(getRandom(MAX_REPEATS)));
+}
 
-// /hyva
-// Replies with an enthusiastic "Hyvä Vadee!" with a random number of repeated letters.
-fun.command("hyva", async ctx => {
-  await ctx.reply("Hyvä Vade" + "e".repeat(getRandom(100)) + "!".repeat(getRandom(100)));
-});
-
-// /isit
-// Replies with "Hyvä isit!" with a random number of repeated letters.
-fun.command("isit", async ctx => {
-  await ctx.reply("Hyvä isi" + "t".repeat(getRandom(100)) + "!".repeat(getRandom(100)));
-});
-
-// /kukakirjaa <name1> <name2> ...
-// Randomly picks one of the given names as the designated score keeper.
-// Builds up suspense with a 3-2-1 countdown before revealing the winner.
-fun.command("kukakirjaa", async ctx => {
+/** Draws the score keeper among the names, after a 3-2-1 countdown. */
+export async function drawScorekeeper(ctx: Command): Promise<unknown> {
   if (!ctx.match) return ctx.reply(MSG.kukakirjaaUsage);
   const players = ctx.match.split(" ");
   const winner = players[getRandom(players.length)];
   await ctx.reply(MSG.kukakirjaaIntro);
-  setTimeout(() => ctx.reply("3"), 1000);
-  setTimeout(() => ctx.reply("2"), 2000);
-  setTimeout(() => ctx.reply("1"), 3000);
-  setTimeout(() => ctx.reply(MSG.kukakirjaaWinner(winner.toUpperCase())), 4000);
-});
+  setTimeout(() => ctx.reply("3"), COUNTDOWN_STEP_MS);
+  setTimeout(() => ctx.reply("2"), 2 * COUNTDOWN_STEP_MS);
+  setTimeout(() => ctx.reply("1"), 3 * COUNTDOWN_STEP_MS);
+  setTimeout(() => ctx.reply(MSG.kukakirjaaWinner(winner.toUpperCase())), 4 * COUNTDOWN_STEP_MS);
+}
 
-// /gifplz <search term>
-// Searches Giphy for a matching GIF/video and sends a random result.
-fun.command("gifplz", async ctx => {
-  if (!ctx.match) return ctx.reply(MSG.gifplzUsage);
-  const gifUrl = await giphy.searchGif(ctx.match);
-  if (gifUrl) await ctx.replyWithVideo(gifUrl);
-});
-
-// /hep <plan>
-// Lets a user announce what disc golf game they're planning today.
-// Plans are stored per username and reset each day at midnight.
-fun.command("hep", async ctx => {
+export async function announceTodaysPlan(ctx: Command): Promise<unknown> {
   if (!ctx.match) return ctx.reply(MSG.hepUsage);
-  expireIfNewDay();
-  const username = ctx.from?.username ?? ctx.from?.first_name ?? "tuntematon";
-  games[username] = ctx.match;
-  await ctx.reply(_todaysGames());
-});
-
-// /pelei
-// Shows today's game plans announced by all users via /hep.
-fun.command("pelei", async ctx => {
-  await ctx.reply(_todaysGames());
-});
-
-// /apua
-// Prints the full list of available bot commands with short descriptions.
-fun.command("apua", async ctx => {
-  await ctx.reply(MSG.apua);
-});
-
-// /heckle [message]
-// Dev command (only active when LLM_ENABLED=true): forces an LLM heckler response
-// using the chat's message buffer. Optional argument overrides the trigger message.
-if (readConfig().llmEnabled) {
-  fun.command("heckle", async ctx => {
-    const trigger = ctx.match?.trim() || ctx.message?.text || "Sakke";
-    const reply = await llmHeckle(ctx.chat.id, trigger);
-    await ctx.reply(reply);
-  });
-
-  fun.command("aamuu", async ctx => {
-    await sendMorningGreeting(morningGreetingDependencies, ctx.chat.id);
-  });
+  const user = ctx.from?.username ?? ctx.from?.first_name ?? "tuntematon";
+  announcePlan(user, ctx.match);
+  return ctx.reply(formatTodaysPlans());
 }
 
-// Answers a name mention without holding up the update queue. grammY's
-// bot.start() processes updates one at a time, so awaiting a gemma3:12b
-// generation here stalled every other message in every chat - /follow, /top5,
-// /tulokset and the rest - for as long as it took, on a GPU that is also
-// serving sakke-gateway. Nothing downstream needs the answer, so it is
-// dispatched and forgotten.
-async function answerMention(ctx: Context, text: string): Promise<void> {
-  if (readConfig().llmEnabled) {
-    const senderName = ctx.from?.first_name ?? ctx.from?.username;
-    const answer = await llmAnswer(text, senderName, getRecentMessages(ctx.chat!.id));
-    if (answer) {
-      await ctx.reply(answer);
-      return;
-    }
-  }
-  if (getRandom(2) === 1) {
-    await ctx.reply(await heckle(ctx.chat!.id, text));
-  }
+export async function listTodaysPlans(ctx: Command): Promise<unknown> {
+  return ctx.reply(formatTodaysPlans());
 }
 
-// Passive listener — must stay last in middleware registration.
-// Reacts to regular text messages (not commands) with random bot personality:
-// - Responds to messages containing Sakari's name
-// - Responds to "jallu" mentions (~50% chance)
-// - Sends a random quote to any message (~1 in 40 chance)
-// Does not call next(), so it must be registered after all command handlers.
-fun.on("message:text", async ctx => {
-  const text = ctx.message.text;
-  recordMessage(ctx.chat.id, text);
-
-  if (sakariNames.find(name => text.toLowerCase().includes(name.toLowerCase()))) {
-    // Decided here rather than after the reply lands, since the handler no
-    // longer waits to find out whether anything was said. The one behavioural
-    // difference: with the LLM enabled but failing AND the fallback coin flip
-    // lost, this no longer falls through to the jallu/random-quote branches.
-    void answerMention(ctx, text).catch(err =>
-      log.warn({ err }, "mention reply failed"),
-    );
-    return;
-  }
-
-  if (text.includes("jallu") && getRandom(2) === 1) {
-    await ctx.reply(MSG.jallu);
-    return;
-  }
-
-  if (getRandom(40) === 1) {
-    await ctx.reply(randomQuote[getRandom(randomQuote.length)]);
-  }
-});
-
-function _todaysGames(): string {
-  expireIfNewDay();
-  if (Object.keys(games).length === 0) return MSG.peleiNone;
+function formatTodaysPlans(): string {
+  const plans = Object.entries(todaysPlans());
+  if (plans.length === 0) return MSG.peleiNone;
   let message = MSG.peleiHeader;
-  for (const [user, plan] of Object.entries(games)) {
+  for (const [user, plan] of plans) {
     message += `${user}: ${plan} \n`;
   }
   return message + MSG.peleiFooter;

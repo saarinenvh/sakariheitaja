@@ -1,30 +1,25 @@
-import { Composer, Context } from "grammy";
+import { CommandContext, Context } from "grammy";
 import { openWeather } from "../../../integrations/openweather";
 import { buildCityWeatherReport } from "../../../features/weather-report/weatherReport";
-import { HTML_OPTIONS } from "../../sendOptions";
 import { cities } from "../../../features/weather-report/phrases";
 import { getRandom } from "../../../shared/utils";
-import { weather as MSG } from "../../messages";
+import { HTML_OPTIONS } from "../../sendOptions";
+import { weatherMessages as MSG } from "./messages";
 
-export const weather = new Composer();
+type Command = CommandContext<Context>;
 
-// /saa <city>
-// Fetches current weather for the given city from OpenWeatherMap and sends
-// a formatted message with temperature, conditions, wind speed, and sunrise/sunset times.
-weather.command("saa", async ctx => {
+export async function showWeather(ctx: Command): Promise<unknown> {
   if (!ctx.match) return ctx.reply(MSG.usage);
   await ctx.reply(MSG.intro);
   await replyWithWeather(ctx, ctx.match.trim());
-});
+}
 
-// /randomsaa
-// Same as /saa but picks a random city from the predefined city list in phrases config.
-weather.command("randomsaa", async ctx => {
+export async function showRandomTownWeather(ctx: Command): Promise<void> {
   await ctx.reply(MSG.intro);
   await replyWithWeather(ctx, cities[getRandom(cities.length)]);
-});
+}
 
-async function replyWithWeather(ctx: Context, city: string): Promise<void> {
+async function replyWithWeather(ctx: Command, city: string): Promise<void> {
   const report = await buildCityWeatherReport(openWeather, city);
   if (report.kind === "found") await ctx.reply(report.html, HTML_OPTIONS);
   else await ctx.reply(report.text);

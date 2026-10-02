@@ -1,20 +1,14 @@
-import { Composer, Context } from "grammy";
+import { CommandContext, Context } from "grammy";
 import { moduleLogger } from "../../../shared/logger";
 import * as scoreService from "../../../features/score-records/scoreRecords";
 import { ScoreRow } from "../../../features/score-records/scoreRepository";
-import { scores as MSG } from "../../messages";
+import { scoreRecordMessages as MSG } from "./messages";
 import { HTML_OPTIONS } from "../../sendOptions";
 
 const log = moduleLogger("scores-command");
 
-export const scores = new Composer();
-
-// /tulokset <course name or id>
-// Shows the all-time top 10 scores for a course, sorted by best total diff.
-// Accepts either a course name (partial match) or a numeric course ID.
-// If the name matches multiple courses, lists them with their IDs so the user
-// can re-run the command with the exact ID.
-scores.command("tulokset", async ctx => {
+/** A course's ten best results; a name matching several courses lists them with their ids. */
+export async function showCourseResults(ctx: CommandContext<Context>): Promise<unknown> {
   const param = ctx.match.trim();
   if (!param) return ctx.reply(MSG.usage);
   const chatId = ctx.chat.id;
@@ -35,7 +29,7 @@ scores.command("tulokset", async ctx => {
     log.error({ err }, "/tulokset failed");
     await ctx.reply(MSG.error);
   }
-});
+}
 
 async function _sendScores(rows: ScoreRow[], ctx: Context): Promise<void> {
   if (rows.length === 0) {

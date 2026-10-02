@@ -1,4 +1,4 @@
-import { Composer } from "grammy";
+import { CommandContext, Context } from "grammy";
 import {
   formatBagtagList,
   setBagtag,
@@ -6,9 +6,8 @@ import {
 } from "../../../features/bagtags/bagtags";
 import { HTML_NO_PREVIEW } from "../../sendOptions";
 
-export const bagtag = new Composer();
-
-bagtag.command("bagtag", async ctx => {
+/** /bagtag lists the tags; "set [nimi] [numero]" and "remove [nimi]" change them. */
+export async function manageBagtags(ctx: CommandContext<Context>): Promise<unknown> {
   const args = (ctx.match ?? "").trim();
 
   // /bagtag  — list current standings
@@ -39,4 +38,4 @@ bagtag.command("bagtag", async ctx => {
   }
 
   return ctx.reply("Käyttö:\n/bagtag — näytä tägilista\n/bagtag set [nimi] [numero] — aseta tägi\n/bagtag remove [nimi] — poista tägi");
-});
+}

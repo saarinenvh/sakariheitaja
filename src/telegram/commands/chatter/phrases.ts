@@ -18,3 +18,5 @@ export const randomQuote = [
   "Tää on kyl nyt iha yhtä paskaa Hirsimäen putti SM-kisoissa 2018 vikalla väylällä...",
   "EZ4ENCE!!", "Oiskohan aika lähtee Saluunaan ryyppää?", "RÄTÄTÄTÄTÄTÄTÄTÄTÄTÄTÄÄTÄÄ",
 ];
+
+export const JALLU_REPLY = "JALLU!";

@@ -12,36 +12,11 @@ import { morningGreetingDependencies, trackerDependencies } from "./telegram/dep
 import * as registry from "./features/live-scoring/trackerRegistry";
 import { ScoreTracker } from "./features/live-scoring/scoreTracker";
 import * as competitionService from "./features/live-scoring/competitions";
-import * as chatRepo from "./features/chats/chatRepository";
 import { startMorningGreeter } from "./features/morning-greeting/morningGreeting";
 
-import { competition } from "./telegram/commands/live-scoring/liveScoring";
-import { players } from "./telegram/commands/players/players";
-import { scores } from "./telegram/commands/score-records/scoreRecords";
-import { weather } from "./telegram/commands/weather-report/weatherReport";
-import { recipe } from "./telegram/commands/recipes/recipes";
-import { bagtag } from "./telegram/commands/bagtags/bagtags";
-import { fun } from "./telegram/commands/games/games"; // must be last — catches all message:text
+import { registerCommands } from "./telegram/commands/registry";
 
-bot.use(competition);
-bot.use(players);
-bot.use(scores);
-bot.use(weather);
-bot.use(recipe);
-bot.use(bagtag);
-bot.use(fun);
-
-// ── New chat handling ─────────────────────────────────────────────────────────
-
-bot.on("message:new_chat_members", ctx => {
-  chatRepo.addIfAbsent(ctx.chat.id, ctx.chat.title ?? "")
-    .catch(error => log.error({ err: error, chatId: ctx.chat.id }, "could not register chat"));
-});
-
-bot.on("message:group_chat_created", ctx => {
-  chatRepo.addIfAbsent(ctx.chat.id, ctx.chat.title ?? "")
-    .catch(error => log.error({ err: error, chatId: ctx.chat.id }, "could not register chat"));
-});
+registerCommands(bot, readConfig().llmEnabled);
 
 // ── Error handling ────────────────────────────────────────────────────────────
 

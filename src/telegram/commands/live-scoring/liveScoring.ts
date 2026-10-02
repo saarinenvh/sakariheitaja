@@ -1,19 +1,16 @@
-import { Composer } from "grammy";
+import { CommandContext, Context } from "grammy";
 import { ScoreTracker } from "../../../features/live-scoring/scoreTracker";
 import * as competitionService from "../../../features/live-scoring/competitions";
 import * as registry from "../../../features/live-scoring/trackerRegistry";
-import { competition as MSG } from "../../messages";
 import { liveScoringMessages } from "../../../features/live-scoring/messages";
+import { liveScoringCommandMessages as MSG } from "./messages";
 import { HTML_NO_PREVIEW } from "../../sendOptions";
 import { trackerDependencies } from "../../dependencies";
 
-export const competition = new Composer();
+type Command = CommandContext<Context>;
 
-// /follow <metrixId>
-// Starts tracking a disc golf competition from Disc Golf Metrix.
-// Saves the competition to the database, creates a ScoreTracker that polls
-// for score updates, and announces tracked players in the chat.
-competition.command("follow", async ctx => {
+/** Saves the competition, starts a tracker and keeps it in the chat's registry if it could start. */
+export async function follow(ctx: Command): Promise<unknown> {
   if (!ctx.match) return ctx.reply(MSG.followUsage);
 
   const metrixId = ctx.match.match(/\d+/)?.[0];
@@ -32,12 +29,9 @@ competition.command("follow", async ctx => {
 
   await ctx.reply(MSG.followStarted);
   registry.add(chatId, tracker);
-});
+}
 
-// /lopeta <metrixId>
-// Stops following a competition. Removes the ScoreTracker from the registry
-// and marks the competition as finished in the database.
-competition.command("lopeta", async ctx => {
+export async function stopFollowing(ctx: Command): Promise<unknown> {
   if (!ctx.match) return ctx.reply(MSG.lopetaUsage);
 
   const chatId = ctx.chat.id;
@@ -45,54 +39,39 @@ competition.command("lopeta", async ctx => {
 
   await ctx.reply(removed ? MSG.lopetaOk : MSG.lopetaNotFound);
   if (removed) await competitionService.remove(String(removed.id));
-});
+}
 
-// /pelit
-// Lists all currently active (followed) competitions in this chat,
-// including the number of tracked players and a link to Disc Golf Metrix.
-competition.command("pelit", async ctx => {
-  const chatId = ctx.chat.id;
-  const active = registry.getActive(chatId);
+export async function listFollowedRounds(ctx: Command): Promise<unknown> {
+  const active = registry.getActive(ctx.chat.id);
 
   let message = active.length > 0 ? MSG.pelitHeader : MSG.pelitNone;
   for (const tracker of active) {
     message += `${tracker.metrixId}: ${tracker.snapshot?.name}, ${tracker.trackedPlayers.length} sankari(a). https://discgolfmetrix.com/${tracker.metrixId}\n`;
   }
-  await ctx.reply(message, HTML_NO_PREVIEW);
-});
+  return ctx.reply(message, HTML_NO_PREVIEW);
+}
 
-// /top5 <metrixId>
-// Shows the top 5 players per division for the given competition,
-// plus any tracked players ranked outside the top 5 ("Muut Sankarit").
-competition.command("top5", async ctx => {
+export async function showTopList(ctx: Command): Promise<unknown> {
   const chatId = ctx.chat.id;
   const active = registry.getActive(chatId);
 
-  if (!ctx.match) {
-    await ctx.reply(active.length > 0 ? MSG.top5Usage : MSG.top5NoneActive);
-    return;
-  }
+  if (!ctx.match) return ctx.reply(active.length > 0 ? MSG.top5Usage : MSG.top5NoneActive);
 
   const tracker = registry.find(chatId, ctx.match.trim());
-  if (tracker) {
-    await tracker.sendTopList();
-  } else {
-    await ctx.reply(MSG.top5NoneActive);
-  }
-});
+  if (!tracker) return ctx.reply(MSG.top5NoneActive);
+  await tracker.sendTopList();
+}
 
-// /score <player name>
-// Looks up the current score and standings position for a specific player
-// in the first active competition being followed in this chat.
-competition.command("score", async ctx => {
+/** The player's score in the first round the chat follows. */
+export async function showPlayerScore(ctx: Command): Promise<unknown> {
   const active = registry.getActive(ctx.chat.id);
   const player = ctx.match && active.length > 0
     ? active[0].getScoreByPlayerName(ctx.match.trim())
     : null;
 
-  await ctx.reply(
+  return ctx.reply(
     player
       ? MSG.scoreFound(player.name, player.totalRelativeToPar, player.standing.position)
-      : MSG.scoreNotFound
+      : MSG.scoreNotFound,
   );
-});
+}
