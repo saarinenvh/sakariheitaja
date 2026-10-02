@@ -5,7 +5,7 @@ A Telegram bot that follows and commentates disc golf competitions live from [Di
 ## Features
 
 - **Live commentary** — polls the Metrix API and sends hole-by-hole commentary as results come in
-- **LLM commentary** — commentary, heckling and replies to name mentions use the configured Ollama model with per-purpose prompts in `src/bot/system-prompts/`. Round commentary writes one message per score update from facts computed in code (results, standings, lead history, course and hole facts, weather); `LLM_ENABLED=false` uses a deterministic factual fallback
+- **LLM commentary** — commentary, heckling and replies to name mentions use the configured Ollama model with per-purpose prompts in `src/prompts/`. Round commentary writes one message per score update from facts computed in code (results, standings, lead history, course and hole facts, weather); `LLM_ENABLED=false` uses a deterministic factual fallback
 - **Smart polling** — adaptive intervals (30s active → 60s idle → 120s dormant) with exponential backoff on errors
 - **Player tracking** — follow specific players per chat group
 - **Score history** — query best scores by course name or ID
@@ -26,7 +26,7 @@ Code computes every fact; the model only writes the message. Start reading at
    derived from recorded totals. What Metrix sends and how each field is normalized
    is in [`src/integrations/metrix/README.md`](src/integrations/metrix/README.md).
 2. `commentary/` turns the changes into one message per division, stage by stage
-   ([`src/features/disc-golf/commentary/README.md`](src/features/disc-golf/commentary/README.md)):
+   ([`src/features/commentary/README.md`](src/features/commentary/README.md)):
    - `detect/`: what changed since the last poll and the last delivered message
    - `facts/`: everything the model may say, computed in code
    - `write/`: compact JSON facts and the three latest messages go to Ollama with a
@@ -35,7 +35,7 @@ Code computes every fact; the model only writes the message. Start reading at
    - `format/`: the Telegram message, with a deterministic result row per player
 3. Only acknowledged sends advance rankings and the recent-message history.
 
-The prompt is `src/bot/system-prompts/batch_commentator.md`. The model may invent
+The prompt is `src/prompts/batch_commentator.md`. The model may invent
 throw imagery as comic colour; results, OB entries, places and gaps must match the
 facts. A code-derived `firstMessage` flag marks each division's first delivered
 message, so the opening welcomes the audience even when following starts mid-round.
@@ -203,24 +203,27 @@ Only registered when `LLM_ENABLED=true`:
 
 ```
 src/
-├── bot/
-│   ├── handlers/            # one file per command group
-│   └── system-prompts/      # persona, batch commentator, heckler, asker + context notes
-├── integrations/metrix/     # Metrix client: round, course layout/statistics/location (see its README)
-├── features/live-scoring/   # following a round: tracker, poller, course data, round end (see its README)
-├── features/disc-golf/
-│   ├── commentary/
-│   │   ├── detect/          # scorecard changes, snapshots, movement since the last message
-│   │   ├── facts/           # facts computed in code, and the model input built from them
-│   │   ├── write/           # structured model call, fallback
-│   │   └── format/          # Telegram message
-│   ├── scores/              # bag tags, player profiles
-│   └── services/            # database services
-├── shared/llm/              # Ollama client
-├── scheduler/               # morning greeter
-└── db/                      # entities and repositories
+├── main.ts                  # startup: config, database, resumed rounds, the bot
+├── config.ts                # the only reader of environment variables
+├── bot/                     # Telegram: bot, command handlers, the messenger
+├── features/                # one folder per capability
+│   ├── live-scoring/        # following a round: tracker, poller, course data, round end (see its README)
+│   ├── commentary/          # detect → facts → write → format (see its README)
+│   ├── bagtags/  player-profiles/  score-records/  players/  chats/
+│   ├── match-play-asker/  heckler/  morning-greeting/  weather-report/  recipes/
+│   └── chatMessenger.ts     # how features send to a chat
+├── integrations/            # one client per external system: metrix (see its README),
+│                            # openweather, ollama, challonge, giphy, recipes
+├── db/                      # the database connection and its entity list
+├── shared/                  # http, logger, validation, JSON stores, HTML escaping
+├── prompts/                 # the model prompts and context notes
+└── data/                    # fallback copies of the JSON stores (production uses DATA_DIR)
 scripts/eval-commentary/     # commentary eval harness and its fixtures
 ```
+
+Each table belongs to one feature, which holds its entity and repository: `players` and
+`player_to_chat` → `players/`, `chats` → `chats/`, `competitions` → `live-scoring/`, `scores`,
+`aces`, `eagles`, `albatrosses` and `courses` → `score-records/`.
 
 ## Setup
 

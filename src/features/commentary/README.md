@@ -1,7 +1,7 @@
 # Commentary
 
 Turns each poll's score changes into one Telegram message per division. **Code computes every
-fact; the model only writes the words.** The ScoreTracker (`../../live-scoring/`) calls
+fact; the model only writes the words.** The ScoreTracker (`../live-scoring/`) calls
 `RoundCommentary.observe` after every poll, and commentary reaches the chat through the
 `CommentaryDelivery` it was given.
 
@@ -52,5 +52,5 @@ acknowledged send advances the published places, the recent-message history and 
 A layout change resets the baseline. Weather is fetched at the first update and rechecked once past
 halfway; course data is fetched once per round.
 
-The prompt is `src/bot/system-prompts/batch_commentator.md`. Prompt work uses the eval harness
+The prompt is `src/prompts/batch_commentator.md`. Prompt work uses the eval harness
 (`scripts/eval-commentary/`), which replays real rounds through this pipeline.
