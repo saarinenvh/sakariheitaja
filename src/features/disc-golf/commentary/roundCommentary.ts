@@ -1,14 +1,14 @@
-import { PublishedStanding } from "./facts/roundAnalysis";
+import { PublishedStanding } from "./facts/roundSummary";
 import { compareScorecards, ScoreChange } from "./detect/scorecardChanges";
 import { buildFactualCommentaryBrief, CommentarySnapshot, FactualCommentaryBrief } from "./facts/playerBrief";
 import { buildCommentarySnapshot } from "./detect/commentarySnapshot";
 import { MetrixRound, TrackedRoundPlayer } from "../../../integrations/metrix/round/types";
-import { formatBatchCommentaryMessages } from "./presentation";
-import { BatchCommentaryContext, BatchContextInput, buildBatchCommentaryContext, WeatherFacts } from "./writer/commentaryContext";
-import { BatchCommentaryResult } from "./writer/commentaryWriter";
+import { formatBatchCommentaryMessages } from "./format/commentaryMessage";
+import { BatchCommentaryContext, BatchContextInput, buildBatchCommentaryContext, WeatherFacts } from "./facts/commentaryContext";
+import { BatchCommentaryResult } from "./write/commentaryWriter";
 import { WeatherObservation } from "../../../shared/weather";
 import { describeWeather, describeWeatherChange } from "./facts/weatherFacts";
-import { CourseInfo } from "./facts/holeFacts";
+import { CourseInfo } from "./facts/courseCommentaryFacts";
 
 const RECENT_MESSAGE_COUNT = 3;
 const COURSE_INFO_TIMEOUT_MS = 15_000;

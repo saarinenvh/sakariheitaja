@@ -1,6 +1,6 @@
 import { moduleLogger } from "../../../../shared/logger";
 import { generateStructured, loadPrompt } from "../../../../shared/llm/ollamaClient";
-import { BatchCommentaryContext } from "./commentaryContext";
+import { BatchCommentaryContext } from "../facts/commentaryContext";
 import { readConfig } from "../../../../config";
 import { BatchCommentaryResult, buildBatchFallback, writeBatchCommentary } from "./commentaryWriter";
 

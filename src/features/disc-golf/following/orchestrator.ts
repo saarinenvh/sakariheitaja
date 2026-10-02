@@ -8,9 +8,9 @@ import { competition as MSG } from "../../../config/messages";
 import { ChatMessenger } from "../../chatMessenger";
 import { updateProfiles } from "../scores/playerProfiles";
 import { computeAndApplySwaps, formatBagtagAnnouncement, getMissingTagPlayers, selectBagtagParticipants } from "../scores/bagtags";
-import { escapeHtml } from "../commentary/presentation";
+import { escapeHtml } from "../commentary/format/commentaryMessage";
 import { RoundCommentary } from "../commentary/roundCommentary";
-import { writeRoundCommentary } from "../commentary/writer/commentaryRuntime";
+import { writeRoundCommentary } from "../commentary/write/commentaryRuntime";
 import {
   hasTrackedRoundEnded, selectFinalScores, selectRankedResults, selectTrackedRankedResults, trackRoundPlayers,
 } from "../../../integrations/metrix/round/results";
@@ -20,8 +20,8 @@ import { MetrixClient, RoundFetchResult } from "../../../integrations/metrix/cli
 import { moduleLogger } from "../../../shared/logger";
 import { fetchCurrentWeather, WeatherObservation } from "../../../shared/weather";
 import { CourseLocationResult } from "../../../integrations/metrix/location/courseLocation";
-import { CourseInfo } from "../commentary/facts/holeFacts";
-import { buildRoundRatings } from "../commentary/facts/courseFacts";
+import { CourseInfo } from "../commentary/facts/courseCommentaryFacts";
+import { buildRoundRatings } from "../commentary/facts/holeDescriptions";
 import { CourseDetails } from "../../../integrations/metrix/course/courseDetails";
 import { CourseStatistics } from "../../../integrations/metrix/statistics/courseStatistics";
 

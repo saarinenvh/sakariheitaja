@@ -1,5 +1,5 @@
 import { HoleScore } from "../../../../integrations/metrix/round/types";
-import { formatHoleScore } from "../presentation";
+import { formatHoleScore } from "../format/commentaryMessage";
 import { RoundPlayer } from "../../../../integrations/metrix/round/types";
 
 const NOT_RECORDED = "-";

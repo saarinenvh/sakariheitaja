@@ -2,7 +2,7 @@ import { WeatherObservation } from "../../../../shared/weather";
 import {
   buildRoundRatings, describeCourseDifficulty, describeHoleHistory, describeHoleLength, describeTodayFieldAverage,
   describeWindOnHole,
-} from "./courseFacts";
+} from "./holeDescriptions";
 import { CourseStatistics } from "../../../../integrations/metrix/statistics/courseStatistics";
 import { FactualCommentaryBrief } from "./playerBrief";
 import { CourseDetails } from "../../../../integrations/metrix/course/courseDetails";

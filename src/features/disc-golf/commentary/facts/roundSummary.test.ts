@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyzeRound, CommentaryScope, comparePublishedStanding } from "./roundAnalysis";
+import { analyzeRound, CommentaryScope, comparePublishedStanding } from "./roundSummary";
 import { parseRoundState, parseScorecard, parseStanding } from "../../../../integrations/metrix/round/normalize";
 
 const scope: CommentaryScope = {

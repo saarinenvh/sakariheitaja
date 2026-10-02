@@ -8,16 +8,16 @@ import { createHash } from "crypto";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import type { OllamaMessage, OllamaOptions } from "../../src/shared/llm/ollamaClient";
-import type { BatchCommentaryContext } from "../../src/features/disc-golf/commentary/writer/commentaryContext";
-import type { BatchCommentaryResult } from "../../src/features/disc-golf/commentary/writer/commentaryWriter";
+import type { BatchCommentaryContext } from "../../src/features/disc-golf/commentary/facts/commentaryContext";
+import type { BatchCommentaryResult } from "../../src/features/disc-golf/commentary/write/commentaryWriter";
 import type { WeatherObservation } from "../../src/shared/weather";
-import type { CourseInfo } from "../../src/features/disc-golf/commentary/facts/holeFacts";
+import type { CourseInfo } from "../../src/features/disc-golf/commentary/facts/courseCommentaryFacts";
 import { HoleRange, parseFlags, parseHoleRange, parsePositiveIntegerFlag } from "./cliFlags";
 import { CommentaryFixture, FixtureWeather, loadFixtures } from "./fixtureFile";
 import { EvalMeta, EvalRecord, renderConsoleSummary, renderMarkdownReport } from "./report";
 import { buildReplaySteps, REPLAY_ROUND_ID } from "./replay";
 import { runChecks } from "./checks";
-import { selectCommentaryRating } from "../../src/features/disc-golf/commentary/facts/courseFacts";
+import { selectCommentaryRating } from "../../src/features/disc-golf/commentary/facts/holeDescriptions";
 
 const DEFAULT_RUNS = 1;
 const DEFAULT_BASE_URL = "http://localhost:11434";
@@ -99,7 +99,7 @@ function configureOllamaEnvironment(options: EvalOptions): void {
 
 async function loadRuntime(options: EvalOptions): Promise<Runtime> {
   const { generateStructured } = await import("../../src/shared/llm/ollamaClient");
-  const { COMMENTARY_MODEL_OPTIONS } = await import("../../src/features/disc-golf/commentary/writer/commentaryRuntime");
+  const { COMMENTARY_MODEL_OPTIONS } = await import("../../src/features/disc-golf/commentary/write/commentaryRuntime");
   return {
     generate: generateStructured,
     modelOptions: COMMENTARY_MODEL_OPTIONS,
@@ -147,7 +147,7 @@ async function replayFixture(fixture: CommentaryFixture, run: number, runtime: R
 type EvaluatedWrite = { result: BatchCommentaryResult; record: Omit<EvalRecord, "fixture" | "run"> | null };
 
 async function writeEvaluated(context: BatchCommentaryContext, runtime: Runtime): Promise<EvaluatedWrite> {
-  const { buildBatchFallback, writeBatchCommentary } = await import("../../src/features/disc-golf/commentary/writer/commentaryWriter");
+  const { buildBatchFallback, writeBatchCommentary } = await import("../../src/features/disc-golf/commentary/write/commentaryWriter");
   const holes = updatedHoles(context);
   if (!isInRange(holes, runtime.holeRange)) {
     return { result: { kind: "fallback", commentary: buildBatchFallback(context), reason: "disabled" }, record: null };

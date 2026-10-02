@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseRoundState, parseStanding } from "../../../../integrations/metrix/round/normalize";
 import { parseScorecard } from "../../../../integrations/metrix/round/normalize";
-import { BatchCommentaryContext } from "./commentaryContext";
+import { BatchCommentaryContext } from "../facts/commentaryContext";
 import { writeBatchCommentary } from "./commentaryWriter";
 import { buildFactualFallback } from "./factualFallback";
 import { buildFactualCommentaryBrief, CommentarySnapshot, FactualCommentaryBrief } from "../facts/playerBrief";

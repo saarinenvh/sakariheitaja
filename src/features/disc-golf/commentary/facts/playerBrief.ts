@@ -1,6 +1,6 @@
 import { compareScorecards, ScorecardComparison, ScoreChange } from "../detect/scorecardChanges";
 import { Scorecard } from "../../../../integrations/metrix/round/types";
-import { analyzeRound, CommentaryScope, comparePublishedStanding, PublishedStanding, RoundSummary, sameCommentaryScope, StandingMovement } from "./roundAnalysis";
+import { analyzeRound, CommentaryScope, comparePublishedStanding, PublishedStanding, RoundSummary, sameCommentaryScope, StandingMovement } from "./roundSummary";
 import { RoundState, Standing } from "../../../../integrations/metrix/round/types";
 
 export interface CommentarySnapshot {

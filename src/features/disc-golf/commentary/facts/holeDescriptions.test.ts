@@ -14,7 +14,7 @@ import {
   HoleLayoutFacts,
   holeBearingDeg,
   selectCommentaryRating,
-} from "./courseFacts";
+} from "./holeDescriptions";
 import { RoundPlayer } from "../../../../integrations/metrix/round/types";
 
 const REAL_ANCHORS: CourseRatingAnchors = { value1: 909.61, result1: 63.06, value2: 1000, result2: 55.53 };

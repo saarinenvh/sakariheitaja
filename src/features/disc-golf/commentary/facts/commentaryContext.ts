@@ -1,11 +1,11 @@
 import { WeatherObservation } from "../../../../shared/weather";
-import { buildCourseCommentaryFacts, CourseInfo } from "../facts/holeFacts";
-import { buildDivisionStandings, DivisionStanding } from "../facts/standings";
-import { FactualCommentaryBrief } from "../facts/playerBrief";
-import { describeLeadHistory, isPlayOrderKnown } from "../facts/leadHistory";
+import { buildCourseCommentaryFacts, CourseInfo } from "./courseCommentaryFacts";
+import { buildDivisionStandings, DivisionStanding } from "./standings";
+import { FactualCommentaryBrief } from "./playerBrief";
+import { describeLeadHistory, isPlayOrderKnown } from "./leadHistory";
 import { MetrixRound } from "../../../../integrations/metrix/round/types";
-import { buildScorecardTable } from "../facts/scorecardTable";
-import { buildSpokenNames } from "../facts/spokenNames";
+import { buildScorecardTable } from "./scorecardTable";
+import { buildSpokenNames } from "./spokenNames";
 
 export interface WeatherFacts {
   current: string;
