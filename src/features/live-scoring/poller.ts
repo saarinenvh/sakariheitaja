@@ -1,7 +1,7 @@
 import EventEmitter from "events";
-import { RoundFetchResult } from "../../../integrations/metrix/client";
-import { moduleLogger } from "../../../shared/logger";
-import { readConfig } from "../../../config";
+import { RoundFetchResult } from "../../integrations/metrix/client";
+import { moduleLogger } from "../../shared/logger";
+import { readConfig } from "../../config";
 
 const log = moduleLogger("poller");
 

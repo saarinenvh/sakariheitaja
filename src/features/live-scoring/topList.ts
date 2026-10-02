@@ -1,4 +1,13 @@
-import { RankedResult } from "../../../integrations/metrix/round/results";
+import { RankedResult, selectRankedResults, selectTrackedRankedResults } from "../../integrations/metrix/round/results";
+import { MetrixRound, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
+import { CourseInfo } from "../disc-golf/commentary/facts/courseCommentaryFacts";
+import { buildRoundRatings } from "../disc-golf/commentary/facts/roundRatings";
+
+/** The TOP-5 of the round as it stands: per division, the tracked players outside it, ratings for finished rounds. */
+export function formatRoundTopList(round: MetrixRound, tracked: readonly TrackedRoundPlayer[], course: CourseInfo): string {
+  const ratings = buildRoundRatings(course.details?.rating ?? null, round.players);
+  return formatTopList(round.name, selectRankedResults(round.players), selectTrackedRankedResults(tracked), ratings);
+}
 
 /** `roundRatings` holds finished rounds' ratings by player name; those rows show the rating after the score. */
 export function formatTopList(

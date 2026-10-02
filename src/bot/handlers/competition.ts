@@ -1,7 +1,7 @@
 import { Composer } from "grammy";
-import { Orchestrator } from "../../features/disc-golf/following/orchestrator";
+import { ScoreTracker } from "../../features/live-scoring/scoreTracker";
 import * as competitionService from "../../features/disc-golf/services/CompetitionService";
-import * as registry from "../../state/competitionRegistry";
+import * as registry from "../../features/live-scoring/trackerRegistry";
 import { competition as MSG } from "../../config/messages";
 import { HTML_NO_PREVIEW } from "../../config/bot";
 import { telegramMessenger } from "../messenger";
@@ -11,7 +11,7 @@ export const competition = new Composer();
 
 // /follow <metrixId>
 // Starts tracking a disc golf competition from Disc Golf Metrix.
-// Saves the competition to the database, creates an Orchestrator that polls
+// Saves the competition to the database, creates a ScoreTracker that polls
 // for score updates, and announces tracked players in the chat.
 competition.command("follow", async ctx => {
   if (!ctx.match) return ctx.reply(MSG.followUsage);
@@ -22,20 +22,20 @@ competition.command("follow", async ctx => {
   const chatId = ctx.chat.id;
   const result = await competitionService.start(chatId, ctx.chat.title ?? "", metrixId);
 
-  const orchestrator = await new Orchestrator(result.insertId, metrixId, chatId, telegramMessenger, metrixClient).init();
+  const tracker = await new ScoreTracker(result.insertId, metrixId, chatId, telegramMessenger, metrixClient).init();
 
-  if (!orchestrator.following) {
-    await ctx.reply(orchestrator.initializationError ?? MSG.followInvalid);
+  if (!tracker.following) {
+    await ctx.reply(tracker.initializationError ?? MSG.followInvalid);
     await competitionService.remove(String(result.insertId));
     return;
   }
 
   await ctx.reply(MSG.followStarted);
-  registry.add(chatId, orchestrator);
+  registry.add(chatId, tracker);
 });
 
 // /lopeta <metrixId>
-// Stops following a competition. Removes the Orchestrator from the registry
+// Stops following a competition. Removes the ScoreTracker from the registry
 // and marks the competition as finished in the database.
 competition.command("lopeta", async ctx => {
   if (!ctx.match) return ctx.reply(MSG.lopetaUsage);
@@ -55,8 +55,8 @@ competition.command("pelit", async ctx => {
   const active = registry.getActive(chatId);
 
   let message = active.length > 0 ? MSG.pelitHeader : MSG.pelitNone;
-  for (const orchestrator of active) {
-    message += `${orchestrator.metrixId}: ${orchestrator.snapshot?.name}, ${orchestrator.trackedPlayers.length} sankari(a). https://discgolfmetrix.com/${orchestrator.metrixId}\n`;
+  for (const tracker of active) {
+    message += `${tracker.metrixId}: ${tracker.snapshot?.name}, ${tracker.trackedPlayers.length} sankari(a). https://discgolfmetrix.com/${tracker.metrixId}\n`;
   }
   await ctx.reply(message, HTML_NO_PREVIEW);
 });
@@ -73,9 +73,9 @@ competition.command("top5", async ctx => {
     return;
   }
 
-  const orchestrator = registry.find(chatId, ctx.match.trim());
-  if (orchestrator) {
-    await orchestrator.sendTopList();
+  const tracker = registry.find(chatId, ctx.match.trim());
+  if (tracker) {
+    await tracker.sendTopList();
   } else {
     await ctx.reply(MSG.top5NoneActive);
   }

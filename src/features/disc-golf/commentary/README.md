@@ -1,7 +1,7 @@
 # Commentary
 
 Turns each poll's score changes into one Telegram message per division. **Code computes every
-fact; the model only writes the words.** The Orchestrator (`../following/`) calls
+fact; the model only writes the words.** The ScoreTracker (`../../live-scoring/`) calls
 `RoundCommentary.observe` after every poll, and commentary reaches the chat through the
 `CommentaryDelivery` it was given.
 

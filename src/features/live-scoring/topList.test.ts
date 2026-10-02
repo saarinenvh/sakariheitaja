@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { RankedResult } from "../../../integrations/metrix/round/results";
+import { RankedResult } from "../../integrations/metrix/round/results";
 import { formatTopList } from "./topList";
 
 // A competition's Results contain every division at once, and Metrix numbers positions

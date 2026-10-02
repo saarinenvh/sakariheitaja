@@ -1,6 +1,7 @@
 import { FactualCommentaryBrief } from "../facts/playerBrief";
 import { formatHoleScore, formatSigned } from "../facts/holeResults";
 import { truncateCourseName } from "../../courseName";
+import { escapeHtml } from "../../../../shared/html";
 import { ScoreChange } from "../detect/scorecardChanges";
 
 export const TELEGRAM_MESSAGE_LIMIT = 4096;
@@ -12,10 +13,6 @@ const ITALIC_MARKUP_LENGTH = "<i></i>".length;
 export interface CommentaryPost {
   brief: FactualCommentaryBrief;
   text: string;
-}
-
-export function escapeHtml(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 export interface BatchCommentaryMessage<Post extends CommentaryPost> {

@@ -17,7 +17,8 @@ A Telegram bot that follows and commentates disc golf competitions live from [Di
 ## Commentary flow
 
 Code computes every fact; the model only writes the message. Start reading at
-`Orchestrator.onPollResult` in `src/features/disc-golf/following/orchestrator.ts`:
+`ScoreTracker.onPollResult` in `src/features/live-scoring/scoreTracker.ts`
+([`src/features/live-scoring/README.md`](src/features/live-scoring/README.md)):
 
 1. `MetrixClient.getRound` (`src/integrations/metrix/`) fetches the round and
    normalizes it; `trackRoundPlayers` matches the chat's players. Metrix reports
@@ -206,8 +207,8 @@ src/
 │   ├── handlers/            # one file per command group
 │   └── system-prompts/      # persona, batch commentator, heckler, asker + context notes
 ├── integrations/metrix/     # Metrix client: round, course layout/statistics/location (see its README)
+├── features/live-scoring/   # following a round: tracker, poller, course data, round end (see its README)
 ├── features/disc-golf/
-│   ├── following/           # orchestrator, poller, top list
 │   ├── commentary/
 │   │   ├── detect/          # scorecard changes, snapshots, movement since the last message
 │   │   ├── facts/           # facts computed in code, and the model input built from them
@@ -217,8 +218,7 @@ src/
 │   └── services/            # database services
 ├── shared/llm/              # Ollama client
 ├── scheduler/               # morning greeter
-├── db/                      # entities and repositories
-└── state/                   # runtime state
+└── db/                      # entities and repositories
 scripts/eval-commentary/     # commentary eval harness and its fixtures
 ```
 
