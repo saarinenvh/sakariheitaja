@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { OllamaMessage } from "../../shared/llm/ollamaClient";
+import { OllamaMessage } from "../../integrations/ollama/client";
 
 const mocks = vi.hoisted(() => ({
   getData: vi.fn<() => Promise<unknown>>(),
@@ -9,15 +9,15 @@ const mocks = vi.hoisted(() => ({
   markDone: vi.fn(), saveScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
 }));
 
-vi.mock("../../shared/llm/ollamaClient", () => ({ generateStructured: mocks.generate, loadPrompt: () => "Sakke" }));
-vi.mock("../../db/repositories/PlayerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
-vi.mock("../disc-golf/services/CompetitionService", () => ({ markDone: mocks.markDone }));
-vi.mock("../disc-golf/services/CourseService", () => ({ getOrCreate: async () => ({ id: 2 }) }));
-vi.mock("../disc-golf/services/ScoreService", () => ({
+vi.mock("../../integrations/ollama/client", () => ({ generateStructured: mocks.generate, loadPrompt: () => "Sakke" }));
+vi.mock("../players/playerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
+vi.mock("./competitions", () => ({ markDone: mocks.markDone }));
+vi.mock("../score-records/courses", () => ({ getOrCreate: async () => ({ id: 2 }) }));
+vi.mock("../score-records/scoreRecords", () => ({
   saveRecordedScores: mocks.saveScores, saveResults: mocks.saveResults,
 }));
-vi.mock("../disc-golf/scores/playerProfiles", () => ({ updateProfiles: vi.fn(), buildProfileSnippet: () => undefined }));
-vi.mock("../disc-golf/scores/bagtags", () => ({
+vi.mock("../player-profiles/playerProfiles", () => ({ updateProfiles: vi.fn(), buildProfileSnippet: () => undefined }));
+vi.mock("../bagtags/bagtags", () => ({
   getMissingTagPlayers: () => [], computeAndApplySwaps: () => ({}), formatBagtagAnnouncement: () => "Tags",
   selectBagtagParticipants: () => [],
 }));

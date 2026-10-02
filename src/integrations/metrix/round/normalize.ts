@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { parseOrThrow } from "../../../util/validation";
+import { parseOrThrow } from "../../../shared/validation";
 import { optionalIntegerSchema, RawCompetition, RawPlayer, roundSchema, scorecardSchema } from "./rawSchema";
 import { MetrixRound, RoundPlayer, RoundState, Scorecard, Standing } from "./types";
 

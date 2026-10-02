@@ -3,9 +3,9 @@ import { CourseDetails } from "../../integrations/metrix/course/courseDetails";
 import { CourseLocationResult } from "../../integrations/metrix/location/courseLocation";
 import { MetrixRound } from "../../integrations/metrix/round/types";
 import { CourseStatistics } from "../../integrations/metrix/statistics/courseStatistics";
-import { CourseInfo } from "../disc-golf/commentary/facts/courseCommentaryFacts";
+import { CourseInfo } from "../commentary/facts/courseCommentaryFacts";
 import { moduleLogger } from "../../shared/logger";
-import { fetchCurrentWeather, WeatherObservation } from "../../shared/weather";
+import { fetchCurrentWeather, WeatherObservation } from "../../integrations/openweather/client";
 
 const log = moduleLogger("course-data");
 

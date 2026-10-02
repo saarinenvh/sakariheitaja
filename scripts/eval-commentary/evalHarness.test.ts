@@ -5,8 +5,8 @@ import { countSentences, runChecks } from "./checks";
 import { parseHoleRange } from "./cliFlags";
 import { CommentaryFixture } from "./fixtureFile";
 import { buildReplaySteps, REPLAY_ROUND_ID } from "./replay";
-import { BatchCommentaryContext } from "../../src/features/disc-golf/commentary/facts/commentaryContext";
-import { FactualCommentaryBrief } from "../../src/features/disc-golf/commentary/facts/playerBrief";
+import { BatchCommentaryContext } from "../../src/features/commentary/facts/commentaryContext";
+import { FactualCommentaryBrief } from "../../src/features/commentary/facts/playerBrief";
 
 const hole = (Result: number, Diff: number, PEN = 0) => ({ Result, Diff, PEN });
 

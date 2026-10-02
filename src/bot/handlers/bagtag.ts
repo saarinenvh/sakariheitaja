@@ -3,7 +3,7 @@ import {
   formatBagtagList,
   setBagtag,
   removeBagtag,
-} from "../../features/disc-golf/scores/bagtags";
+} from "../../features/bagtags/bagtags";
 import { HTML_NO_PREVIEW } from "../../config/bot";
 
 export const bagtag = new Composer();

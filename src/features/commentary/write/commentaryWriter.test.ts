@@ -1,0 +1,110 @@
+import { compareScorecards } from "../detect/scorecardChanges";
+import { describe, expect, it } from "vitest";
+import { parseRoundState, parseStanding } from "../../../integrations/metrix/round/normalize";
+import { parseScorecard } from "../../../integrations/metrix/round/normalize";
+import { BatchCommentaryContext } from "../facts/commentaryContext";
+import { writeBatchCommentary } from "./commentaryWriter";
+import { buildFactualFallback } from "./factualFallback";
+import { buildFactualCommentaryBrief, CommentarySnapshot, FactualCommentaryBrief } from "../facts/playerBrief";
+
+function buildBrief(playerName: string, previous: unknown, current: unknown): FactualCommentaryBrief {
+  const makeSnapshot = (scorecard: unknown): CommentarySnapshot => ({
+    scope: { chatId: -100, competitionId: "round", division: "MA3", playerId: playerName.length },
+    playerName, courseName: "Meilahti",
+    scorecard: parseScorecard(scorecard),
+    round: parseRoundState({ totalHoles: 3 }),
+    standing: parseStanding({ position: 1, fieldSize: 2, isProvisional: false }),
+  });
+  const comparison = compareScorecards(parseScorecard(previous), parseScorecard(current));
+  if (comparison.kind !== "compared") throw new Error(`Expected comparable cards, received ${comparison.reason}`);
+  return buildFactualCommentaryBrief({ current: makeSnapshot(current), changes: comparison.changes, lastPublished: null });
+}
+
+const ville = buildBrief("Ville Saarinen", [{ Result: 3, Diff: 0 }, [], []], [{ Result: 3, Diff: 0 }, { Result: 2, Diff: -1, PEN: 0 }, []]);
+const tommi = buildBrief("tommi Virtanen", [{ Result: 3, Diff: 0 }, [], []], [{ Result: 3, Diff: 0 }, { Result: 5, Diff: 2, PEN: 1 }, []]);
+
+const context: BatchCommentaryContext = {
+  players: [ville, tommi],
+  standings: [
+    { playerName: "Ville Saarinen", position: 1, provisional: false, dnf: false, recordedHoles: 2, roundRelativeToPar: -1, leaderGap: { kind: "leader" } },
+    { playerName: "tommi Virtanen", position: 2, provisional: false, dnf: false, recordedHoles: 2, roundRelativeToPar: 2, leaderGap: { kind: "behind", strokes: 3 } },
+  ],
+  scorecardTable: "Väylä | Par | Ville | Tommi", playOrderKnown: true, leadHistory: "Ville on johtanut kaikki 2 pelattua väylää.",
+  weather: { current: "Sää: 8 °C.", changeSinceStart: null }, recentMessages: ["Aiempi viesti"],
+  firstMessage: false, holeFacts: "Väylä 2: Par 3, 57 m, radan lyhyin.", courseDifficulty: "Radan par-rating noin 982: MA1-taso (vaativa).",
+  roundRatings: new Map([["Ville Saarinen", 1012], ["tommi Virtanen", 900]]),
+  spokenNames: new Map([["Ville Saarinen", "Ville"], ["tommi Virtanen", "Tommi"]]),
+};
+
+const reply = (players: { name: string; text: string }[], overrides: Record<string, unknown> = {}) =>
+  JSON.stringify({ opening: "Ja sieltä lähtee.", players, closing: "Ville kärjessä.", ...overrides });
+
+describe("batch commentary writer", () => {
+  it("sends compact facts with spoken names and returns lines in the brief order", async () => {
+    const result = await writeBatchCommentary(context, "Sakke", async (messages, jsonSchema) => {
+      expect(jsonSchema).toMatchObject({ properties: { players: {
+        minItems: 2, maxItems: 2, items: { properties: { name: { enum: ["Ville", "Tommi"] } } },
+      } } });
+      const input = JSON.parse(messages[1].content);
+      expect(input.players[0]).toEqual({
+        name: "Ville", holes: [{ hole: "2", result: "birdie", ob: 0 }], roundTotal: -1,
+        progress: "2/3", position: 1, provisional: false, positionChange: "ei tiedossa",
+        roundRating: { rating: 1012, tier: "tonnin rundi" },
+      });
+      // An ordinary rating stays in the result row and never reaches the model.
+      expect(input.players[1].roundRating).toBeNull();
+      expect(input).toMatchObject({ holeFacts: "Väylä 2: Par 3, 57 m, radan lyhyin.", course: "Radan par-rating noin 982: MA1-taso (vaativa)." });
+      expect(input.players[1].holes).toEqual([{ hole: "2", result: "tuplabogi", ob: 1 }]);
+      expect(input.standings.map((standing: { name: string; behindLeader: unknown }) => [standing.name, standing.behindLeader]))
+        .toEqual([["Ville", "kärjessä"], ["Tommi", 3]]);
+      expect(input).toMatchObject({ hole: "2", playOrder: "väylänumerojärjestys", recentMessages: ["Aiempi viesti"] });
+      return reply([{ name: "tommi", text: "Tommi uimakouluun." }, { name: "Ville", text: "Ville lentää." }]);
+    });
+    expect(result).toEqual({
+      kind: "generated",
+      commentary: {
+        opening: "Ja sieltä lähtee.", closing: "Ville kärjessä.",
+        lines: [{ brief: ville, text: "Ville lentää." }, { brief: tommi, text: "Tommi uimakouluun." }],
+      },
+    });
+  });
+
+  it("removes result labels the model appends, even on their own line", async () => {
+    const result = await writeBatchCommentary(context, "Sakke", async () => reply([
+      { name: "Ville", text: "Ville lentää pönttöön! Tulos: Birdie." },
+      { name: "Tommi", text: "Tommi uimakouluun.\n\nTulokset: 5 lyöntiä" },
+    ]));
+    expect(result.kind === "generated" && result.commentary.lines.map(line => line.text))
+      .toEqual(["Ville lentää pönttöön!", "Tommi uimakouluun."]);
+  });
+
+  it("leaves a label-like word inside a sentence alone instead of cutting the sentence", async () => {
+    const result = await writeBatchCommentary(context, "Sakke", async () => reply([
+      { name: "Ville", text: "Ville sanoi, että tulos: ihan sama, kunhan kiekko lentää." },
+      { name: "Tommi", text: "Tommi uimakouluun." },
+    ]));
+    expect(result.kind === "generated" && result.commentary.lines[0].text)
+      .toBe("Ville sanoi, että tulos: ihan sama, kunhan kiekko lentää.");
+  });
+
+  it.each([
+    ["invalid JSON", "not json"],
+    ["a line that is only a result label", reply([{ name: "Ville", text: "Tulos: par." }, { name: "Tommi", text: "b" }])],
+    ["a missing player", reply([{ name: "Ville", text: "Ville lentää." }])],
+    ["an unknown player", reply([{ name: "Ville", text: "a" }, { name: "Jori", text: "b" }])],
+    ["a duplicated player", reply([{ name: "Ville", text: "a" }, { name: "Ville", text: "b" }])],
+    ["an empty closing", reply([{ name: "Ville", text: "a" }, { name: "Tommi", text: "b" }], { closing: " " })],
+  ])("falls back to factual lines on %s", async (_case, output) => {
+    const result = await writeBatchCommentary(context, "Sakke", async () => output);
+    expect(result).toEqual({
+      kind: "fallback", reason: "unusable-response",
+      commentary: { opening: "", closing: "", lines: [ville, tommi].map(brief => ({ brief, text: buildFactualFallback(brief) })) },
+    });
+  });
+
+  it("falls back without exposing provider errors when generation fails", async () => {
+    const result = await writeBatchCommentary(context, "Sakke", async () => { throw new Error("secret provider details"); });
+    expect(result.kind).toBe("fallback");
+    expect(JSON.stringify(result)).not.toContain("secret provider details");
+  });
+});

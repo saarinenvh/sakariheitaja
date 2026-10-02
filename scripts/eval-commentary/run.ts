@@ -7,22 +7,22 @@
 import { createHash } from "crypto";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
-import type { OllamaMessage, OllamaOptions } from "../../src/shared/llm/ollamaClient";
-import type { BatchCommentaryContext } from "../../src/features/disc-golf/commentary/facts/commentaryContext";
-import type { BatchCommentaryResult } from "../../src/features/disc-golf/commentary/write/commentaryWriter";
-import type { WeatherObservation } from "../../src/shared/weather";
-import type { CourseInfo } from "../../src/features/disc-golf/commentary/facts/courseCommentaryFacts";
+import type { OllamaMessage, OllamaOptions } from "../../src/integrations/ollama/client";
+import type { BatchCommentaryContext } from "../../src/features/commentary/facts/commentaryContext";
+import type { BatchCommentaryResult } from "../../src/features/commentary/write/commentaryWriter";
+import type { WeatherObservation } from "../../src/integrations/openweather/client";
+import type { CourseInfo } from "../../src/features/commentary/facts/courseCommentaryFacts";
 import { HoleRange, parseFlags, parseHoleRange, parsePositiveIntegerFlag } from "./cliFlags";
 import { CommentaryFixture, FixtureWeather, loadFixtures } from "./fixtureFile";
 import { EvalMeta, EvalRecord, renderConsoleSummary, renderMarkdownReport } from "./report";
 import { buildReplaySteps, REPLAY_ROUND_ID } from "./replay";
 import { runChecks } from "./checks";
-import { selectCommentaryRating } from "../../src/features/disc-golf/commentary/facts/roundRatings";
+import { selectCommentaryRating } from "../../src/features/commentary/facts/roundRatings";
 
 const DEFAULT_RUNS = 1;
 const DEFAULT_BASE_URL = "http://localhost:11434";
 const DEFAULT_TIMEOUT_MS = 300_000;
-const DEFAULT_PROMPT_PATH = join("src", "bot", "system-prompts", "batch_commentator.md");
+const DEFAULT_PROMPT_PATH = join("src", "prompts", "batch_commentator.md");
 const DEFAULT_OUT_DIR = ".eval-results";
 const EVAL_CHAT_ID = -1;
 const PROMPT_HASH_LENGTH = 8;
@@ -98,8 +98,8 @@ function configureOllamaEnvironment(options: EvalOptions): void {
 }
 
 async function loadRuntime(options: EvalOptions): Promise<Runtime> {
-  const { generateStructured } = await import("../../src/shared/llm/ollamaClient");
-  const { COMMENTARY_MODEL_OPTIONS } = await import("../../src/features/disc-golf/commentary/write/commentaryRuntime");
+  const { generateStructured } = await import("../../src/integrations/ollama/client");
+  const { COMMENTARY_MODEL_OPTIONS } = await import("../../src/features/commentary/write/commentaryRuntime");
   return {
     generate: generateStructured,
     modelOptions: COMMENTARY_MODEL_OPTIONS,
@@ -110,7 +110,7 @@ async function loadRuntime(options: EvalOptions): Promise<Runtime> {
 }
 
 async function replayFixture(fixture: CommentaryFixture, run: number, runtime: Runtime): Promise<EvalRecord[]> {
-  const { RoundCommentary } = await import("../../src/features/disc-golf/commentary/roundCommentary");
+  const { RoundCommentary } = await import("../../src/features/commentary/roundCommentary");
   const { parseMetrixRound } = await import("../../src/integrations/metrix/round/normalize");
   const { trackRoundPlayers } = await import("../../src/integrations/metrix/round/results");
   const tracked = fixture.tracked.map((name, index) => ({ id: index + 1, name }));
@@ -147,7 +147,7 @@ async function replayFixture(fixture: CommentaryFixture, run: number, runtime: R
 type EvaluatedWrite = { result: BatchCommentaryResult; record: Omit<EvalRecord, "fixture" | "run"> | null };
 
 async function writeEvaluated(context: BatchCommentaryContext, runtime: Runtime): Promise<EvaluatedWrite> {
-  const { buildBatchFallback, writeBatchCommentary } = await import("../../src/features/disc-golf/commentary/write/commentaryWriter");
+  const { buildBatchFallback, writeBatchCommentary } = await import("../../src/features/commentary/write/commentaryWriter");
   const holes = updatedHoles(context);
   if (!isInRange(holes, runtime.holeRange)) {
     return { result: { kind: "fallback", commentary: buildBatchFallback(context), reason: "disabled" }, record: null };

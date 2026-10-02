@@ -12,9 +12,9 @@ import { telegramMessenger } from "./bot/messenger";
 import { metrixClient } from "./integrations/metrix";
 import * as registry from "./features/live-scoring/trackerRegistry";
 import { ScoreTracker } from "./features/live-scoring/scoreTracker";
-import * as competitionService from "./features/disc-golf/services/CompetitionService";
-import * as chatRepo from "./db/repositories/ChatRepository";
-import { startMorningGreeter } from "./scheduler/morningGreeter";
+import * as competitionService from "./features/live-scoring/competitions";
+import * as chatRepo from "./features/chats/chatRepository";
+import { startMorningGreeter } from "./features/morning-greeting/morningGreeting";
 
 import { competition } from "./bot/handlers/competition";
 import { players } from "./bot/handlers/players";

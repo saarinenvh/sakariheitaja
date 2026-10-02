@@ -1,7 +1,7 @@
-import { BatchCommentaryContext } from "../../src/features/disc-golf/commentary/facts/commentaryContext";
-import { BatchCommentaryResult } from "../../src/features/disc-golf/commentary/write/commentaryWriter";
-import { FactualCommentaryBrief } from "../../src/features/disc-golf/commentary/facts/playerBrief";
-import { selectCommentaryRating } from "../../src/features/disc-golf/commentary/facts/roundRatings";
+import { BatchCommentaryContext } from "../../src/features/commentary/facts/commentaryContext";
+import { BatchCommentaryResult } from "../../src/features/commentary/write/commentaryWriter";
+import { FactualCommentaryBrief } from "../../src/features/commentary/facts/playerBrief";
+import { selectCommentaryRating } from "../../src/features/commentary/facts/roundRatings";
 
 export type CheckSeverity = "fail" | "warn" | "info";
 

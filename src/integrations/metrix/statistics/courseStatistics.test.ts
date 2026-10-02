@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CourseStatistics, fetchCourseStatistics, parseCourseStatisticsHtml, parseStoredCourseStatistics } from "./courseStatistics";
-import { ValidationError } from "../../../util/validation";
+import { ValidationError } from "../../../shared/validation";
 
 const COUNT_ROWS = ["Hole in one", "Eagle -2", "Birdie -1", "Par 0", "Bogey 1", "Double Bogey 2", "Triple Bogey 3", "Other >3"];
 

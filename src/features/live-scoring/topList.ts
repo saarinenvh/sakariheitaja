@@ -1,7 +1,7 @@
 import { RankedResult, selectRankedResults, selectTrackedRankedResults } from "../../integrations/metrix/round/results";
 import { MetrixRound, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
-import { CourseInfo } from "../disc-golf/commentary/facts/courseCommentaryFacts";
-import { buildRoundRatings } from "../disc-golf/commentary/facts/roundRatings";
+import { CourseInfo } from "../commentary/facts/courseCommentaryFacts";
+import { buildRoundRatings } from "../commentary/facts/roundRatings";
 
 /** The TOP-5 of the round as it stands: per division, the tracked players outside it, ratings for finished rounds. */
 export function formatRoundTopList(round: MetrixRound, tracked: readonly TrackedRoundPlayer[], course: CourseInfo): string {

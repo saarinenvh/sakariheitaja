@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { WeatherObservation } from "../../shared/weather";
+import { WeatherObservation } from "../../integrations/openweather/client";
 
 const mocks = vi.hoisted(() => ({ fetchCurrentWeather: vi.fn() }));
-vi.mock("../../shared/weather", () => ({ fetchCurrentWeather: mocks.fetchCurrentWeather }));
+vi.mock("../../integrations/openweather/client", () => ({ fetchCurrentWeather: mocks.fetchCurrentWeather }));
 
 import { RoundCourseData } from "./courseData";
 import { MetrixClient } from "../../integrations/metrix/client";

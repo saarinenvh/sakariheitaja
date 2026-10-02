@@ -1,5 +1,5 @@
 import { Composer } from "grammy";
-import { sendWeatherMessage } from "../../shared/weather";
+import { sendWeatherMessage } from "../../integrations/openweather/client";
 import { citys } from "../../config/phrases";
 import { getRandom } from "../../shared/utils";
 import { weather as MSG } from "../../config/messages";

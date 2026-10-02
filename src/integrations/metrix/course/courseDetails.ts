@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getData } from "../../../shared/http";
-import { parseOrThrow } from "../../../util/validation";
+import { parseOrThrow } from "../../../shared/validation";
 
 const COURSE_API_URL = "https://discgolfmetrix.com/api.php?content=course";
 const METRES_PER_FOOT = 0.3048;

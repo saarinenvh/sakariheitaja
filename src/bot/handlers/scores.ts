@@ -1,7 +1,7 @@
 import { Composer, Context } from "grammy";
 import { moduleLogger } from "../../shared/logger";
-import * as scoreService from "../../features/disc-golf/services/ScoreService";
-import { ScoreRow } from "../../db/repositories/ScoreRepository";
+import * as scoreService from "../../features/score-records/scoreRecords";
+import { ScoreRow } from "../../features/score-records/scoreRepository";
 import { scores as MSG } from "../../config/messages";
 import { HTML_OPTIONS } from "../../config/bot";
 
