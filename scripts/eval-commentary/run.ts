@@ -17,7 +17,7 @@ import { CommentaryFixture, FixtureWeather, loadFixtures } from "./fixtureFile";
 import { EvalMeta, EvalRecord, renderConsoleSummary, renderMarkdownReport } from "./report";
 import { buildReplaySteps, REPLAY_ROUND_ID } from "./replay";
 import { runChecks } from "./checks";
-import { selectCommentaryRating } from "../../src/features/disc-golf/commentary/facts/holeDescriptions";
+import { selectCommentaryRating } from "../../src/features/disc-golf/commentary/facts/roundRatings";
 
 const DEFAULT_RUNS = 1;
 const DEFAULT_BASE_URL = "http://localhost:11434";

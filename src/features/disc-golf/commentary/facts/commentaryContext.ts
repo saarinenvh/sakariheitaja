@@ -6,11 +6,7 @@ import { describeLeadHistory, isPlayOrderKnown } from "./leadHistory";
 import { MetrixRound } from "../../../../integrations/metrix/round/types";
 import { buildScorecardTable } from "./scorecardTable";
 import { buildSpokenNames } from "./spokenNames";
-
-export interface WeatherFacts {
-  current: string;
-  changeSinceStart: string | null;
-}
+import { WeatherFacts } from "./weatherFacts";
 
 /** Everything the writer may use for one division's update; names inside strings are already spoken names. */
 export interface BatchCommentaryContext {

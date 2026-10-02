@@ -1,8 +1,6 @@
 import { WeatherObservation } from "../../../../shared/weather";
-import {
-  buildRoundRatings, describeCourseDifficulty, describeHoleHistory, describeHoleLength, describeTodayFieldAverage,
-  describeWindOnHole,
-} from "./holeDescriptions";
+import { buildRoundRatings, describeCourseDifficulty } from "./roundRatings";
+import { describeHoleHistory, describeHoleLength, describeTodayFieldAverage, describeWindOnHole } from "./holeDescriptions";
 import { CourseStatistics } from "../../../../integrations/metrix/statistics/courseStatistics";
 import { FactualCommentaryBrief } from "./playerBrief";
 import { CourseDetails } from "../../../../integrations/metrix/course/courseDetails";

@@ -1,3 +1,4 @@
+import { compareScorecards } from "../detect/scorecardChanges";
 import { describe, expect, it } from "vitest";
 import { parseRoundState, parseStanding } from "../../../../integrations/metrix/round/normalize";
 import { parseScorecard } from "../../../../integrations/metrix/round/normalize";
@@ -14,9 +15,9 @@ function buildBrief(playerName: string, previous: unknown, current: unknown): Fa
     round: parseRoundState({ totalHoles: 3 }),
     standing: parseStanding({ position: 1, fieldSize: 2, isProvisional: false }),
   });
-  const result = buildFactualCommentaryBrief({ previousObserved: makeSnapshot(previous), current: makeSnapshot(current), lastPublished: null });
-  if (result.kind !== "ready") throw new Error(`Expected a brief, received ${result.kind}`);
-  return result.brief;
+  const comparison = compareScorecards(parseScorecard(previous), parseScorecard(current));
+  if (comparison.kind !== "compared") throw new Error(`Expected comparable cards, received ${comparison.reason}`);
+  return buildFactualCommentaryBrief({ current: makeSnapshot(current), changes: comparison.changes, lastPublished: null });
 }
 
 const ville = buildBrief("Ville Saarinen", [{ Result: 3, Diff: 0 }, [], []], [{ Result: 3, Diff: 0 }, { Result: 2, Diff: -1, PEN: 0 }, []]);

@@ -1,10 +1,11 @@
-import { PublishedStanding } from "./facts/roundSummary";
+import { PublishedStanding } from "./detect/standingMovement";
 import { compareScorecards, ScoreChange } from "./detect/scorecardChanges";
 import { buildFactualCommentaryBrief, CommentarySnapshot, FactualCommentaryBrief } from "./facts/playerBrief";
 import { buildCommentarySnapshot } from "./detect/commentarySnapshot";
 import { MetrixRound, TrackedRoundPlayer } from "../../../integrations/metrix/round/types";
 import { formatBatchCommentaryMessages } from "./format/commentaryMessage";
-import { BatchCommentaryContext, BatchContextInput, buildBatchCommentaryContext, WeatherFacts } from "./facts/commentaryContext";
+import { BatchCommentaryContext, BatchContextInput, buildBatchCommentaryContext } from "./facts/commentaryContext";
+import { WeatherFacts } from "./facts/weatherFacts";
 import { BatchCommentaryResult } from "./write/commentaryWriter";
 import { WeatherObservation } from "../../../shared/weather";
 import { describeWeather, describeWeatherChange } from "./facts/weatherFacts";
@@ -33,8 +34,8 @@ interface ObservedPlayer {
 }
 
 interface PendingUpdate {
-  previous: CommentarySnapshot;
   current: CommentarySnapshot;
+  changes: readonly ScoreChange[];
   firstRecorded: readonly number[];
 }
 
@@ -120,7 +121,7 @@ export class RoundCommentary {
       }
       const comparison = compareScorecards(previous.snapshot.scorecard, current.scorecard);
       if (comparison.kind === "compared" && comparison.changes.length > 0) {
-        batch.updates.push({ previous: previous.snapshot, current, firstRecorded });
+        batch.updates.push({ current, changes: comparison.changes, firstRecorded });
       }
     }
     for (const playerId of this.observed.keys()) {
@@ -158,12 +159,10 @@ export class RoundCommentary {
 
   private buildBriefsByDivision(updates: readonly PendingUpdate[]): Map<string, PendingBrief[]> {
     const byDivision = new Map<string, PendingBrief[]>();
-    for (const { current, previous, firstRecorded } of updates) {
-      const result = buildFactualCommentaryBrief({
-        previousObserved: previous, current, lastPublished: this.published.get(current.scope.playerId) ?? null,
+    for (const { current, changes, firstRecorded } of updates) {
+      const brief = buildFactualCommentaryBrief({
+        current, changes, lastPublished: this.published.get(current.scope.playerId) ?? null,
       });
-      if (result.kind !== "ready") continue;
-      const brief = result.brief;
       const newScores = brief.changes.filter(change => change.kind === "recorded" && firstRecorded.includes(change.holeNumber));
       const division = byDivision.get(brief.division) ?? [];
       division.push({ current, brief, newScores });

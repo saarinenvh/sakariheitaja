@@ -1,13 +1,14 @@
 import { z } from "zod";
 import { OllamaMessage } from "../../../../shared/llm/ollamaClient";
 import { BatchCommentaryContext } from "../facts/commentaryContext";
-import { RoundProgress, StandingMovement } from "../facts/roundSummary";
+import { RoundProgress } from "../facts/roundSummary";
+import { StandingMovement } from "../detect/standingMovement";
 import { ScoreChange } from "../detect/scorecardChanges";
-import { holeScoreName } from "../format/commentaryMessage";
+import { holeScoreName } from "../facts/holeResults";
 import { buildFactualFallback } from "./factualFallback";
 import { LeaderGap } from "../facts/standings";
 import { FactualCommentaryBrief } from "../facts/playerBrief";
-import { selectCommentaryRating } from "../facts/holeDescriptions";
+import { selectCommentaryRating } from "../facts/roundRatings";
 
 export interface BatchCommentaryLine {
   brief: FactualCommentaryBrief;

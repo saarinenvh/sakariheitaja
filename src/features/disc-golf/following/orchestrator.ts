@@ -1,5 +1,6 @@
 import Poller from "./poller";
-import { formatTopList, truncateCourseName } from "./topList";
+import { formatTopList } from "./topList";
+import { truncateCourseName } from "../courseName";
 import * as playerRepo from "../../../db/repositories/PlayerRepository";
 import * as competitionService from "../services/CompetitionService";
 import * as courseService from "../services/CourseService";
@@ -21,7 +22,7 @@ import { moduleLogger } from "../../../shared/logger";
 import { fetchCurrentWeather, WeatherObservation } from "../../../shared/weather";
 import { CourseLocationResult } from "../../../integrations/metrix/location/courseLocation";
 import { CourseInfo } from "../commentary/facts/courseCommentaryFacts";
-import { buildRoundRatings } from "../commentary/facts/holeDescriptions";
+import { buildRoundRatings } from "../commentary/facts/roundRatings";
 import { CourseDetails } from "../../../integrations/metrix/course/courseDetails";
 import { CourseStatistics } from "../../../integrations/metrix/statistics/courseStatistics";
 

@@ -1,5 +1,6 @@
 import { FactualCommentaryBrief } from "../facts/playerBrief";
-import { HoleScore } from "../../../../integrations/metrix/round/types";
+import { formatHoleScore, formatSigned } from "../facts/holeResults";
+import { truncateCourseName } from "../../courseName";
 import { ScoreChange } from "../detect/scorecardChanges";
 
 export const TELEGRAM_MESSAGE_LIMIT = 4096;
@@ -7,7 +8,6 @@ const BLOCK_SEPARATOR = "\n\n";
 const OPENING_PREFIX = "🎙️ ";
 const CLOSING_PREFIX = "📊 ";
 const ITALIC_MARKUP_LENGTH = "<i></i>".length;
-const HOLE_SCORE_NAMES = new Map([[0, "par"], [-1, "birdie"], [-2, "eagle"], [1, "bogi"], [2, "tuplabogi"]]);
 
 export interface CommentaryPost {
   brief: FactualCommentaryBrief;
@@ -81,9 +81,8 @@ function buildBatchBlocks<Post extends CommentaryPost>(
 
 function formatHoleHeading(labels: readonly string[], courseName: string, metrixId: string): string {
   const label = labels.length === 1 ? `Väylä ${labels[0]}` : `Väylät ${labels.join(", ")}`;
-  const course = courseName.replace(/&rarr;/g, "");
-  const shortCourse = course.length > 38 ? `${course.slice(0, 37)}...` : course;
-  return `⛳ ${escapeHtml(label)} · <a href="https://discgolfmetrix.com/${encodeURIComponent(metrixId)}">${escapeHtml(shortCourse)}</a>`;
+  const course = truncateCourseName(courseName);
+  return `⛳ ${escapeHtml(label)} · <a href="https://discgolfmetrix.com/${encodeURIComponent(metrixId)}">${escapeHtml(course)}</a>`;
 }
 
 function formatFooter(brief: FactualCommentaryBrief, rating: number | null): string {
@@ -97,29 +96,13 @@ function formatFooter(brief: FactualCommentaryBrief, rating: number | null): str
   const movement = brief.movementSincePublication;
   const arrow = movement.kind === "up" ? " ↑" : movement.kind === "down" ? " ↓" : "";
   const ratingPart = rating === null ? "" : ` | rating ${rating}`;
-  return `<blockquote>${escapeHtml(`${changes} | ${brief.playerName} | ${total === null ? "?" : signed(total)} | ${standing}${qualifier}${arrow}${ratingPart}`)}</blockquote>`;
+  return `<blockquote>${escapeHtml(`${changes} | ${brief.playerName} | ${total === null ? "?" : formatSigned(total)} | ${standing}${qualifier}${arrow}${ratingPart}`)}</blockquote>`;
 }
 
 function describeChange(change: ScoreChange): string {
   if (change.kind === "removed") return `poistettu (${formatHoleScore(change.previous)})`;
   if (change.kind === "corrected") return `korjaus: ${formatHoleScore(change.previous)} → ${formatHoleScore(change.current)}`;
   return formatHoleScore(change.score);
-}
-
-/** Result name with OB count, as shown in footers and the scorecard table. */
-export function formatHoleScore(score: HoleScore): string {
-  const label = holeScoreName(score);
-  return score.obCount !== null && score.obCount > 0 ? `${label} (${score.obCount} OB)` : label;
-}
-
-export function holeScoreName(score: HoleScore): string {
-  if (score.strokes === 1) return "ässä";
-  if (score.relativeToPar === null) return `${score.strokes} heittoa`;
-  return HOLE_SCORE_NAMES.get(score.relativeToPar) ?? signed(score.relativeToPar);
-}
-
-function signed(value: number): string {
-  return value > 0 ? `+${value}` : String(value);
 }
 
 interface TextFragment {
