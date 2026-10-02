@@ -14,7 +14,8 @@ const recipeSchema = z.object({
     ingredients: z.array(z.object({ ingredientTitle: z.string() })).optional(),
   })),
   steps: z.array(z.object({ body: z.string() })),
-  media: z.array(z.object({ file: z.object({ url: z.string() }) })).min(1),
+  // formatRecipe drops the photo URL's first two characters, so something must be left after them.
+  media: z.array(z.object({ file: z.object({ url: z.string().refine(url => url.substring(2) !== "", "empty photo URL") }) })).min(1),
 });
 const recipesResponseSchema = z.object({ results: z.array(z.unknown()) });
 

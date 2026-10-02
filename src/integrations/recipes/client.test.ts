@@ -16,7 +16,9 @@ describe("recipes client", () => {
   const client = createRecipesClient();
 
   it("returns the recipes, leaving out ones the message can't show", async () => {
-    mocks.getData.mockResolvedValue({ results: [soup, { ...soup, name: "Kuvaton", media: [] }, { name: "Rikki" }] });
+    mocks.getData.mockResolvedValue({ results: [
+      soup, { ...soup, name: "Kuvaton", media: [] }, { ...soup, name: "Tyhjä kuva", media: [{ file: { url: "" } }] }, { name: "Rikki" },
+    ] });
     expect(await client.getRecipes()).toEqual([soup]);
   });
 
