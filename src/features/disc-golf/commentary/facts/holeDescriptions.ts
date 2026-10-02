@@ -1,36 +1,14 @@
-import { completedRoundStrokes } from "../../../../integrations/metrix/round/results";
 import { RoundPlayer } from "../../../../integrations/metrix/round/types";
+import { CourseCoordinates, CourseHoleDetails } from "../../../../integrations/metrix/course/courseDetails";
+import { formatDecimal } from "./numberText";
 
-export interface CourseCoordinates { latitude: number; longitude: number }
-export interface CourseRatingAnchors { value1: number; result1: number; value2: number; result2: number }
-export interface HoleLayoutFacts { label: string; par: number | null; lengthM: number | null; tee: CourseCoordinates | null; basket: CourseCoordinates | null }
+// One Finnish sentence group per fact about a hole: length, wind, history, today's field.
+
 export interface HoleHistoryFacts { label: string; par: number | null; averageStrokes: number | null; difficultyRank: number | null; aces: number | null }
 
 export const MIN_HOLES_WITH_LENGTH_FOR_EXTREMES = 3;
 export const MIN_RELEVANT_WIND_MS = 3;
 export const MIN_PLAYERS_FOR_FIELD_AVERAGE = 3;
-
-const PRO_RATING_MIN = 1000;
-const MA1_RATING_MIN = 935;
-const MA2_RATING_MIN = 900;
-const DIFFICULTY_CLASSES = [
-  { minRating: PRO_RATING_MIN, label: "PRO-taso (erittäin vaativa)" },
-  { minRating: MA1_RATING_MIN, label: "MA1-taso (vaativa)" },
-  { minRating: MA2_RATING_MIN, label: "MA2-taso (keskitaso)" },
-] as const;
-const LOWEST_DIFFICULTY_CLASS = "MA3-taso (harrastetaso)";
-
-// A 1000-rated round ("tonnin rundi") is the big milestone on the amateur scene.
-const THOUSAND_RATING_MIN = 1000;
-const NEAR_THOUSAND_RATING_MIN = 980;
-const ROAST_RATING_BELOW = 750;
-
-export type RoundRatingTier = "tonnin rundi" | "melkein tonnin rundi" | "surkea rundi";
-
-export interface CommentaryRoundRating {
-  rating: number;
-  tier: RoundRatingTier;
-}
 
 const FULL_CIRCLE_DEG = 360;
 const HALF_CIRCLE_DEG = 180;
@@ -38,49 +16,7 @@ const HEAD_OR_TAIL_WIND_SECTOR_HALF_WIDTH_DEG = 45;
 const WIND_FROM_RIGHT_CENTRE_DEG = 90;
 const WIND_FROM_LEFT_CENTRE_DEG = 270;
 
-const DISPLAY_DECIMAL_FACTOR = 10;
-
-/** Metrix course rating: linear interpolation through the two anchor (rating, strokes) points. */
-export function computeRating(anchors: CourseRatingAnchors, totalStrokes: number): number | null {
-  const { value1, result1, value2, result2 } = anchors;
-  if (![value1, result1, value2, result2, totalStrokes].every(Number.isFinite)) return null;
-  if (result1 === result2) return null;
-  const rating = (value2 - value1) * (totalStrokes - result1) / (result2 - result1) + value1;
-  return Number.isFinite(rating) ? Math.round(rating) : null;
-}
-
-export function describeCourseDifficulty(anchors: CourseRatingAnchors | null, coursePar: number | null): string | null {
-  if (anchors === null || coursePar === null) return null;
-  const parRating = computeRating(anchors, coursePar);
-  if (parRating === null) return null;
-  return `Radan par-rating noin ${parRating}: ${classifyDifficulty(parRating)}.`;
-}
-
-/** Ratings of every finished round, keyed by full player name; empty when the layout has no rating anchors. */
-export function buildRoundRatings(anchors: CourseRatingAnchors | null, players: readonly RoundPlayer[]): Map<string, number> {
-  const ratings = new Map<string, number>();
-  if (anchors === null) return ratings;
-  for (const player of players) {
-    const strokes = completedRoundStrokes(player);
-    const rating = strokes === null ? null : computeRating(anchors, strokes);
-    if (rating !== null) ratings.set(player.name, rating);
-  }
-  return ratings;
-}
-
-/**
- * The model only ever sees exceptional ratings: the result rows show every rating, and an ordinary one
- * in the commentary text would just read as a number. Gating here keeps it out however the prompt is worded.
- */
-export function selectCommentaryRating(rating: number | undefined): CommentaryRoundRating | null {
-  if (rating === undefined) return null;
-  if (rating >= THOUSAND_RATING_MIN) return { rating, tier: "tonnin rundi" };
-  if (rating >= NEAR_THOUSAND_RATING_MIN) return { rating, tier: "melkein tonnin rundi" };
-  if (rating < ROAST_RATING_BELOW) return { rating, tier: "surkea rundi" };
-  return null;
-}
-
-export function describeHoleLength(hole: HoleLayoutFacts, layout: readonly HoleLayoutFacts[]): string | null {
+export function describeHoleLength(hole: CourseHoleDetails, layout: readonly CourseHoleDetails[]): string | null {
   if (!isKnownLength(hole.lengthM)) return null;
   const parts = [`${Math.round(hole.lengthM)} m`];
   if (hole.par !== null) parts.unshift(`Par ${hole.par}`);
@@ -101,7 +37,7 @@ export function holeBearingDeg(tee: CourseCoordinates, basket: CourseCoordinates
 }
 
 /** `windFromDeg` follows the meteorological convention: the direction the wind blows from. */
-export function describeWindOnHole(hole: HoleLayoutFacts, windFromDeg: number | null, windSpeedMs: number | null): string | null {
+export function describeWindOnHole(hole: CourseHoleDetails, windFromDeg: number | null, windSpeedMs: number | null): string | null {
   if (hole.tee === null || hole.basket === null) return null;
   if (windFromDeg === null || windSpeedMs === null) return null;
   if (!Number.isFinite(windFromDeg) || !Number.isFinite(windSpeedMs)) return null;
@@ -127,18 +63,11 @@ export function describeTodayFieldAverage(players: readonly RoundPlayer[], holeI
   return `Tänään kentän keskiarvo väylällä ${formatDecimal(average)} heittoa (${strokes.length} pelaajaa).`;
 }
 
-function classifyDifficulty(rating: number): string {
-  for (const difficultyClass of DIFFICULTY_CLASSES) {
-    if (rating >= difficultyClass.minRating) return difficultyClass.label;
-  }
-  return LOWEST_DIFFICULTY_CLASS;
-}
-
 function isKnownLength(lengthM: number | null): lengthM is number {
   return lengthM !== null && Number.isFinite(lengthM) && lengthM > 0;
 }
 
-function describeLengthExtreme(lengthM: number, layout: readonly HoleLayoutFacts[]): string | null {
+function describeLengthExtreme(lengthM: number, layout: readonly CourseHoleDetails[]): string | null {
   const lengths = layout.map(hole => hole.lengthM).filter(isKnownLength);
   if (lengths.length < MIN_HOLES_WITH_LENGTH_FOR_EXTREMES) return null;
   const isUnique = lengths.filter(length => length === lengthM).length === 1;
@@ -207,9 +136,4 @@ function toDegrees(radians: number): number {
 
 function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-function formatDecimal(value: number): string {
-  const rounded = Math.round(value * DISPLAY_DECIMAL_FACTOR) / DISPLAY_DECIMAL_FACTOR;
-  return String(rounded || 0).replace(".", ",");
 }

@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { WeatherObservation } from "../../../shared/weather";
-import { BatchCommentaryContext } from "./writer/commentaryContext";
-import { BatchCommentaryResult, writeBatchCommentary } from "./writer/commentaryWriter";
+import { BatchCommentaryContext } from "./facts/commentaryContext";
+import { BatchCommentaryResult, writeBatchCommentary } from "./write/commentaryWriter";
 import { CommentaryDelivery, RoundCommentary } from "./roundCommentary";
 import { hasTrackedRoundEnded, selectFinalScores, trackRoundPlayers } from "../../../integrations/metrix/round/results";
 import { parseMetrixRound } from "../../../integrations/metrix/round/normalize";
 import { selectBagtagParticipants } from "../scores/bagtags";
-import { formatBatchCommentaryMessages, TELEGRAM_MESSAGE_LIMIT } from "./presentation";
+import { formatBatchCommentaryMessages, TELEGRAM_MESSAGE_LIMIT } from "./format/commentaryMessage";
 import { FactualCommentaryBrief } from "./facts/playerBrief";
 
 const tracked = [{ id: 1, name: "Matti" }, { id: 2, name: "Jori" }];

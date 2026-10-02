@@ -1,3 +1,4 @@
+import { compareScorecards } from "../detect/scorecardChanges";
 import { describe, expect, it } from "vitest";
 import { parseRoundState, parseStanding } from "../../../../integrations/metrix/round/normalize";
 import { parseScorecard } from "../../../../integrations/metrix/round/normalize";
@@ -13,11 +14,9 @@ function buildBrief(previous: unknown, current: unknown, holeCount = 3) {
     round: parseRoundState({ totalHoles: holeCount }),
     standing: parseStanding({ position: 8, fieldSize: 20, isProvisional: false }),
   });
-  const result = buildFactualCommentaryBrief({
-    previousObserved: makeSnapshot(previous), current: makeSnapshot(current), lastPublished: null,
-  });
-  if (result.kind !== "ready") throw new Error(`Expected a brief, received ${result.kind}`);
-  return result.brief;
+  const comparison = compareScorecards(parseScorecard(previous), parseScorecard(current));
+  if (comparison.kind !== "compared") throw new Error(`Expected comparable cards, received ${comparison.reason}`);
+  return buildFactualCommentaryBrief({ current: makeSnapshot(current), changes: comparison.changes, lastPublished: null });
 }
 
 describe("factual fallback", () => {

@@ -1,4 +1,4 @@
-import { analyzeRound } from "./roundAnalysis";
+import { analyzeRound } from "./roundSummary";
 import { MetrixRound, RoundPlayer } from "../../../../integrations/metrix/round/types";
 
 export interface DivisionStanding {

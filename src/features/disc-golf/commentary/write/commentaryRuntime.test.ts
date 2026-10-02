@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { generateStructured, loadPrompt } from "../../../../shared/llm/ollamaClient";
-import { BatchCommentaryContext } from "./commentaryContext";
+import { BatchCommentaryContext } from "../facts/commentaryContext";
 import { buildBatchResponseJsonSchema } from "./commentaryWriter";
 import { writeRoundCommentary } from "./commentaryRuntime";
 

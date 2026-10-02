@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { parseRoundState, parseStanding } from "../../../../integrations/metrix/round/normalize";
 import { parseScorecard } from "../../../../integrations/metrix/round/normalize";
-import {
-  buildFactualCommentaryBrief, CommentarySnapshot, FactualBriefResult, FactualCommentaryBrief,
-} from "./playerBrief";
+import { buildFactualCommentaryBrief, CommentarySnapshot, FactualCommentaryBrief } from "./playerBrief";
+import { compareScorecards } from "../detect/scorecardChanges";
+import { PublishedStanding } from "../detect/standingMovement";
 
 function snapshot(scores: unknown, position = 10): CommentarySnapshot {
   return {
@@ -16,19 +16,25 @@ function snapshot(scores: unknown, position = 10): CommentarySnapshot {
   };
 }
 
-function readyBrief(result: FactualBriefResult): FactualCommentaryBrief {
-  expect(result.kind).toBe("ready");
-  if (result.kind !== "ready") throw new Error("Expected a factual brief");
-  return result.brief;
+interface BriefCase {
+  previousObserved: CommentarySnapshot;
+  current: CommentarySnapshot;
+  lastPublished: PublishedStanding | null;
+}
+
+function briefFor({ previousObserved, current, lastPublished }: BriefCase): FactualCommentaryBrief {
+  const comparison = compareScorecards(previousObserved.scorecard, current.scorecard);
+  if (comparison.kind !== "compared") throw new Error(`Expected comparable cards, received ${comparison.reason}`);
+  return buildFactualCommentaryBrief({ current, changes: comparison.changes, lastPublished });
 }
 
 describe("factual commentary brief", () => {
   it("uses the last published ranking rather than an intermediate observed ranking", () => {
     const previousObserved = snapshot([[], [], []], 15);
     const current = snapshot([[], [], { Result: 3, Diff: 0 }], 12);
-    const brief = readyBrief(buildFactualCommentaryBrief({ previousObserved, current, lastPublished: {
+    const brief = briefFor({ previousObserved, current, lastPublished: {
       scope: current.scope, standing: parseStanding({ position: 11, isProvisional: false }),
-    } }));
+    } });
     expect(brief.movementSincePublication).toEqual({
       kind: "down", previousPosition: 11, currentPosition: 12, places: 1,
     });
@@ -37,10 +43,10 @@ describe("factual commentary brief", () => {
   });
 
   it("keeps catch-up events together without claiming chronological order", () => {
-    const brief = readyBrief(buildFactualCommentaryBrief({
+    const brief = briefFor({
       previousObserved: snapshot([[], [], []]),
       current: snapshot([{ Result: 3, Diff: 0 }, [], { Result: 2, Diff: -1 }]), lastPublished: null,
-    }));
+    });
     expect(brief.event).toBe("scores-recorded");
     expect(brief.changes).toHaveLength(2);
     expect(brief.limitations).toContain("play-order-unknown");
@@ -48,10 +54,10 @@ describe("factual commentary brief", () => {
   });
 
   it("recalculates totals after corrections/removals rather than retaining stale round prose", () => {
-    const brief = readyBrief(buildFactualCommentaryBrief({
+    const brief = briefFor({
       previousObserved: snapshot([{ Result: 6, Diff: 3 }, { Result: 4, Diff: 1 }, []]),
       current: snapshot([{ Result: 3, Diff: 0 }, [], []]), lastPublished: null,
-    }));
+    });
     expect(brief.event).toBe("scores-corrected");
     expect(brief.changes.map(change => change.kind)).toEqual(["corrected", "removed"]);
     expect(brief.round).toMatchObject({
@@ -61,10 +67,10 @@ describe("factual commentary brief", () => {
   });
 
   it("distinguishes mixed updates and includes OB count as a known fact", () => {
-    const brief = readyBrief(buildFactualCommentaryBrief({
+    const brief = briefFor({
       previousObserved: snapshot([{ Result: 4, Diff: 1 }, [], []]),
       current: snapshot([{ Result: 3, Diff: 0 }, { Result: 5, Diff: 2, PEN: 1 }, []]), lastPublished: null,
-    }));
+    });
     expect(brief.event).toBe("mixed-update");
     expect(brief.limitations).toEqual(["play-order-unknown"]);
     expect(brief.changes).toContainEqual({
@@ -78,21 +84,11 @@ describe("factual commentary brief", () => {
       playerProfile: "Keskikastissa ja hyvässä vireessä",
       generatedHistory: "invented story",
     };
-    const brief = readyBrief(buildFactualCommentaryBrief({
+    const brief = briefFor({
       previousObserved: snapshot([[], [], []]), current, lastPublished: null,
-    }));
+    });
     expect(JSON.stringify(brief)).not.toMatch(/playerProfile|generatedHistory|scorecard|Keskikastissa|invented story/);
     expect(brief.standing.position).toBe(10);
-  });
-
-  it("does not manufacture events for duplicate or incomparable snapshots", () => {
-    const current = snapshot([{ Result: 3 }, [], []]);
-    expect(buildFactualCommentaryBrief({ previousObserved: current, current, lastPublished: null }))
-      .toEqual({ kind: "unchanged" });
-    expect(buildFactualCommentaryBrief({ previousObserved: snapshot(null), current, lastPublished: null }))
-      .toEqual({ kind: "unavailable", reason: "missing-scorecard" });
-    expect(buildFactualCommentaryBrief({ previousObserved: snapshot([[]]), current, lastPublished: null }))
-      .toEqual({ kind: "unavailable", reason: "hole-count-changed" });
   });
 
   it("replays the supplied hole-8-to-21 sequence with factual totals and numeric ranking movement", () => {
@@ -123,27 +119,17 @@ describe("factual commentary brief", () => {
       scores[holeIndex] = { Result: 3 + update.diff, Diff: update.diff };
       const current = snapshot(scores, update.position);
       current.round = parseRoundState({ totalHoles: 21 });
-      const brief = readyBrief(buildFactualCommentaryBrief({
+      const brief = briefFor({
         previousObserved, current,
         lastPublished: updateIndex === 0 ? null : {
           scope: previousObserved.scope, standing: previousObserved.standing,
         },
-      }));
+      });
       expect(brief.round.recordedRelativeToPar).toBe(update.total);
       expect(brief.round.progress).toMatchObject({ completedHoles: holeIndex + 1, totalHoles: 21 });
       if (holeIndex === 8 || holeIndex === 11) expect(brief.movementSincePublication.kind).toBe("up");
       if (holeIndex === 15) expect(brief.movementSincePublication.kind).toBe("unchanged");
       previousObserved = current;
     }
-  });
-
-  it.each([
-    { chatId: -200 }, { competitionId: "other" }, { division: "MPO" }, { playerId: 2 },
-  ])("never compares observed scorecards from another scope (%j)", mismatch => {
-    const previousObserved = snapshot([[], [], []]);
-    previousObserved.scope = { ...previousObserved.scope, ...mismatch };
-    expect(buildFactualCommentaryBrief({
-      previousObserved, current: snapshot([{ Result: 3 }, [], []]), lastPublished: null,
-    })).toEqual({ kind: "unavailable", reason: "scope-changed" });
   });
 });

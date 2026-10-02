@@ -1,6 +1,7 @@
-import { compareScorecards, ScorecardComparison, ScoreChange } from "../detect/scorecardChanges";
+import { ScoreChange } from "../detect/scorecardChanges";
 import { Scorecard } from "../../../../integrations/metrix/round/types";
-import { analyzeRound, CommentaryScope, comparePublishedStanding, PublishedStanding, RoundSummary, sameCommentaryScope, StandingMovement } from "./roundAnalysis";
+import { analyzeRound, RoundSummary } from "./roundSummary";
+import { CommentaryScope, comparePublishedStanding, PublishedStanding, StandingMovement } from "../detect/standingMovement";
 import { RoundState, Standing } from "../../../../integrations/metrix/round/types";
 
 export interface CommentarySnapshot {
@@ -14,8 +15,8 @@ export interface CommentarySnapshot {
 }
 
 export interface FactualBriefInput {
-  previousObserved: CommentarySnapshot;
   current: CommentarySnapshot;
+  changes: readonly ScoreChange[];
   lastPublished: PublishedStanding | null;
 }
 
@@ -33,38 +34,23 @@ export interface FactualCommentaryBrief {
   limitations: readonly BriefLimitation[];
 }
 
-export type FactualBriefResult =
-  | { kind: "unavailable"; reason: "scope-changed" | Extract<ScorecardComparison, { kind: "unavailable" }>["reason"] }
-  | { kind: "unchanged" }
-  | { kind: "ready"; brief: FactualCommentaryBrief };
-
-export function buildFactualCommentaryBrief(input: FactualBriefInput): FactualBriefResult {
-  const { previousObserved, current, lastPublished } = input;
-  if (!sameCommentaryScope(previousObserved.scope, current.scope)) {
-    return { kind: "unavailable", reason: "scope-changed" };
-  }
-  const comparison = compareScorecards(previousObserved.scorecard, current.scorecard);
-  if (comparison.kind === "unavailable") return comparison;
-  if (comparison.changes.length === 0) return { kind: "unchanged" };
-
+/** A player's update as facts. `changes` are the non-empty changes detected since the previous observation. */
+export function buildFactualCommentaryBrief(input: FactualBriefInput): FactualCommentaryBrief {
+  const { current, changes, lastPublished } = input;
   return {
-    kind: "ready",
-    brief: {
-      playerName: current.playerName,
-      courseName: current.courseName,
-      division: current.scope.division,
-      event: classifyChanges(comparison.changes),
-      changes: comparison.changes.map(change => ({
-        ...change, holeLabel: current.holeLabels?.[change.holeNumber - 1] ?? String(change.holeNumber),
-      })),
-      round: analyzeRound(current.scorecard, current.round),
-      standing: current.standing,
-      movementSincePublication: comparePublishedStanding(current.scope, current.standing, lastPublished),
-      limitations: buildLimitations(comparison.changes),
-    },
+    playerName: current.playerName,
+    courseName: current.courseName,
+    division: current.scope.division,
+    event: classifyChanges(changes),
+    changes: changes.map(change => ({
+      ...change, holeLabel: current.holeLabels?.[change.holeNumber - 1] ?? String(change.holeNumber),
+    })),
+    round: analyzeRound(current.scorecard, current.round),
+    standing: current.standing,
+    movementSincePublication: comparePublishedStanding(current.scope, current.standing, lastPublished),
+    limitations: buildLimitations(changes),
   };
 }
-
 
 function classifyChanges(changes: readonly ScoreChange[]): FactualCommentaryBrief["event"] {
   const hasRecorded = changes.some(change => change.kind === "recorded");

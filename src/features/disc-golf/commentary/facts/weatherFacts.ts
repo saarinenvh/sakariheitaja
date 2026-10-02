@@ -1,9 +1,15 @@
 import { WeatherObservation } from "../../../../shared/weather";
+import { formatDecimal } from "./numberText";
+
+/** What the model hears about the weather: the current conditions, and how they changed since the start. */
+export interface WeatherFacts {
+  current: string;
+  changeSinceStart: string | null;
+}
 
 export const TEMPERATURE_CHANGE_THRESHOLD_C = 3;
 export const WIND_CHANGE_THRESHOLD_MS = 3;
 const DELTA_PRECISION_FACTOR = 100;
-const DISPLAY_DECIMAL_FACTOR = 10;
 
 export function describeWeather(observation: WeatherObservation): string {
   const parts = [`${formatInteger(observation.temperatureC)} °C`, observation.description];
@@ -61,7 +67,3 @@ function formatInteger(value: number): string {
   return String(Math.round(value) || 0);
 }
 
-function formatDecimal(value: number): string {
-  const rounded = Math.round(value * DISPLAY_DECIMAL_FACTOR) / DISPLAY_DECIMAL_FACTOR;
-  return String(rounded || 0).replace(".", ",");
-}

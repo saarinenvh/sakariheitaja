@@ -1,10 +1,5 @@
 import { RankedResult } from "../../../integrations/metrix/round/results";
 
-export function truncateCourseName(rawName: string): string {
-  const name = rawName.replace(/&rarr;/g, "");
-  return name.length > 38 ? `${name.slice(0, 37)}...` : name;
-}
-
 /** `roundRatings` holds finished rounds' ratings by player name; those rows show the rating after the score. */
 export function formatTopList(
   competitionName: string, results: readonly RankedResult[], trackedPlayers: readonly RankedResult[], roundRatings: ReadonlyMap<string, number>,
