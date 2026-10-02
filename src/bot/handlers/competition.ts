@@ -4,8 +4,7 @@ import * as competitionService from "../../features/live-scoring/competitions";
 import * as registry from "../../features/live-scoring/trackerRegistry";
 import { competition as MSG } from "../../config/messages";
 import { HTML_NO_PREVIEW } from "../../config/bot";
-import { telegramMessenger } from "../messenger";
-import { metrixClient } from "../../integrations/metrix";
+import { trackerDependencies } from "../dependencies";
 
 export const competition = new Composer();
 
@@ -22,7 +21,7 @@ competition.command("follow", async ctx => {
   const chatId = ctx.chat.id;
   const result = await competitionService.start(chatId, ctx.chat.title ?? "", metrixId);
 
-  const tracker = await new ScoreTracker(result.insertId, metrixId, chatId, telegramMessenger, metrixClient).init();
+  const tracker = await new ScoreTracker(result.insertId, metrixId, chatId, trackerDependencies).init();
 
   if (!tracker.following) {
     await ctx.reply(tracker.initializationError ?? MSG.followInvalid);

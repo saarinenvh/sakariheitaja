@@ -5,7 +5,7 @@ import { MetrixRound } from "../../integrations/metrix/round/types";
 import { CourseStatistics } from "../../integrations/metrix/statistics/courseStatistics";
 import { CourseInfo } from "../commentary/facts/courseCommentaryFacts";
 import { moduleLogger } from "../../shared/logger";
-import { fetchCurrentWeather, WeatherObservation } from "../../integrations/openweather/client";
+import { OpenWeatherClient, WeatherObservation } from "../../integrations/openweather/client";
 
 const log = moduleLogger("course-data");
 
@@ -19,6 +19,7 @@ export class RoundCourseData {
 
   constructor(
     private readonly metrix: MetrixClient,
+    private readonly openWeather: OpenWeatherClient,
     private readonly metrixId: string,
     private readonly currentRound: () => MetrixRound | null,
   ) {}
@@ -40,7 +41,7 @@ export class RoundCourseData {
       log.warn({ metrixId: this.metrixId, location: location.kind }, "no course location for weather");
       return null;
     }
-    const weather = await fetchCurrentWeather(location.location);
+    const weather = await this.openWeather.getCurrentWeather(location.location);
     if (weather.kind === "failed") {
       log.warn({ metrixId: this.metrixId, reason: weather.reason }, "weather unavailable");
       return null;

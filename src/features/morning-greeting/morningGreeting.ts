@@ -1,5 +1,6 @@
 import { Bot } from "grammy";
-import { sendWeatherMessage } from "../../integrations/openweather/client";
+import { openWeather } from "../../integrations/openweather";
+import { buildCityWeatherReport } from "../weather-report/weatherReport";
 import { searchGiphy } from "../../integrations/giphy/client";
 import { getRandom, formatDate } from "../../shared/utils";
 import { randomGoodMorning, giphySearchWords, citys } from "../../config/phrases";
@@ -14,7 +15,7 @@ export async function sendMorningGreeting(api: Bot["api"], chatId: number): Prom
   const message = `${greeting}Kello on <b>${formatDate(new Date())}</b> & tämmöstä keliä ois sit tänää taas luvassa.`;
 
   try { await api.sendMessage(chatId, message, HTML_OPTIONS); } catch (e: any) { log.error({ err: e }, "morning greeting text failed"); }
-  try { await sendWeatherMessage(citys[getRandom(citys.length)], chatId, api); } catch (e: any) { log.error({ err: e }, "morning greeting weather failed"); }
+  try { await sendCityWeather(api, chatId, citys[getRandom(citys.length)]); } catch (e: any) { log.error({ err: e }, "morning greeting weather failed"); }
   try { await api.sendMessage(chatId, "Ja tästä päivä käyntiin!"); } catch (e: any) { log.error({ err: e }, "morning greeting call to action failed"); }
   try {
     const gifUrl = await searchGiphy(giphySearchWords[getRandom(giphySearchWords.length)]);
@@ -39,4 +40,10 @@ export function startMorningGreeter(bot: Bot): void {
     await sendMorningGreeting(bot.api, chatId);
     startMorningGreeter(bot);
   }, millisTill09);
+}
+
+async function sendCityWeather(api: Bot["api"], chatId: number, city: string): Promise<void> {
+  const report = await buildCityWeatherReport(openWeather, city);
+  if (report.kind === "found") await api.sendMessage(chatId, report.html, HTML_OPTIONS);
+  else await api.sendMessage(chatId, report.text);
 }
