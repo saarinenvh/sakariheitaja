@@ -45,6 +45,6 @@ async function answerMention(ctx: Filter<Context, "message:text">, deps: Command
     }
   }
   if (getRandom(2) === 1) {
-    await ctx.reply(await heckle(deps.ollama, ctx.chat.id, text));
+    await ctx.reply(await heckle(deps.ollama, ctx.chat.id, text, deps.llmEnabled));
   }
 }

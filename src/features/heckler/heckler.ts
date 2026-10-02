@@ -63,9 +63,9 @@ function cannedHeckle(): string {
   return sakariResponses[getRandom(sakariResponses.length)];
 }
 
-// 50% canned, 50% LLM — falls back to canned if LLM fails
-export async function heckle(ollama: OllamaClient, chatId: number, trigger: string): Promise<string> {
-  const useLlm = getRandom(2) === 1;
+/** With the LLM enabled, half canned and half from the model (canned if it fails); otherwise always canned. */
+export async function heckle(ollama: OllamaClient, chatId: number, trigger: string, llmEnabled: boolean): Promise<string> {
+  const useLlm = llmEnabled && getRandom(2) === 1;
 
   if (!useLlm) {
     log.debug("heckler → canned");
