@@ -1,15 +1,24 @@
 import { getRandom } from "../../shared/utils";
-import { readConfig } from "../../config";
 
-// Searches Giphy for the given query and returns a random video/gif URL, or null if nothing found.
-export async function searchGiphy(query: string): Promise<string | null> {
-  const apiKey = readConfig().giphyApiKey;
+const SEARCH_URL = "https://api.giphy.com/v1/gifs/search";
+const RESULTS_TO_PICK_FROM = 10;
+
+export interface GiphyClient {
+  /** A random video (or gif) URL among the top results for the query, or null without a key or a match. */
+  searchGif(query: string): Promise<string | null>;
+}
+
+export function createGiphyClient(config: { apiKey: string | undefined }): GiphyClient {
+  return { searchGif: query => searchGif(query, config.apiKey) };
+}
+
+async function searchGif(query: string, apiKey: string | undefined): Promise<string | null> {
   if (!apiKey) return null;
 
   const url =
-    `https://api.giphy.com/v1/gifs/search?api_key=${apiKey}` +
+    `${SEARCH_URL}?api_key=${apiKey}` +
     `&q=${encodeURIComponent(query)}` +
-    `&limit=10&rating=g&lang=fi`;
+    `&limit=${RESULTS_TO_PICK_FROM}&rating=g&lang=fi`;
 
   const res = await fetch(url);
   if (!res.ok) return null;

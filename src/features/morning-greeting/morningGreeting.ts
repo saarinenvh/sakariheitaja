@@ -1,7 +1,7 @@
 import { Bot } from "grammy";
 import { openWeather } from "../../integrations/openweather";
 import { buildCityWeatherReport } from "../weather-report/weatherReport";
-import { searchGiphy } from "../../integrations/giphy/client";
+import { giphy } from "../../integrations/giphy";
 import { getRandom, formatDate } from "../../shared/utils";
 import { randomGoodMorning, giphySearchWords, citys } from "../../config/phrases";
 import { moduleLogger } from "../../shared/logger";
@@ -18,7 +18,7 @@ export async function sendMorningGreeting(api: Bot["api"], chatId: number): Prom
   try { await sendCityWeather(api, chatId, citys[getRandom(citys.length)]); } catch (e: any) { log.error({ err: e }, "morning greeting weather failed"); }
   try { await api.sendMessage(chatId, "Ja tästä päivä käyntiin!"); } catch (e: any) { log.error({ err: e }, "morning greeting call to action failed"); }
   try {
-    const gifUrl = await searchGiphy(giphySearchWords[getRandom(giphySearchWords.length)]);
+    const gifUrl = await giphy.searchGif(giphySearchWords[getRandom(giphySearchWords.length)]);
     if (gifUrl) await api.sendVideo(chatId, gifUrl);
   } catch (e: any) { log.error({ err: e }, "morning greeting gif failed"); }
 }

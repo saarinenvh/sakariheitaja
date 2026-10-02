@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { findParticipantByName, findParticipantsByName, findPlayerMatch, formatFullBracket, type BracketData } from "./client";
+import { type BracketData } from "../../integrations/challonge/client";
+import { findParticipantByName, findParticipantsByName, findPlayerMatch, formatFullBracket } from "./bracket";
 
 // Small, hand-built double-elimination-shaped bracket - four players, one
 // completed match, one open (current), one not yet started, mirroring the

@@ -1,5 +1,7 @@
 import { generate, loadPrompt, loadContext } from "../../integrations/ollama/client";
-import { fetchBracketData, findParticipantsByName, findPlayerMatch, formatFullBracket, type BracketData } from "../../integrations/challonge/client";
+import { type BracketData } from "../../integrations/challonge/client";
+import { challonge } from "../../integrations/challonge";
+import { findParticipantsByName, findPlayerMatch, formatFullBracket } from "./bracket";
 import { moduleLogger } from "../../shared/logger";
 
 const log = moduleLogger("asker");
@@ -111,7 +113,7 @@ export async function llmAnswer(question: string, senderName?: string, recentMes
       const matchplay = getMatchplayContext();
       if (matchplay) systemContent += `\n\n---\n\n${matchplay}`;
       try {
-        const data = await fetchBracketData();
+        const data = await challonge.fetchBracket();
 
         // The common case ("who do I play next") gets one deterministic line
         // instead of the entire bracket as text - both cheaper (a few dozen
