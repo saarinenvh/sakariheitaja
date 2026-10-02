@@ -28,6 +28,7 @@ export interface CourseLocation {
   city: string | null;
 }
 
+/** `not-found`: no course with usable coordinates matched. `failed`: the request or payload failed. */
 export type CourseLocationResult =
   | { kind: "found"; location: CourseLocation }
   | { kind: "not-found" }

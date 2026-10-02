@@ -61,6 +61,7 @@ export interface CourseStatistics {
   holes: CourseHoleStatistics[];
 }
 
+/** `not-found`: the page has no statistics table. `failed`: the request failed or the table looked wrong. */
 export type CourseStatisticsResult =
   | { kind: "found"; statistics: CourseStatistics }
   | { kind: "not-found" }

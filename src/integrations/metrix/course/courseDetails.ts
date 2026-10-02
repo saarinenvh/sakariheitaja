@@ -14,6 +14,7 @@ export interface CourseCoordinates {
   longitude: number;
 }
 
+/** Two (rating, strokes) points; a round's rating is linear through them. */
 export interface CourseRatingAnchors {
   value1: number;
   result1: number;
@@ -29,6 +30,7 @@ export interface CourseHoleDetails {
   basket: CourseCoordinates | null;
 }
 
+/** A layout from the course API. Community-edited, so everything but `courseId` may be missing. */
 export interface CourseDetails {
   courseId: string;
   location: CourseCoordinates | null;
@@ -36,6 +38,7 @@ export interface CourseDetails {
   holes: CourseHoleDetails[];
 }
 
+/** `failed` covers a failed request, an API error and an unparseable payload; the reason never contains the code. */
 export type CourseDetailsResult =
   | { kind: "found"; details: CourseDetails }
   | { kind: "failed"; reason: string };
