@@ -5,6 +5,7 @@ import * as registry from "../../state/competitionRegistry";
 import { competition as MSG } from "../../config/messages";
 import { HTML_NO_PREVIEW } from "../../config/bot";
 import { telegramMessenger } from "../messenger";
+import { metrixClient } from "../../integrations/metrix";
 
 export const competition = new Composer();
 
@@ -21,7 +22,7 @@ competition.command("follow", async ctx => {
   const chatId = ctx.chat.id;
   const result = await competitionService.start(chatId, ctx.chat.title ?? "", metrixId);
 
-  const orchestrator = await new Orchestrator(result.insertId, metrixId, chatId, telegramMessenger).init();
+  const orchestrator = await new Orchestrator(result.insertId, metrixId, chatId, telegramMessenger, metrixClient).init();
 
   if (!orchestrator.following) {
     await ctx.reply(orchestrator.initializationError ?? MSG.followInvalid);

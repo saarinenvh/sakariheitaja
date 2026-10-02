@@ -15,19 +15,17 @@ import {
   hasTrackedRoundEnded, selectFinalScores, selectRankedResults, selectTrackedRankedResults, trackRoundPlayers,
 } from "../../../integrations/metrix/round/results";
 import { MetrixRound, TrackedRoundPlayer } from "../../../integrations/metrix/round/types";
-import { parseMetrixRound, UnsupportedRoundError } from "../../../integrations/metrix/round/normalize";
+import { UnsupportedRoundError } from "../../../integrations/metrix/round/normalize";
+import { MetrixClient, RoundFetchResult } from "../../../integrations/metrix/client";
 import { moduleLogger } from "../../../shared/logger";
-import { readConfig } from "../../../config";
 import { fetchCurrentWeather, WeatherObservation } from "../../../shared/weather";
-import { CourseLocationResult, fetchCourseLocation } from "../../../integrations/metrix/location/courseLocation";
+import { CourseLocationResult } from "../../../integrations/metrix/location/courseLocation";
 import { CourseInfo } from "../commentary/facts/holeFacts";
 import { buildRoundRatings } from "../commentary/facts/courseFacts";
-import { CourseDetails, fetchCourseDetails } from "../../../integrations/metrix/course/courseDetails";
-import { CourseStatistics, fetchCourseStatistics } from "../../../integrations/metrix/statistics/courseStatistics";
+import { CourseDetails } from "../../../integrations/metrix/course/courseDetails";
+import { CourseStatistics } from "../../../integrations/metrix/statistics/courseStatistics";
 
 const log = moduleLogger("orchestrator");
-
-const BASE_URL = "https://discgolfmetrix.com/api.php?content=result&id=";
 
 export class Orchestrator {
   following = true;
@@ -44,7 +42,7 @@ export class Orchestrator {
 
   constructor(
     public id: number, public metrixId: string, public chatId: number,
-    private readonly messenger: ChatMessenger, private playersAnnounced = false,
+    private readonly messenger: ChatMessenger, private readonly metrix: MetrixClient, private playersAnnounced = false,
   ) {
     this.commentary = new RoundCommentary(chatId, metrixId, {
       write: writeRoundCommentary,
@@ -60,16 +58,15 @@ export class Orchestrator {
   }
 
   async init(): Promise<this> {
-    const { getData } = await import("../../../shared/http");
-    try {
-      const input = await getData<unknown>(`${BASE_URL}${this.metrixId}`);
-      this.snapshot = parseMetrixRound(input, this.metrixId);
-    } catch (error) {
+    const initial = await this.metrix.getRound(this.metrixId);
+    if (initial.kind !== "fetched") {
+      const error = initial.kind === "invalid" ? initial.error : new Error("Metrix round request failed");
       log.error({ metrixId: this.metrixId, err: error }, "invalid initial round");
       this.initializationError = error instanceof UnsupportedRoundError ? error.message : MSG.followInvalid;
       this.following = false;
       return this;
     }
+    this.snapshot = initial.round;
     this.trackedPlayers = await this.refreshTrackedPlayers(this.snapshot);
     if (this.trackedPlayers.length === 0 && !this.playersAnnounced) {
       await this.messenger.sendText(this.chatId, MSG.followNoPlayers);
@@ -79,8 +76,8 @@ export class Orchestrator {
     this.commentary.observe(this.snapshot, this.trackedPlayers);
     await this.announceIfNeeded();
     const initialDelay = this.msUntilStart(this.snapshot.date);
-    this.poller = new Poller(this.metrixId, BASE_URL);
-    this.poller.on("data", (input: unknown) => this.enqueuePoll(input));
+    this.poller = new Poller(this.metrixId, () => this.metrix.getRound(this.metrixId));
+    this.poller.on("data", (result: RoundFetchResult) => this.enqueuePoll(result));
     this.poller.on("fetchError", (error: Error) => log.error({ metrixId: this.metrixId, err: error }, "poll failed"));
     this.poller.start(initialDelay);
     log.info({ metrixId: this.metrixId, round: this.snapshot.name }, "started following");
@@ -92,7 +89,7 @@ export class Orchestrator {
     if (!round?.courseId) return null;
     const layoutLocation = (await this.fetchCourseInfo()).details?.location ?? null;
     const location = layoutLocation ? { kind: "found" as const, location: { ...layoutLocation, city: null } } : this.courseLocation
-      ?? await fetchCourseLocation(round.courseId, round.courseName, readConfig().metrix.commentaryCountryCode);
+      ?? await this.metrix.findCourseLocation(round.courseId, round.courseName);
     if (!layoutLocation && location.kind !== "failed") this.courseLocation = location;
     if (location.kind !== "found") {
       log.warn({ metrixId: this.metrixId, location: location.kind }, "no course location for weather");
@@ -131,16 +128,15 @@ export class Orchestrator {
   }
 
   private async loadCourseDetails(courseId: string): Promise<CourseDetails | null> {
-    const integrationCode = readConfig().metrix.integrationCode;
-    if (!integrationCode) return null;
-    const result = await fetchCourseDetails(courseId, integrationCode);
+    const result = await this.metrix.getCourseDetails(courseId);
     if (result.kind === "found") return result.details;
+    if (result.kind === "unconfigured") return null;
     log.warn({ metrixId: this.metrixId, reason: result.reason }, "course details unavailable");
     return null;
   }
 
   private async loadCourseStatistics(courseId: string): Promise<CourseStatistics | null> {
-    const result = await fetchCourseStatistics(courseId);
+    const result = await this.metrix.getCourseStatistics(courseId);
     if (result.kind === "found") return result.statistics;
     if (result.kind === "failed") log.warn({ metrixId: this.metrixId, reason: result.reason }, "course statistics unavailable");
     return null;
@@ -166,17 +162,18 @@ export class Orchestrator {
     await this.messenger.sendText(this.chatId, message);
   }
 
-  private enqueuePoll(input: unknown): Promise<void> {
-    this.pollQueue = this.pollQueue.then(() => this.onPollResult(input)).catch(error => {
+  private enqueuePoll(result: RoundFetchResult): Promise<void> {
+    this.pollQueue = this.pollQueue.then(() => this.onPollResult(result)).catch(error => {
       log.error({ metrixId: this.metrixId, err: error }, "rejected poll");
       this.poller?.reportChanges(false);
     });
     return this.pollQueue;
   }
 
-  private async onPollResult(input: unknown): Promise<void> {
+  private async onPollResult(result: RoundFetchResult): Promise<void> {
     if (!this.following || this.endQueued) return;
-    const round = parseMetrixRound(input, this.metrixId);
+    if (result.kind !== "fetched") throw result.kind === "invalid" ? result.error : new Error("Metrix round request failed");
+    const { round } = result;
     const tracked = await this.refreshTrackedPlayers(round);
     if (!this.following) return;
     const changed = this.commentary.observe(round, tracked);

@@ -5,11 +5,10 @@ const mocks = vi.hoisted(() => ({
   getData: vi.fn<() => Promise<unknown>>(),
   send: vi.fn<(chatId: number, text: string) => Promise<void>>(),
   generate: vi.fn<(messages: OllamaMessage[], jsonSchema: unknown, options: unknown) => Promise<string>>(),
-  handlers: new Map<string, (input: unknown) => Promise<void>>(),
+  handlers: new Map<string, (result: RoundFetchResult) => Promise<void>>(),
   markDone: vi.fn(), saveScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
 }));
 
-vi.mock("../../../shared/http", () => ({ getData: mocks.getData }));
 vi.mock("../../../shared/llm/ollamaClient", () => ({ generateStructured: mocks.generate, loadPrompt: () => "Sakke" }));
 vi.mock("../../../db/repositories/PlayerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
 vi.mock("../services/CompetitionService", () => ({ markDone: mocks.markDone }));
@@ -24,7 +23,7 @@ vi.mock("../scores/bagtags", () => ({
 }));
 vi.mock("./poller", () => ({ default: class {
   constructor(private id: string) {}
-  on(event: string, handler: (input: unknown) => Promise<void>): void {
+  on(event: string, handler: (result: RoundFetchResult) => Promise<void>): void {
     if (event === "data") mocks.handlers.set(this.id, handler);
   }
   start(): void {}
@@ -34,8 +33,15 @@ vi.mock("./poller", () => ({ default: class {
 
 import { Orchestrator } from "./orchestrator";
 import { ChatMessenger } from "../../chatMessenger";
+import { MetrixClient, readRoundPayload, RoundFetchResult } from "../../../integrations/metrix/client";
 
 const messenger: ChatMessenger = { sendText: mocks.send, sendHtml: mocks.send };
+const metrix: MetrixClient = {
+  getRound: async roundId => readRoundPayload(await mocks.getData(), roundId),
+  getCourseDetails: async () => ({ kind: "unconfigured" }),
+  getCourseStatistics: async () => ({ kind: "not-found" }),
+  findCourseLocation: async () => ({ kind: "not-found" }),
+};
 
 const batchReply = (text: string): string =>
   JSON.stringify({ opening: "Avaus.", players: [{ name: "Matti", text }], closing: "Loppu." });
@@ -62,7 +68,7 @@ function response(strokes: readonly (number | null)[], position = "11") {
 async function poll(input: unknown): Promise<void> {
   const handler = mocks.handlers.get("123");
   if (!handler) throw new Error("Poller was not started");
-  await handler(input);
+  await handler(readRoundPayload(input, "123"));
 }
 
 beforeEach(() => {
@@ -77,7 +83,7 @@ beforeEach(() => {
 describe("poll to publication", () => {
   it("announces offsetting corrections even when the total does not change", async () => {
     mocks.getData.mockResolvedValue(response([3, 4, null]));
-    const orchestrator = await new Orchestrator(1, "123", -100, messenger, true).init();
+    const orchestrator = await new Orchestrator(1, "123", -100, messenger, metrix, true).init();
     await poll(response([4, 3, null]));
     await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
     expect(mocks.send.mock.calls[0][1]).toContain("korjaus");
@@ -86,7 +92,7 @@ describe("poll to publication", () => {
   });
 
   it("uses numeric live positions in the footer and passes delivered narrative to the model", async () => {
-    const orchestrator = await new Orchestrator(1, "123", -100, messenger, true).init();
+    const orchestrator = await new Orchestrator(1, "123", -100, messenger, metrix, true).init();
     await poll(response([3, null, null], "11"));
     await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
     await poll(response([3, 4, null], "10"));
@@ -101,7 +107,7 @@ describe("poll to publication", () => {
 
   it("reports removals and preserves the last valid snapshot after malformed polling data", async () => {
     mocks.getData.mockResolvedValue(response([3, null, null]));
-    const orchestrator = await new Orchestrator(1, "123", -100, messenger, true).init();
+    const orchestrator = await new Orchestrator(1, "123", -100, messenger, metrix, true).init();
     const snapshot = orchestrator.snapshot;
     await poll({ Competition: { Results: [] } });
     expect(orchestrator.snapshot).toBe(snapshot);
@@ -115,7 +121,7 @@ describe("poll to publication", () => {
     let release: (text: string) => void = () => { throw new Error("Generation has not started"); };
     mocks.generate.mockImplementationOnce(() => new Promise<string>(resolve => { release = resolve; }));
     mocks.getData.mockResolvedValue(response([3, 3, null]));
-    const orchestrator = await new Orchestrator(1, "123", -100, messenger, true).init();
+    const orchestrator = await new Orchestrator(1, "123", -100, messenger, metrix, true).init();
     await poll(response([3, 3, 3]));
     await vi.waitFor(() => expect(mocks.generate).toHaveBeenCalledTimes(1));
     expect(mocks.markDone).not.toHaveBeenCalled();
@@ -127,7 +133,7 @@ describe("poll to publication", () => {
 
   it("posts the results before the bagtag announcement at round end", async () => {
     mocks.getData.mockResolvedValue(response([3, 3, null]));
-    await new Orchestrator(1, "123", -100, messenger, true).init();
+    await new Orchestrator(1, "123", -100, messenger, metrix, true).init();
     await poll(response([3, 3, 3]));
     await vi.waitFor(() => expect(mocks.send.mock.calls.map(call => call[1])).toContain("Tags"));
     const texts = mocks.send.mock.calls.map(call => call[1]);
@@ -141,7 +147,7 @@ describe("poll to publication", () => {
     const parent = response([null, null, null]);
     parent.Competition.SubCompetitions = [{ ID: "124" }];
     mocks.getData.mockResolvedValue(parent);
-    const orchestrator = await new Orchestrator(1, "123", -100, messenger, true).init();
+    const orchestrator = await new Orchestrator(1, "123", -100, messenger, metrix, true).init();
     expect(orchestrator.following).toBe(false);
     expect(orchestrator.initializationError).toContain("yksittäisiä kierroksia");
     expect(mocks.handlers.size).toBe(0);
