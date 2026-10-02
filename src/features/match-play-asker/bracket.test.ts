@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { type BracketData } from "../../integrations/challonge/client";
-import { findParticipantByName, findParticipantsByName, findPlayerMatch, formatFullBracket } from "./bracket";
+import { findParticipantsByName, findPlayerMatch, formatFullBracket } from "./bracket";
 
 // Small, hand-built double-elimination-shaped bracket - four players, one
 // completed match, one open (current), one not yet started, mirroring the
@@ -25,31 +25,6 @@ const bracket: BracketData = {
     { round: 2, player1Id: JORI.id, player2Id: null, winnerId: null, state: "pending", scoresCsv: null },
   ],
 };
-
-describe("findParticipantByName", () => {
-  it("matches the full name, case-insensitively", () => {
-    expect(findParticipantByName(bracket, "turkka maisala")).toEqual(TURKKA);
-  });
-
-  it("matches a bare first name", () => {
-    // Telegram sender names and spoken/typed mentions are almost always just
-    // "Turkka", never the full "Turkka Maisala".
-    expect(findParticipantByName(bracket, "Turkka")).toEqual(TURKKA);
-  });
-
-  it("returns null for someone not in the bracket", () => {
-    expect(findParticipantByName(bracket, "Sakke")).toBeNull();
-  });
-
-  it("returns null for an empty query", () => {
-    expect(findParticipantByName(bracket, "")).toBeNull();
-    expect(findParticipantByName(bracket, "   ")).toBeNull();
-  });
-
-  it("returns null (not a guess) for a first name shared by two players", () => {
-    expect(findParticipantByName(bracket, "Ville")).toBeNull();
-  });
-});
 
 describe("findParticipantsByName", () => {
   it("returns both players for a bare first name they share", () => {

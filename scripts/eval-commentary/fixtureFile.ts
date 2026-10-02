@@ -58,7 +58,6 @@ const fixtureSchema = z.object({
 
 export type FixtureHole = z.output<typeof holeSchema>;
 export type FixturePlayer = z.output<typeof playerSchema>;
-export type FixtureTrack = z.output<typeof trackSchema>;
 export type FixtureWeather = z.output<typeof weatherSchema>;
 export type FixtureCourse = z.output<typeof courseSchema>;
 export type CommentaryFixture = z.output<typeof fixtureSchema> & { name: string };

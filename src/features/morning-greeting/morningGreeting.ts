@@ -4,7 +4,7 @@ import { GiphyClient } from "../../integrations/giphy/client";
 import { buildCityWeatherReport } from "../weather-report/weatherReport";
 import { cities } from "../weather-report/phrases";
 import { giphySearchWords, randomGoodMorning } from "./phrases";
-import { getRandom, formatDate } from "../../shared/utils";
+import { formatClockTime, getRandom } from "../../shared/utils";
 import { moduleLogger } from "../../shared/logger";
 
 const log = moduleLogger("morning-greeter");
@@ -22,7 +22,7 @@ export interface MorningGreetingDependencies {
 export async function sendMorningGreeting(deps: MorningGreetingDependencies, chatId: number): Promise<void> {
   const { messenger } = deps;
   const greeting = randomGoodMorning[getRandom(randomGoodMorning.length)];
-  const message = `${greeting}Kello on <b>${formatDate(new Date())}</b> & tämmöstä keliä ois sit tänää taas luvassa.`;
+  const message = `${greeting}Kello on <b>${formatClockTime(new Date())}</b> & tämmöstä keliä ois sit tänää taas luvassa.`;
 
   try { await messenger.sendHtml(chatId, message); } catch (e: any) { log.error({ err: e }, "morning greeting text failed"); }
   try { await sendCityWeather(deps, chatId, cities[getRandom(cities.length)]); } catch (e: any) { log.error({ err: e }, "morning greeting weather failed"); }

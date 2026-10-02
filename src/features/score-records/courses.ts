@@ -6,6 +6,3 @@ export async function getOrCreate(name: string): Promise<Course | null> {
   return courseRepo.findByName(name);
 }
 
-export async function findByName(name: string): Promise<Course | null> {
-  return courseRepo.findByName(name);
-}
