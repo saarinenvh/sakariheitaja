@@ -19,8 +19,13 @@ const noBotFromBelow = {
   message: "Only the Telegram layer imports the bot; features send through ChatMessenger.",
 };
 const noUpwardImports = {
-  group: ["**/features/**", "**/scheduler/*", "**/state/*", "**/config/*"],
-  message: "shared/, util/ and db/ sit below the features and UI text; they must not import them.",
+  group: ["**/features/**", "**/config/*"],
+  message: "shared/ and db/ sit below the features and UI text; they must not import them.",
+};
+// db/ lists the entities, which live with the features that own their tables.
+const noUpwardImportsFromDb = {
+  regex: "(^|/)(features/(?!.*\\.entity$)|config/)",
+  message: "db/ only lists the features' entities; it must not import anything else from them.",
 };
 
 export default tseslint.config(
@@ -48,12 +53,17 @@ export default tseslint.config(
     rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noBotFromBelow, noHttpOutsideIntegrations] }] },
   },
   {
-    files: ["src/shared/**/*.ts", "src/util/**/*.ts", "src/db/**/*.ts"],
+    files: ["src/shared/**/*.ts"],
     ignores: [...TEST_FILES, "src/shared/http.ts"],
     rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noBotFromBelow, noUpwardImports, noHttpOutsideIntegrations] }] },
   },
   {
-    files: ["src/bot/**/*.ts", "src/scheduler/**/*.ts", "src/state/**/*.ts"],
+    files: ["src/db/**/*.ts"],
+    ignores: TEST_FILES,
+    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noBotFromBelow, noUpwardImportsFromDb, noHttpOutsideIntegrations] }] },
+  },
+  {
+    files: ["src/bot/**/*.ts"],
     ignores: TEST_FILES,
     rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noHttpOutsideIntegrations] }] },
   },
