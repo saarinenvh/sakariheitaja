@@ -1,4 +1,4 @@
-import { RankedResult } from "../../../integrations/metrix/round/results";
+import { RankedResult } from "../../integrations/metrix/round/results";
 
 /** `roundRatings` holds finished rounds' ratings by player name; those rows show the rating after the score. */
 export function formatTopList(

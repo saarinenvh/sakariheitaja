@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { OllamaMessage } from "../../../shared/llm/ollamaClient";
+import { OllamaMessage } from "../../shared/llm/ollamaClient";
 
 const mocks = vi.hoisted(() => ({
   getData: vi.fn<() => Promise<unknown>>(),
@@ -9,15 +9,15 @@ const mocks = vi.hoisted(() => ({
   markDone: vi.fn(), saveScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
 }));
 
-vi.mock("../../../shared/llm/ollamaClient", () => ({ generateStructured: mocks.generate, loadPrompt: () => "Sakke" }));
-vi.mock("../../../db/repositories/PlayerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
-vi.mock("../services/CompetitionService", () => ({ markDone: mocks.markDone }));
-vi.mock("../services/CourseService", () => ({ getOrCreate: async () => ({ id: 2 }) }));
-vi.mock("../services/ScoreService", () => ({
+vi.mock("../../shared/llm/ollamaClient", () => ({ generateStructured: mocks.generate, loadPrompt: () => "Sakke" }));
+vi.mock("../../db/repositories/PlayerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
+vi.mock("../disc-golf/services/CompetitionService", () => ({ markDone: mocks.markDone }));
+vi.mock("../disc-golf/services/CourseService", () => ({ getOrCreate: async () => ({ id: 2 }) }));
+vi.mock("../disc-golf/services/ScoreService", () => ({
   saveRecordedScores: mocks.saveScores, saveResults: mocks.saveResults,
 }));
-vi.mock("../scores/playerProfiles", () => ({ updateProfiles: vi.fn(), buildProfileSnippet: () => undefined }));
-vi.mock("../scores/bagtags", () => ({
+vi.mock("../disc-golf/scores/playerProfiles", () => ({ updateProfiles: vi.fn(), buildProfileSnippet: () => undefined }));
+vi.mock("../disc-golf/scores/bagtags", () => ({
   getMissingTagPlayers: () => [], computeAndApplySwaps: () => ({}), formatBagtagAnnouncement: () => "Tags",
   selectBagtagParticipants: () => [],
 }));
@@ -31,9 +31,9 @@ vi.mock("./poller", () => ({ default: class {
   reportChanges(): void {}
 } }));
 
-import { Orchestrator } from "./orchestrator";
-import { ChatMessenger } from "../../chatMessenger";
-import { MetrixClient, readRoundPayload, RoundFetchResult } from "../../../integrations/metrix/client";
+import { Orchestrator } from "./scoreTracker";
+import { ChatMessenger } from "../chatMessenger";
+import { MetrixClient, readRoundPayload, RoundFetchResult } from "../../integrations/metrix/client";
 
 const messenger: ChatMessenger = { sendText: mocks.send, sendHtml: mocks.send };
 const metrix: MetrixClient = {

@@ -1,30 +1,30 @@
 import Poller from "./poller";
 import { formatTopList } from "./topList";
-import { truncateCourseName } from "../courseName";
-import * as playerRepo from "../../../db/repositories/PlayerRepository";
-import * as competitionService from "../services/CompetitionService";
-import * as courseService from "../services/CourseService";
-import * as scoreService from "../services/ScoreService";
-import { competition as MSG } from "../../../config/messages";
-import { ChatMessenger } from "../../chatMessenger";
-import { updateProfiles } from "../scores/playerProfiles";
-import { computeAndApplySwaps, formatBagtagAnnouncement, getMissingTagPlayers, selectBagtagParticipants } from "../scores/bagtags";
-import { escapeHtml } from "../commentary/format/commentaryMessage";
-import { RoundCommentary } from "../commentary/roundCommentary";
-import { writeRoundCommentary } from "../commentary/write/commentaryRuntime";
+import { truncateCourseName } from "../disc-golf/courseName";
+import * as playerRepo from "../../db/repositories/PlayerRepository";
+import * as competitionService from "../disc-golf/services/CompetitionService";
+import * as courseService from "../disc-golf/services/CourseService";
+import * as scoreService from "../disc-golf/services/ScoreService";
+import { competition as MSG } from "../../config/messages";
+import { ChatMessenger } from "../chatMessenger";
+import { updateProfiles } from "../disc-golf/scores/playerProfiles";
+import { computeAndApplySwaps, formatBagtagAnnouncement, getMissingTagPlayers, selectBagtagParticipants } from "../disc-golf/scores/bagtags";
+import { escapeHtml } from "../disc-golf/commentary/format/commentaryMessage";
+import { RoundCommentary } from "../disc-golf/commentary/roundCommentary";
+import { writeRoundCommentary } from "../disc-golf/commentary/write/commentaryRuntime";
 import {
   hasTrackedRoundEnded, selectFinalScores, selectRankedResults, selectTrackedRankedResults, trackRoundPlayers,
-} from "../../../integrations/metrix/round/results";
-import { MetrixRound, TrackedRoundPlayer } from "../../../integrations/metrix/round/types";
-import { UnsupportedRoundError } from "../../../integrations/metrix/round/normalize";
-import { MetrixClient, RoundFetchResult } from "../../../integrations/metrix/client";
-import { moduleLogger } from "../../../shared/logger";
-import { fetchCurrentWeather, WeatherObservation } from "../../../shared/weather";
-import { CourseLocationResult } from "../../../integrations/metrix/location/courseLocation";
-import { CourseInfo } from "../commentary/facts/courseCommentaryFacts";
-import { buildRoundRatings } from "../commentary/facts/roundRatings";
-import { CourseDetails } from "../../../integrations/metrix/course/courseDetails";
-import { CourseStatistics } from "../../../integrations/metrix/statistics/courseStatistics";
+} from "../../integrations/metrix/round/results";
+import { MetrixRound, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
+import { UnsupportedRoundError } from "../../integrations/metrix/round/normalize";
+import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client";
+import { moduleLogger } from "../../shared/logger";
+import { fetchCurrentWeather, WeatherObservation } from "../../shared/weather";
+import { CourseLocationResult } from "../../integrations/metrix/location/courseLocation";
+import { CourseInfo } from "../disc-golf/commentary/facts/courseCommentaryFacts";
+import { buildRoundRatings } from "../disc-golf/commentary/facts/roundRatings";
+import { CourseDetails } from "../../integrations/metrix/course/courseDetails";
+import { CourseStatistics } from "../../integrations/metrix/statistics/courseStatistics";
 
 const log = moduleLogger("orchestrator");
 

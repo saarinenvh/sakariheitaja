@@ -1,7 +1,7 @@
 import { Composer } from "grammy";
-import { Orchestrator } from "../../features/disc-golf/following/orchestrator";
+import { Orchestrator } from "../../features/live-scoring/scoreTracker";
 import * as competitionService from "../../features/disc-golf/services/CompetitionService";
-import * as registry from "../../state/competitionRegistry";
+import * as registry from "../../features/live-scoring/trackerRegistry";
 import { competition as MSG } from "../../config/messages";
 import { HTML_NO_PREVIEW } from "../../config/bot";
 import { telegramMessenger } from "../messenger";

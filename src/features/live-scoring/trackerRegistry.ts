@@ -1,4 +1,4 @@
-import { Orchestrator } from "../features/disc-golf/following/orchestrator";
+import { Orchestrator } from "./scoreTracker";
 
 const registry = new Map<number, Orchestrator[]>();
 
