@@ -27,6 +27,15 @@ export async function addResult(
   log.info({ playerId }, "score added");
 }
 
+/** Players whose result for the competition is already saved. */
+export async function findResultPlayerIds(competitionId: number): Promise<number[]> {
+  const rows: { playerId: number }[] = await dataSource.query(
+    "SELECT player_id AS playerId FROM scores WHERE competition_id = ?",
+    [competitionId]
+  );
+  return rows.map(row => row.playerId);
+}
+
 export async function findByCourseName(name: string, chatId: number): Promise<ScoreRow[]> {
   const rows = await dataSource.query(
     `SELECT S.course_id AS courseId, I.name AS player, C.name AS course, S.sum, S.diff,

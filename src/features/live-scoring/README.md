@@ -30,7 +30,7 @@ sequenceDiagram
 | `scoreTracker.ts` | One followed round: start, poll, hand changes to commentary, start the round end. Its state (`following`, `snapshot`, `trackedPlayers`) answers `/pelit`, `/top5` and `/score`. |
 | `poller.ts` | Timing: 30 s while scores change, 60 s after 3 quiet polls, 120 s after 10; exponential backoff after failed requests. |
 | `courseData.ts` | The round's course: layout details and statistics (once), and the weather at the layout's coordinates or the parent course's. |
-| `roundFinalizer.ts` | The round end: end message, competition marked done, results saved, profiles updated, bagtags swapped, then the TOP-5 and the bagtag announcement. |
+| `roundFinalizer.ts` | The round end: end message; results, profiles and bagtags saved; competition marked done; then the TOP-5 and the bagtag announcement. Done comes after the saves, so a failure leaves the round unfinished and the round end runs again after a restart; the saves are safe to repeat. |
 | `playerAnnouncement.ts`, `topList.ts` | The start message and the TOP-5 (with ratings for finished rounds). |
 | `trackerRegistry.ts` | The rounds each chat follows right now, in memory. |
 

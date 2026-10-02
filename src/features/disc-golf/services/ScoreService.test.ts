@@ -7,13 +7,14 @@ vi.mock("../../../db/repositories/ScoreRepository", () => ({
   addEagle: vi.fn(),
   addAlbatross: vi.fn(),
   addResult: vi.fn(),
+  findResultPlayerIds: vi.fn(async () => [] as number[]),
 }));
 vi.mock("../../../db/repositories/CourseRepository", () => ({
   findByName: vi.fn(async () => ({ id: 7, name: "Talin frisbeegolfrata" })),
 }));
 
 import * as scoreRepo from "../../../db/repositories/ScoreRepository";
-import { saveRecordedScores } from "./ScoreService";
+import { saveRecordedScores, saveResults } from "./ScoreService";
 
 const recorded = (holeNumber: number, strokes: number, relativeToPar: number): ScoreChange =>
   ({ kind: "recorded", holeNumber, score: { strokes, relativeToPar, obCount: 0 } });
@@ -47,5 +48,18 @@ describe("saveRecordedScores", () => {
     expect(scoreRepo.addAce).not.toHaveBeenCalled();
     expect(scoreRepo.addEagle).not.toHaveBeenCalled();
     expect(scoreRepo.addAlbatross).not.toHaveBeenCalled();
+  });
+});
+
+describe("saveResults", () => {
+  it("skips players whose result for the competition is already saved, so a retried round end saves once", async () => {
+    vi.mocked(scoreRepo.findResultPlayerIds).mockResolvedValueOnce([1]);
+    await saveResults([
+      { playerId: 1, strokes: 54, relativeToPar: 0 },
+      { playerId: 2, strokes: 57, relativeToPar: 3 },
+    ], -100, 7, 55);
+    expect(scoreRepo.findResultPlayerIds).toHaveBeenCalledWith(55);
+    expect(scoreRepo.addResult).toHaveBeenCalledTimes(1);
+    expect(scoreRepo.addResult).toHaveBeenCalledWith(2, -100, 7, 55, 3, 57);
   });
 });

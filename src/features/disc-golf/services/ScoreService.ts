@@ -21,13 +21,16 @@ export async function saveRecordedScores(
   }
 }
 
+/** Saves each player's result once per competition, so a retried round end doesn't save twice. */
 export async function saveResults(
   scores: readonly FinalScore[],
   chatId: number,
   courseId: number,
   competitionId: number
 ): Promise<void> {
+  const saved = new Set(await scoreRepo.findResultPlayerIds(competitionId));
   for (const score of scores) {
+    if (saved.has(score.playerId)) continue;
     await scoreRepo.addResult(score.playerId, chatId, courseId, competitionId, score.relativeToPar, score.strokes);
   }
 }

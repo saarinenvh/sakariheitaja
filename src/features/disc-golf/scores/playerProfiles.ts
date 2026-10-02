@@ -18,6 +18,8 @@ export interface PlayerProfile {
   gamesPlayed: number;
   avgPositionPct: number;
   lastUpdated: string;
+  /** The competition last counted; a retried round end doesn't count it again. */
+  lastCompetitionId?: number;
 }
 
 type ProfileStore = Record<string, Record<string, PlayerProfile>>;
@@ -60,7 +62,9 @@ export function buildProfileSnippet(chatId: number, name: string): string | unde
 }
 
 // A position is within a division, so it is scored against that division's field, not the whole event's.
-export function updateProfiles(chatId: number, trackedPlayers: readonly RankedResult[], allResults: readonly RankedResult[]): void {
+export function updateProfiles(
+  chatId: number, competitionId: number, trackedPlayers: readonly RankedResult[], allResults: readonly RankedResult[],
+): void {
   if (allResults.length === 0) return;
 
   const divisionFieldSize = new Map<string, number>();
@@ -76,6 +80,7 @@ export function updateProfiles(chatId: number, trackedPlayers: readonly RankedRe
 
   for (const player of trackedPlayers) {
     const existing = store[chatKey][player.playerName];
+    if (existing?.lastCompetitionId === competitionId) continue;
     const fieldSize = divisionFieldSize.get(player.division) ?? allResults.length;
     if (fieldSize === 0) continue;
     const positionPct = player.position / fieldSize;
@@ -95,6 +100,7 @@ export function updateProfiles(chatId: number, trackedPlayers: readonly RankedRe
       gamesPlayed: prevGames + 1,
       avgPositionPct: Math.round(newAvgPct * 1000) / 1000,
       lastUpdated: today,
+      lastCompetitionId: competitionId,
     };
   }
 

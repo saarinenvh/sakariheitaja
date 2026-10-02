@@ -17,17 +17,19 @@ export interface RoundEnd {
 }
 
 /**
- * Finishes a round once every tracked player is done, in this order: the end message, the competition marked
- * done, results saved, profiles updated, bagtags swapped, then the TOP-5 and the bagtag announcement.
+ * Finishes a round once every tracked player is done: the end message, then results, profiles and bagtags,
+ * then the competition marked done, then the TOP-5 and the bagtag announcement.
+ * The competition is marked done only after everything is saved: if a step fails, the round stays unfinished
+ * and the round end runs again when the bot restarts. Every step before that is safe to repeat.
  */
 export async function finishRound(end: RoundEnd, round: MetrixRound, tracked: readonly TrackedRoundPlayer[]): Promise<void> {
   const { chatId, competitionId, messenger } = end;
   await messenger.sendText(chatId, MSG.endSoon);
-  await competitionService.markDone(competitionId);
   const course = await courseService.getOrCreate(round.courseName);
   if (course) await scoreService.saveResults(selectFinalScores(tracked), chatId, course.id, competitionId);
-  updateProfiles(chatId, selectTrackedRankedResults(tracked), selectRankedResults(round.players));
+  updateProfiles(chatId, competitionId, selectTrackedRankedResults(tracked), selectRankedResults(round.players));
   const bagtags = computeAndApplySwaps(chatId, selectBagtagParticipants(tracked));
+  await competitionService.markDone(competitionId);
   await end.sendTopList();
   await messenger.sendHtml(chatId, formatBagtagAnnouncement(bagtags));
 }

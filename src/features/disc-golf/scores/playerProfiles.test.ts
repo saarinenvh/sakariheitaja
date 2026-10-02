@@ -27,10 +27,21 @@ describe("player profiles", () => {
     ];
     const tracked = [player("Ama8", "MA3", 8, 27)];
 
-    updateProfiles(chatId, tracked, results);
+    updateProfiles(chatId, 31, tracked, results);
 
     // 8th of 10 in MA3 = 0.8, a back-of-the-pack finish. Dividing by the whole
     // 50-player field gave 0.16, which reads as "tyypillisesti kärjessä".
     expect(getProfile(chatId, "Ama8")?.avgPositionPct).toBe(0.8);
+  });
+
+  it("counts a competition once, even when the round end is retried", () => {
+    const chatId = -54321;
+    const results = Array.from({ length: 10 }, (_, i) => player(`Ama${i + 1}`, "MA3", i + 1, i));
+    const tracked = [player("Ama2", "MA3", 2, 1)];
+    updateProfiles(chatId, 77, tracked, results);
+    updateProfiles(chatId, 77, tracked, results);
+    expect(getProfile(chatId, "Ama2")).toMatchObject({ gamesPlayed: 1, lastCompetitionId: 77 });
+    updateProfiles(chatId, 78, tracked, results);
+    expect(getProfile(chatId, "Ama2")?.gamesPlayed).toBe(2);
   });
 });
