@@ -22,6 +22,12 @@ describe("recipes client", () => {
     expect(await client.getRecipes()).toEqual([soup]);
   });
 
+  it("checks only the first photo, the one the message sends", async () => {
+    const gallery = { ...soup, media: [{ file: { url: "//kuva.jpg" } }, { file: { url: "" } }] };
+    mocks.getData.mockResolvedValue({ results: [gallery] });
+    expect(await client.getRecipes()).toEqual([gallery]);
+  });
+
   it("returns null when the request fails or the reply has no recipe list", async () => {
     mocks.getData.mockResolvedValue(undefined);
     expect(await client.getRecipes()).toBeNull();
