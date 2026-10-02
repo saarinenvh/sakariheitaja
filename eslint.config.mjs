@@ -4,9 +4,9 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
-// The layer rules from the structure design (sakke-workspace docs/roadmap/sakariheitaja-structure).
-// They warn while the restructure moves code into place, and become errors when it's done.
-const LAYER_RULE = "warn";
+// The layer rules from the structure design (sakke-workspace docs/roadmap/sakariheitaja-structure)
+// and docs/architecture/README.md.
+const LAYER_RULE = "error";
 const SOURCE_FILES = ["src/**/*.ts"];
 const TEST_FILES = ["**/*.test.ts"];
 
@@ -14,17 +14,17 @@ const noHttpOutsideIntegrations = {
   group: ["**/shared/http", "./http"],
   message: "HTTP belongs in an integration client (src/integrations/<system>/).",
 };
-const noBotFromBelow = {
-  group: ["**/bot/*"],
-  message: "Only the Telegram layer imports the bot; features send through ChatMessenger.",
+const noTelegramFromBelow = {
+  group: ["**/telegram/**"],
+  message: "Only main.ts imports the Telegram layer; features send through ChatMessenger.",
 };
 const noUpwardImports = {
-  group: ["**/features/**", "**/config/*"],
-  message: "shared/ and db/ sit below the features and UI text; they must not import them.",
+  group: ["**/features/**"],
+  message: "shared/ and integrations/ sit below the features; they must not import them.",
 };
 // db/ lists the entities, which live with the features that own their tables.
 const noUpwardImportsFromDb = {
-  regex: "(^|/)(features/(?!.*\\.entity$)|config/)",
+  regex: "(^|/)features/(?!.*\\.entity$)",
   message: "db/ only lists the features' entities; it must not import anything else from them.",
 };
 
@@ -50,22 +50,27 @@ export default tseslint.config(
   {
     files: ["src/features/**/*.ts"],
     ignores: TEST_FILES,
-    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noBotFromBelow, noHttpOutsideIntegrations] }] },
+    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noTelegramFromBelow, noHttpOutsideIntegrations] }] },
   },
   {
     files: ["src/shared/**/*.ts"],
     ignores: [...TEST_FILES, "src/shared/http.ts"],
-    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noBotFromBelow, noUpwardImports, noHttpOutsideIntegrations] }] },
+    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noTelegramFromBelow, noUpwardImports, noHttpOutsideIntegrations] }] },
   },
   {
     files: ["src/db/**/*.ts"],
     ignores: TEST_FILES,
-    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noBotFromBelow, noUpwardImportsFromDb, noHttpOutsideIntegrations] }] },
+    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noTelegramFromBelow, noUpwardImportsFromDb, noHttpOutsideIntegrations] }] },
   },
   {
-    files: ["src/bot/**/*.ts"],
+    files: ["src/telegram/**/*.ts"],
     ignores: TEST_FILES,
     rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noHttpOutsideIntegrations] }] },
+  },
+  {
+    files: ["src/integrations/**/*.ts"],
+    ignores: TEST_FILES,
+    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noTelegramFromBelow, noUpwardImports] }] },
   },
   {
     files: SOURCE_FILES,
