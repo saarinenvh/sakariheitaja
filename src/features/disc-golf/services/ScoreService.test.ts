@@ -62,4 +62,12 @@ describe("saveResults", () => {
     expect(scoreRepo.addResult).toHaveBeenCalledTimes(1);
     expect(scoreRepo.addResult).toHaveBeenCalledWith(2, -100, 7, 55, 3, 57);
   });
+
+  it("saves a player at most once even if the batch repeats them", async () => {
+    await saveResults([
+      { playerId: 3, strokes: 54, relativeToPar: 0 },
+      { playerId: 3, strokes: 54, relativeToPar: 0 },
+    ], -100, 7, 55);
+    expect(scoreRepo.addResult).toHaveBeenCalledTimes(1);
+  });
 });

@@ -26,7 +26,8 @@ export async function finishRound(end: RoundEnd, round: MetrixRound, tracked: re
   const { chatId, competitionId, messenger } = end;
   await messenger.sendText(chatId, MSG.endSoon);
   const course = await courseService.getOrCreate(round.courseName);
-  if (course) await scoreService.saveResults(selectFinalScores(tracked), chatId, course.id, competitionId);
+  if (!course) throw new Error(`Course ${round.courseName} could not be saved`);
+  await scoreService.saveResults(selectFinalScores(tracked), chatId, course.id, competitionId);
   updateProfiles(chatId, competitionId, selectTrackedRankedResults(tracked), selectRankedResults(round.players));
   const bagtags = computeAndApplySwaps(chatId, selectBagtagParticipants(tracked));
   await competitionService.markDone(competitionId);

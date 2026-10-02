@@ -3,10 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const steps = vi.hoisted(() => [] as string[]);
 const mocks = vi.hoisted(() => ({
   saveResults: vi.fn<() => Promise<void>>(),
+  getOrCreate: vi.fn<() => Promise<{ id: number } | null>>(),
 }));
 
 vi.mock("../disc-golf/services/CompetitionService", () => ({ markDone: async () => { steps.push("done"); } }));
-vi.mock("../disc-golf/services/CourseService", () => ({ getOrCreate: async () => ({ id: 2 }) }));
+vi.mock("../disc-golf/services/CourseService", () => ({ getOrCreate: mocks.getOrCreate }));
 vi.mock("../disc-golf/services/ScoreService", () => ({ saveResults: mocks.saveResults }));
 vi.mock("../disc-golf/scores/playerProfiles", () => ({ updateProfiles: () => { steps.push("profiles"); } }));
 vi.mock("../disc-golf/scores/bagtags", () => ({
@@ -35,6 +36,7 @@ const end: RoundEnd = {
 beforeEach(() => {
   steps.length = 0;
   mocks.saveResults.mockReset().mockImplementation(async () => { steps.push("results"); });
+  mocks.getOrCreate.mockReset().mockResolvedValue({ id: 2 });
 });
 
 describe("finishRound", () => {
@@ -48,5 +50,11 @@ describe("finishRound", () => {
     await expect(finishRound(end, round, [])).rejects.toThrow("database down");
     expect(steps).not.toContain("done");
     expect(steps).not.toContain("top list");
+  });
+
+  it("treats a missing course as a failure instead of finishing without results", async () => {
+    mocks.getOrCreate.mockResolvedValue(null);
+    await expect(finishRound(end, round, [])).rejects.toThrow("Course Testirata could not be saved");
+    expect(steps).not.toContain("done");
   });
 });

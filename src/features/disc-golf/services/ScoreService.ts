@@ -32,6 +32,7 @@ export async function saveResults(
   for (const score of scores) {
     if (saved.has(score.playerId)) continue;
     await scoreRepo.addResult(score.playerId, chatId, courseId, competitionId, score.relativeToPar, score.strokes);
+    saved.add(score.playerId);
   }
 }
 
