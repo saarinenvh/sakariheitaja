@@ -37,7 +37,7 @@ import { ChatMessenger } from "../chatMessenger";
 import { MetrixClient, readRoundPayload, RoundFetchResult } from "../../integrations/metrix/client";
 import { OpenWeatherClient } from "../../integrations/openweather/client";
 
-const messenger: ChatMessenger = { sendText: mocks.send, sendHtml: mocks.send };
+const messenger: ChatMessenger = { sendText: mocks.send, sendHtml: mocks.send, sendVideo: vi.fn() };
 const openWeather: OpenWeatherClient = { getCurrentWeather: vi.fn(), getCityWeather: vi.fn() };
 const metrix: MetrixClient = {
   getRound: async roundId => readRoundPayload(await mocks.getData(), roundId),

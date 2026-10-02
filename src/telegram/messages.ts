@@ -2,8 +2,6 @@ export const competition = {
   followUsage:      "Anna metrixId komennon perään. Esim: /follow 12345",
   followNoNumber:   "Ei löydy numeroa viestistä, urpo.",
   followStarted:    "Okei, aletaan kattoo vähä kiekkogolffii (c) Ian Andersson",
-  followNoPlayers:  "Ei löydy seurattavia pelaajia tästä kisasta. Lopetan seuraamisen.",
-  followInvalid:    "Mitä sä säädät?? XD Laita se kisa julkiseks tai kokeile oikeeta osotetta!",
 
   lopetaUsage:      "Anna kisan id. Esim: /lopeta 42",
   lopetaOk:         "No olihan se kivaa taas, jatketaan ens kerralla.",
@@ -15,7 +13,6 @@ export const competition = {
   top5Usage:        "Jaa, vai että minkäs kisan top tulokset haluut? Kokeile vaik /pelit komentoo ja lisää kisan id /top5 komennon perään. Aasi!",
   top5NoneActive:   "Varmaa pitäis jotai kisaa seuratakki.",
 
-  endSoon:          "Dodii, ne kisat oli sit siinä, tässä olis sit vielä lopputulokset!",
 
   scoreFound:       (name: string, diff: number | null, order: number | null) =>
     `${name} on tuloksessa ${diff ?? "?"} ja sijalla ${order ?? "?"}! Hienosti`,
@@ -51,7 +48,6 @@ export const scores = {
 export const weather = {
   usage:      "Anna kaupunki. Esim: /saa Helsinki",
   intro:      "Oiskohan nyt hyvä hetki puhua säästä?",
-  notFound:   (city: string) => `Mikä vitun ${city}? - Eihän tommosta mestaa oo ees olemassakaa.`,
 };
 
 export const recipe = {

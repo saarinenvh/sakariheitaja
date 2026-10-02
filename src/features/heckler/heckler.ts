@@ -1,7 +1,7 @@
 import { ollama } from "../../integrations/ollama";
 import { loadPrompt } from "../../prompts/prompts";
 import { getRandom } from "../../shared/utils";
-import { sakariResponses } from "../../config/phrases";
+import { sakariResponses } from "./cannedHeckles";
 import { moduleLogger } from "../../shared/logger";
 
 const log = moduleLogger("heckler");

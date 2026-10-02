@@ -2,12 +2,13 @@ import { Composer, Context } from "grammy";
 import { moduleLogger } from "../../../shared/logger";
 import { getRandom } from "../../../shared/utils";
 import { giphy } from "../../../integrations/giphy";
-import { sakariNames, randomQuote } from "../../../config/phrases";
+import { sakariNames, randomQuote } from "../chatter/phrases";
 import { fun as MSG } from "../../messages";
 import { heckle, llmHeckle, recordMessage, getRecentMessages } from "../../../features/heckler/heckler";
 import { llmAnswer } from "../../../features/match-play-asker/matchPlayAsker";
 import { sendMorningGreeting } from "../../../features/morning-greeting/morningGreeting";
 import { readConfig } from "../../../config";
+import { morningGreetingDependencies } from "../../dependencies";
 
 const log = moduleLogger("fun");
 
@@ -95,7 +96,7 @@ if (readConfig().llmEnabled) {
   });
 
   fun.command("aamuu", async ctx => {
-    await sendMorningGreeting(ctx.api, ctx.chat.id);
+    await sendMorningGreeting(morningGreetingDependencies, ctx.chat.id);
   });
 }
 

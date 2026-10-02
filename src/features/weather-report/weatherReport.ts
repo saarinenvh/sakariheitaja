@@ -1,6 +1,5 @@
 import { CityWeather, OpenWeatherClient } from "../../integrations/openweather/client";
-import { weatherEmojis } from "../../config/phrases";
-import { weather as MSG } from "../../telegram/messages";
+import { cityNotFound, weatherEmojis } from "./phrases";
 import { createDate } from "../../shared/utils";
 
 /** The `/saa` message: `html` for a found city, `text` when OpenWeatherMap doesn't know it. */
@@ -8,7 +7,7 @@ export type CityWeatherReport = { kind: "found"; html: string } | { kind: "not-f
 
 export async function buildCityWeatherReport(weather: OpenWeatherClient, city: string): Promise<CityWeatherReport> {
   const report = await weather.getCityWeather(city);
-  return report ? { kind: "found", html: formatCityWeather(report) } : { kind: "not-found", text: MSG.notFound(city) };
+  return report ? { kind: "found", html: formatCityWeather(report) } : { kind: "not-found", text: cityNotFound(city) };
 }
 
 function formatCityWeather(data: CityWeather): string {

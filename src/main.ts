@@ -8,7 +8,7 @@ const log = moduleLogger("main");
 
 import { dataSource } from "./db/dataSource";
 import { bot } from "./telegram/bot";
-import { trackerDependencies } from "./telegram/dependencies";
+import { morningGreetingDependencies, trackerDependencies } from "./telegram/dependencies";
 import * as registry from "./features/live-scoring/trackerRegistry";
 import { ScoreTracker } from "./features/live-scoring/scoreTracker";
 import * as competitionService from "./features/live-scoring/competitions";
@@ -52,7 +52,7 @@ bot.catch(botError => {
 // ── Startup ───────────────────────────────────────────────────────────────────
 
 async function init(): Promise<void> {
-  startMorningGreeter(bot);
+  startMorningGreeter(morningGreetingDependencies, readConfig().telegram.morningChatId);
 
   const unfinished = await competitionService.getUnfinished();
   for (const i of unfinished) {

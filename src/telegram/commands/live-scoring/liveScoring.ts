@@ -3,6 +3,7 @@ import { ScoreTracker } from "../../../features/live-scoring/scoreTracker";
 import * as competitionService from "../../../features/live-scoring/competitions";
 import * as registry from "../../../features/live-scoring/trackerRegistry";
 import { competition as MSG } from "../../messages";
+import { liveScoringMessages } from "../../../features/live-scoring/messages";
 import { HTML_NO_PREVIEW } from "../../sendOptions";
 import { trackerDependencies } from "../../dependencies";
 
@@ -24,7 +25,7 @@ competition.command("follow", async ctx => {
   const tracker = await new ScoreTracker(result.insertId, metrixId, chatId, trackerDependencies).init();
 
   if (!tracker.following) {
-    await ctx.reply(tracker.initializationError ?? MSG.followInvalid);
+    await ctx.reply(tracker.initializationError ?? liveScoringMessages.followInvalid);
     await competitionService.remove(String(result.insertId));
     return;
   }

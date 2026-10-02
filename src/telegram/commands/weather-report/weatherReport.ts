@@ -2,7 +2,7 @@ import { Composer, Context } from "grammy";
 import { openWeather } from "../../../integrations/openweather";
 import { buildCityWeatherReport } from "../../../features/weather-report/weatherReport";
 import { HTML_OPTIONS } from "../../sendOptions";
-import { citys } from "../../../config/phrases";
+import { cities } from "../../../features/weather-report/phrases";
 import { getRandom } from "../../../shared/utils";
 import { weather as MSG } from "../../messages";
 
@@ -21,7 +21,7 @@ weather.command("saa", async ctx => {
 // Same as /saa but picks a random city from the predefined city list in phrases config.
 weather.command("randomsaa", async ctx => {
   await ctx.reply(MSG.intro);
-  await replyWithWeather(ctx, citys[getRandom(citys.length)]);
+  await replyWithWeather(ctx, cities[getRandom(cities.length)]);
 });
 
 async function replyWithWeather(ctx: Context, city: string): Promise<void> {
