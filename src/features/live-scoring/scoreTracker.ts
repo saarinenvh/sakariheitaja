@@ -1,34 +1,28 @@
 import Poller from "./poller";
-import { formatTopList } from "./topList";
-import { truncateCourseName } from "../disc-golf/courseName";
-import * as playerRepo from "../../db/repositories/PlayerRepository";
-import * as competitionService from "../disc-golf/services/CompetitionService";
-import * as courseService from "../disc-golf/services/CourseService";
-import * as scoreService from "../disc-golf/services/ScoreService";
-import { competition as MSG } from "../../config/messages";
+import { RoundCourseData } from "./courseData";
+import { formatPlayerAnnouncement } from "./playerAnnouncement";
+import { finishRound } from "./roundFinalizer";
+import { formatRoundTopList } from "./topList";
 import { ChatMessenger } from "../chatMessenger";
-import { updateProfiles } from "../disc-golf/scores/playerProfiles";
-import { computeAndApplySwaps, formatBagtagAnnouncement, getMissingTagPlayers, selectBagtagParticipants } from "../disc-golf/scores/bagtags";
-import { escapeHtml } from "../disc-golf/commentary/format/commentaryMessage";
+import { competition as MSG } from "../../config/messages";
+import * as playerRepo from "../../db/repositories/PlayerRepository";
+import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client";
+import { UnsupportedRoundError } from "../../integrations/metrix/round/normalize";
+import { hasTrackedRoundEnded, trackRoundPlayers } from "../../integrations/metrix/round/results";
+import { MetrixRound, RoundPlayer, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
 import { RoundCommentary } from "../disc-golf/commentary/roundCommentary";
 import { writeRoundCommentary } from "../disc-golf/commentary/write/commentaryRuntime";
-import {
-  hasTrackedRoundEnded, selectFinalScores, selectRankedResults, selectTrackedRankedResults, trackRoundPlayers,
-} from "../../integrations/metrix/round/results";
-import { MetrixRound, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
-import { UnsupportedRoundError } from "../../integrations/metrix/round/normalize";
-import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client";
+import { getMissingTagPlayers } from "../disc-golf/scores/bagtags";
+import * as scoreService from "../disc-golf/services/ScoreService";
 import { moduleLogger } from "../../shared/logger";
-import { fetchCurrentWeather, WeatherObservation } from "../../shared/weather";
-import { CourseLocationResult } from "../../integrations/metrix/location/courseLocation";
-import { CourseInfo } from "../disc-golf/commentary/facts/courseCommentaryFacts";
-import { buildRoundRatings } from "../disc-golf/commentary/facts/roundRatings";
-import { CourseDetails } from "../../integrations/metrix/course/courseDetails";
-import { CourseStatistics } from "../../integrations/metrix/statistics/courseStatistics";
 
-const log = moduleLogger("orchestrator");
+const log = moduleLogger("live-scoring");
 
-export class Orchestrator {
+/**
+ * Follows one Metrix round in one chat: polls it, hands every change to commentary, and finishes the round
+ * once every tracked player is done. Created by `/follow`, and on startup for rounds still unfinished.
+ */
+export class ScoreTracker {
   following = true;
   snapshot: MetrixRound | null = null;
   trackedPlayers: TrackedRoundPlayer[] = [];
@@ -37,18 +31,18 @@ export class Orchestrator {
   private poller: Poller | null = null;
   private pollQueue: Promise<void> = Promise.resolve();
   private endQueued = false;
-  private commentary: RoundCommentary;
-  private courseLocation: CourseLocationResult | null = null;
-  private courseInfo: Promise<CourseInfo> | null = null;
+  private readonly commentary: RoundCommentary;
+  private readonly course: RoundCourseData;
 
   constructor(
     public id: number, public metrixId: string, public chatId: number,
     private readonly messenger: ChatMessenger, private readonly metrix: MetrixClient, private playersAnnounced = false,
   ) {
+    this.course = new RoundCourseData(metrix, metrixId, () => this.snapshot);
     this.commentary = new RoundCommentary(chatId, metrixId, {
       write: writeRoundCommentary,
-      fetchWeather: () => this.fetchCourseWeather(),
-      fetchCourse: () => this.fetchCourseInfo(),
+      fetchWeather: () => this.course.weather(),
+      fetchCourse: () => this.course.info(),
       send: async html => {
         await messenger.sendHtml(chatId, html);
         log.info({ metrixId, chars: html.length }, "commentary message sent");
@@ -58,6 +52,7 @@ export class Orchestrator {
     });
   }
 
+  /** Loads the round, announces the players and starts polling; `following` is false when it couldn't start. */
   async init(): Promise<this> {
     const initial = await this.metrix.getRound(this.metrixId);
     if (initial.kind !== "fetched") {
@@ -76,71 +71,9 @@ export class Orchestrator {
     }
     this.commentary.observe(this.snapshot, this.trackedPlayers);
     await this.announceIfNeeded();
-    const initialDelay = this.msUntilStart(this.snapshot.date);
-    this.poller = new Poller(this.metrixId, () => this.metrix.getRound(this.metrixId));
-    this.poller.on("data", (result: RoundFetchResult) => this.enqueuePoll(result));
-    this.poller.on("fetchError", (error: Error) => log.error({ metrixId: this.metrixId, err: error }, "poll failed"));
-    this.poller.start(initialDelay);
+    this.startPolling(this.snapshot);
     log.info({ metrixId: this.metrixId, round: this.snapshot.name }, "started following");
     return this;
-  }
-
-  private async fetchCourseWeather(): Promise<WeatherObservation | null> {
-    const round = this.snapshot;
-    if (!round?.courseId) return null;
-    const layoutLocation = (await this.fetchCourseInfo()).details?.location ?? null;
-    const location = layoutLocation ? { kind: "found" as const, location: { ...layoutLocation, city: null } } : this.courseLocation
-      ?? await this.metrix.findCourseLocation(round.courseId, round.courseName);
-    if (!layoutLocation && location.kind !== "failed") this.courseLocation = location;
-    if (location.kind !== "found") {
-      log.warn({ metrixId: this.metrixId, location: location.kind }, "no course location for weather");
-      return null;
-    }
-    const weather = await fetchCurrentWeather(location.location);
-    if (weather.kind === "failed") {
-      log.warn({ metrixId: this.metrixId, reason: weather.reason }, "weather unavailable");
-      return null;
-    }
-    const { temperatureC, description } = weather.observation;
-    log.info({ metrixId: this.metrixId, temperatureC, description }, "weather observed");
-    return weather.observation;
-  }
-
-  /** Fetched once per round; each part is null when Metrix doesn't have it or the key isn't configured. */
-  private fetchCourseInfo(): Promise<CourseInfo> {
-    this.courseInfo ??= this.loadCourseInfo();
-    return this.courseInfo;
-  }
-
-  private async loadCourseInfo(): Promise<CourseInfo> {
-    const courseId = this.snapshot?.courseId;
-    if (!courseId) return { details: null, statistics: null };
-    const [details, statistics] = await Promise.all([
-      this.loadCourseDetails(courseId).catch(error => this.reportCourseDataFailure("details", error)),
-      this.loadCourseStatistics(courseId).catch(error => this.reportCourseDataFailure("statistics", error)),
-    ]);
-    log.info({ metrixId: this.metrixId }, `course data ${details ? "with" : "without"} layout details, ${statistics ? "with" : "without"} statistics`);
-    return { details, statistics };
-  }
-
-  private reportCourseDataFailure(part: string, error: unknown): null {
-    log.warn({ metrixId: this.metrixId, err: error }, `course ${part} unavailable`);
-    return null;
-  }
-
-  private async loadCourseDetails(courseId: string): Promise<CourseDetails | null> {
-    const result = await this.metrix.getCourseDetails(courseId);
-    if (result.kind === "found") return result.details;
-    if (result.kind === "unconfigured") return null;
-    log.warn({ metrixId: this.metrixId, reason: result.reason }, "course details unavailable");
-    return null;
-  }
-
-  private async loadCourseStatistics(courseId: string): Promise<CourseStatistics | null> {
-    const result = await this.metrix.getCourseStatistics(courseId);
-    if (result.kind === "found") return result.statistics;
-    if (result.kind === "failed") log.warn({ metrixId: this.metrixId, reason: result.reason }, "course statistics unavailable");
-    return null;
   }
 
   stopFollowing(): void {
@@ -149,18 +82,21 @@ export class Orchestrator {
     this.commentary.stop();
   }
 
-  getScoreByPlayerName(name: string): MetrixRound["players"][number] | undefined {
+  getScoreByPlayerName(name: string): RoundPlayer | undefined {
     return this.snapshot?.players.find(player => player.name === name);
   }
 
   async sendTopList(): Promise<void> {
     if (!this.snapshot) return;
-    const { details } = await this.fetchCourseInfo();
-    const ratings = buildRoundRatings(details?.rating ?? null, this.snapshot.players);
-    const message = formatTopList(
-      this.snapshot.name, selectRankedResults(this.snapshot.players), selectTrackedRankedResults(this.trackedPlayers), ratings,
-    );
+    const message = formatRoundTopList(this.snapshot, this.trackedPlayers, await this.course.info());
     await this.messenger.sendText(this.chatId, message);
+  }
+
+  private startPolling(round: MetrixRound): void {
+    this.poller = new Poller(this.metrixId, () => this.metrix.getRound(this.metrixId));
+    this.poller.on("data", (result: RoundFetchResult) => this.enqueuePoll(result));
+    this.poller.on("fetchError", (error: Error) => log.error({ metrixId: this.metrixId, err: error }, "poll failed"));
+    this.poller.start(msUntilStart(round.date));
   }
 
   private enqueuePoll(result: RoundFetchResult): Promise<void> {
@@ -185,26 +121,18 @@ export class Orchestrator {
     if (hasTrackedRoundEnded(tracked)) this.queueRoundEnd(round, tracked);
   }
 
+  /** The round ends only after the last commentary message has gone out. */
   private queueRoundEnd(round: MetrixRound, tracked: TrackedRoundPlayer[]): void {
     this.endQueued = true;
     this.poller?.stop();
     void this.commentary.idle().then(async () => {
       if (!this.following) return;
-      await this.handleRoundEnd(round, tracked);
+      this.stopFollowing();
+      log.info({ metrixId: this.metrixId, round: round.name }, "tracked scorecards are finished");
+      await finishRound({
+        chatId: this.chatId, competitionId: this.id, messenger: this.messenger, sendTopList: () => this.sendTopList(),
+      }, round, tracked);
     }).catch(error => log.error({ metrixId: this.metrixId, err: error }, "end handler failed"));
-  }
-
-  private async handleRoundEnd(round: MetrixRound, tracked: TrackedRoundPlayer[]): Promise<void> {
-    this.stopFollowing();
-    log.info({ metrixId: this.metrixId, round: round.name }, "tracked scorecards are finished");
-    await this.messenger.sendText(this.chatId, MSG.endSoon);
-    await competitionService.markDone(this.id);
-    const course = await courseService.getOrCreate(round.courseName);
-    if (course) await scoreService.saveResults(selectFinalScores(tracked), this.chatId, course.id, this.id);
-    updateProfiles(this.chatId, selectTrackedRankedResults(tracked), selectRankedResults(round.players));
-    const bagtags = computeAndApplySwaps(this.chatId, selectBagtagParticipants(tracked));
-    await this.sendTopList();
-    await this.messenger.sendHtml(this.chatId, formatBagtagAnnouncement(bagtags));
   }
 
   private async refreshTrackedPlayers(round: MetrixRound): Promise<TrackedRoundPlayer[]> {
@@ -214,21 +142,15 @@ export class Orchestrator {
 
   private async announceIfNeeded(): Promise<void> {
     if (!this.snapshot || this.trackedPlayers.length === 0 || this.playersAnnounced) return;
-    const course = `<a href="https://discgolfmetrix.com/${this.metrixId}">${escapeHtml(truncateCourseName(this.snapshot.courseName))}</a>`;
-    let message = `Peliareenana toimii ${course}\n\nJa tällä kertaa kisassa on mukana:\n`;
-    for (const tracked of this.trackedPlayers) message += `${escapeHtml(tracked.player.name)}\n`;
-    const names = this.trackedPlayers.map(tracked => ({ Name: tracked.player.name }));
-    const missingTags = getMissingTagPlayers(this.chatId, names);
-    if (missingTags.length > 0) {
-      message += `\n🏷️ Ilman tägiä: ${missingTags.map(escapeHtml).join(", ")}\nAseta: /bagtag set [nimi] [numero]`;
-    }
-    await this.messenger.sendHtml(this.chatId, message);
+    const names = this.trackedPlayers.map(tracked => tracked.player.name);
+    const missingTags = getMissingTagPlayers(this.chatId, names.map(name => ({ Name: name })));
+    await this.messenger.sendHtml(this.chatId, formatPlayerAnnouncement(this.metrixId, this.snapshot.courseName, names, missingTags));
     this.playersAnnounced = true;
   }
+}
 
-  private msUntilStart(date: string): number {
-    const offsetMs = new Date().getTimezoneOffset() * 60 * 1000;
-    const difference = new Date(date).getTime() + offsetMs - Date.now();
-    return difference > 0 ? difference : 0;
-  }
+function msUntilStart(date: string): number {
+  const offsetMs = new Date().getTimezoneOffset() * 60 * 1000;
+  const difference = new Date(date).getTime() + offsetMs - Date.now();
+  return difference > 0 ? difference : 0;
 }

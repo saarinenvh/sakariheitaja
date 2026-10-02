@@ -1,28 +1,29 @@
-import { Orchestrator } from "./scoreTracker";
+import { ScoreTracker } from "./scoreTracker";
 
-const registry = new Map<number, Orchestrator[]>();
+/** The rounds each chat follows right now; in memory, rebuilt on startup from unfinished competitions. */
+const registry = new Map<number, ScoreTracker[]>();
 
-export function add(chatId: number, orchestrator: Orchestrator): void {
+export function add(chatId: number, tracker: ScoreTracker): void {
   if (!registry.has(chatId)) registry.set(chatId, []);
-  registry.get(chatId)!.push(orchestrator);
+  registry.get(chatId)!.push(tracker);
 }
 
-export function getActive(chatId: number): Orchestrator[] {
-  const active = (registry.get(chatId) ?? []).filter(o => o.following);
+export function getActive(chatId: number): ScoreTracker[] {
+  const active = (registry.get(chatId) ?? []).filter(tracker => tracker.following);
   registry.set(chatId, active);
   return active;
 }
 
-export function find(chatId: number, metrixId: string): Orchestrator | undefined {
-  return getActive(chatId).find(o => o.metrixId === metrixId);
+export function find(chatId: number, metrixId: string): ScoreTracker | undefined {
+  return getActive(chatId).find(tracker => tracker.metrixId === metrixId);
 }
 
-export function remove(chatId: number, metrixId: string): Orchestrator | undefined {
+export function remove(chatId: number, metrixId: string): ScoreTracker | undefined {
   const active = getActive(chatId);
-  const idx = active.findIndex(o => o.metrixId === metrixId);
+  const idx = active.findIndex(tracker => tracker.metrixId === metrixId);
   if (idx === -1) return undefined;
-  const [orchestrator] = active.splice(idx, 1);
-  orchestrator.stopFollowing();
+  const [tracker] = active.splice(idx, 1);
+  tracker.stopFollowing();
   registry.set(chatId, active);
-  return orchestrator;
+  return tracker;
 }
