@@ -54,4 +54,30 @@ describe("formatBagtagAnnouncement", () => {
     const msg = formatBagtagAnnouncement({ swaps: [], unchanged: [], noTag: [] });
     expect(msg).toContain("ei vaihtoja");
   });
+  it("escapes player names, which are HTML in the announcement", () => {
+    const msg = formatBagtagAnnouncement({
+      swaps: [{ playerName: "Matti <3", from: 7, to: 3 }],
+      unchanged: [{ playerName: "A & B", tag: 4 }],
+      noTag: ["<b>Pekka</b>"],
+    });
+    expect(msg).toContain("Matti &lt;3: #7");
+    expect(msg).toContain("A &amp; B: #4");
+    expect(msg).toContain("Ilman tägiä: &lt;b&gt;Pekka&lt;/b&gt;");
+  });
+});
+
+describe("formatBagtagList", () => {
+  it("escapes the names chat members set", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "sakke-tag-list-"));
+    vi.stubEnv("DATA_DIR", directory);
+    vi.resetModules();
+    try {
+      const tags = await import("./bagtags");
+      tags.setBagtag(-100, "Teppo <3", 1);
+      expect(tags.formatBagtagList(-100)).toContain("#1 — Teppo &lt;3");
+    } finally {
+      vi.unstubAllEnvs();
+      rmSync(directory, { recursive: true });
+    }
+  });
 });

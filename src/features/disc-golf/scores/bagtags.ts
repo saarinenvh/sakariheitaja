@@ -4,6 +4,7 @@ import { readConfig } from "../../../config";
 import { finalTotals } from "../../../integrations/metrix/round/results";
 import { TrackedRoundPlayer } from "../../../integrations/metrix/round/types";
 import { moduleLogger } from "../../../shared/logger";
+import { escapeHtml } from "../../../shared/html";
 
 const log = moduleLogger("bagtags");
 
@@ -159,15 +160,15 @@ export function formatBagtagAnnouncement(result: BagtagRoundResult): string {
     : "🏷️ <b>Tägit tarkistettu</b> — ei vaihtoja tällä kertaa.\n\n";
 
   for (const swap of result.swaps) {
-    msg += `${swap.playerName}: #${swap.from} → <b>#${swap.to}</b>\n`;
+    msg += `${escapeHtml(swap.playerName)}: #${swap.from} → <b>#${swap.to}</b>\n`;
   }
 
   for (const u of result.unchanged) {
-    msg += `${u.playerName}: #${u.tag} (pysyy)\n`;
+    msg += `${escapeHtml(u.playerName)}: #${u.tag} (pysyy)\n`;
   }
 
   if (result.noTag.length > 0) {
-    msg += `\nIlman tägiä: ${result.noTag.join(", ")}\n`;
+    msg += `\nIlman tägiä: ${result.noTag.map(escapeHtml).join(", ")}\n`;
     msg += `Aseta tägi: /bagtag set [nimi] [numero]`;
   }
 
@@ -184,7 +185,7 @@ export function formatBagtagList(chatId: number): string {
 
   let msg = "🏷️ <b>Bag Tag tilanne:</b>\n\n";
   for (const [name, tag] of entries) {
-    msg += `#${tag} — ${name}\n`;
+    msg += `#${tag} — ${escapeHtml(name)}\n`;
   }
   return msg;
 }

@@ -1,4 +1,4 @@
-import { escapeHtml } from "../disc-golf/commentary/format/commentaryMessage";
+import { escapeHtml } from "../../shared/html";
 import { truncateCourseName } from "../disc-golf/courseName";
 
 /** The message that starts following: the course, the tracked players, and who still has no bagtag. */
