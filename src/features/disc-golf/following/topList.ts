@@ -1,4 +1,4 @@
-import { MetrixPlayerResult, TrackedPlayer } from "../../../types/metrix";
+import { RankedResult } from "../../../integrations/metrix/round/results";
 
 export function truncateCourseName(rawName: string): string {
   const name = rawName.replace(/&rarr;/g, "");
@@ -7,26 +7,23 @@ export function truncateCourseName(rawName: string): string {
 
 /** `roundRatings` holds finished rounds' ratings by player name; those rows show the rating after the score. */
 export function formatTopList(
-  competitionName: string, results: MetrixPlayerResult[], trackedPlayers: TrackedPlayer[], roundRatings: ReadonlyMap<string, number>,
+  competitionName: string, results: readonly RankedResult[], trackedPlayers: readonly RankedResult[], roundRatings: ReadonlyMap<string, number>,
 ): string {
-  const divisions = [...new Set(results.map(r => r.ClassName))];
-  const rankings: Record<string, MetrixPlayerResult[]> = {};
+  const divisions = [...new Set(results.map(result => result.division))];
+  const rankings: Record<string, RankedResult[]> = {};
 
   for (const division of divisions) {
     rankings[division] = results
-      .filter(r => r.ClassName === division && r.OrderNumber <= 5)
-      .sort((a, b) => a.OrderNumber - b.OrderNumber);
+      .filter(result => result.division === division && result.position <= 5)
+      .sort((a, b) => a.position - b.position);
   }
 
-  // Tracked players outside their division's top 5, grouped so that players
-  // from different divisions don't read as one ranking - sorting purely by
-  // OrderNumber put an MA3 6th place above an MPO 8th as though they were
-  // competing against each other, with nothing on the line to say otherwise.
+  // Tracked players outside their division's top 5 carry their division, so places from different divisions don't read as one ranking.
   const OTHERS = "Muut Sankarit";
-  const outsideTopFive = trackedPlayers.filter(player => player.OrderNumber > 5);
+  const outsideTopFive = trackedPlayers.filter(player => player.position > 5);
   if (outsideTopFive.length) {
     rankings[OTHERS] = [...outsideTopFive].sort(
-      (a, b) => a.ClassName.localeCompare(b.ClassName) || a.OrderNumber - b.OrderNumber,
+      (a, b) => a.division.localeCompare(b.division) || a.position - b.position,
     );
   }
 
@@ -34,10 +31,10 @@ export function formatTopList(
   for (const [division, players] of Object.entries(rankings)) {
     message += `Sarja ${division}\n`;
     for (const player of players) {
-      const suffix = division === OTHERS ? ` (${player.ClassName})` : "";
-      const rating = roundRatings.get(player.Name);
+      const suffix = division === OTHERS ? ` (${player.division})` : "";
+      const rating = roundRatings.get(player.playerName);
       const ratingPart = rating === undefined ? "" : ` (rating ${rating})`;
-      message += `${player.OrderNumber}. ${player.Name}${suffix}\t\t\t\t${player.Diff}${ratingPart}\n`;
+      message += `${player.position}. ${player.playerName}${suffix}\t\t\t\t${player.relativeToPar}${ratingPart}\n`;
     }
     message += "\n";
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HoleScore } from "../../metrix/scorecard";
+import { HoleScore } from "../../../../integrations/metrix/round/types";
 import {
   buildRoundRatings,
   computeRating,
@@ -15,7 +15,7 @@ import {
   holeBearingDeg,
   selectCommentaryRating,
 } from "./courseFacts";
-import { RoundPlayer } from "../../metrix/metrixRound";
+import { RoundPlayer } from "../../../../integrations/metrix/round/types";
 
 const REAL_ANCHORS: CourseRatingAnchors = { value1: 909.61, result1: 63.06, value2: 1000, result2: 55.53 };
 // Rating = 1000 - strokes, so a stroke count maps straight to a chosen rating.

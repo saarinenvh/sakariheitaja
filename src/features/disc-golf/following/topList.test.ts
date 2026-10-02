@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { MetrixPlayerResult, TrackedPlayer } from "../../../types/metrix";
+import { RankedResult } from "../../../integrations/metrix/round/results";
 import { formatTopList } from "./topList";
 
 // A competition's Results contain every division at once, and Metrix numbers positions
 // within a division, so there is one OrderNumber === 1 per division.
 
-function player(name: string, className: string, orderNumber: number, diff: number): MetrixPlayerResult {
-  return { Name: name, ClassName: className, OrderNumber: orderNumber, Diff: diff, Sum: 54 + diff };
+function player(name: string, division: string, position: number, relativeToPar: number): RankedResult {
+  return { playerName: name, division, position, relativeToPar, strokes: 54 + relativeToPar };
 }
 
 describe("formatTopList", () => {
@@ -15,10 +15,7 @@ describe("formatTopList", () => {
       ...[1, 2, 3, 4, 5, 6].map(n => player(`MPO${n}`, "MPO", n, n)),
       ...[1, 2, 3, 4, 5, 6].map(n => player(`MA3_${n}`, "MA3", n, n + 10)),
     ];
-    const tracked: TrackedPlayer[] = [
-      { ...player("MPO6", "MPO", 6, 6), id: 1 },
-      { ...player("MA3_6", "MA3", 6, 16), id: 2 },
-    ];
+    const tracked = [player("MPO6", "MPO", 6, 6), player("MA3_6", "MA3", 6, 16)];
 
     const message = formatTopList("Tiistaikisa", results, tracked, new Map());
 

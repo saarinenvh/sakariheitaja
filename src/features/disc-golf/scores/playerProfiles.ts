@@ -1,7 +1,7 @@
 import { join } from "path";
 import { createJsonStore } from "../../../shared/jsonStore";
 import { readConfig } from "../../../config";
-import { MetrixPlayerResult, TrackedPlayer } from "../../../types/metrix";
+import { RankedResult } from "../../../integrations/metrix/round/results";
 import { moduleLogger } from "../../../shared/logger";
 
 const log = moduleLogger("player-profiles");
@@ -59,18 +59,13 @@ export function buildProfileSnippet(chatId: number, name: string): string | unde
   return parts.join(", ");
 }
 
-// Takes the full result set rather than a single field size: OrderNumber is a
-// position WITHIN a division, so dividing it by the whole competition's head
-// count (what the caller used to pass) made every player in a small division
-// look like a front-runner - 3rd of 10 in MA3 at a 50-player event scored 0.06,
-// i.e. "tyypillisesti kärjessä". That rating is fed straight back into
-// commentary via buildProfileSnippet, so it isn't only a stats problem.
-export function updateProfiles(chatId: number, trackedPlayers: TrackedPlayer[], allResults: MetrixPlayerResult[]): void {
+// A position is within a division, so it is scored against that division's field, not the whole event's.
+export function updateProfiles(chatId: number, trackedPlayers: readonly RankedResult[], allResults: readonly RankedResult[]): void {
   if (allResults.length === 0) return;
 
   const divisionFieldSize = new Map<string, number>();
   for (const r of allResults) {
-    divisionFieldSize.set(r.ClassName, (divisionFieldSize.get(r.ClassName) ?? 0) + 1);
+    divisionFieldSize.set(r.division, (divisionFieldSize.get(r.division) ?? 0) + 1);
   }
 
   const store = load();
@@ -80,10 +75,10 @@ export function updateProfiles(chatId: number, trackedPlayers: TrackedPlayer[], 
   const today = new Date().toISOString().slice(0, 10);
 
   for (const player of trackedPlayers) {
-    const existing = store[chatKey][player.Name];
-    const fieldSize = divisionFieldSize.get(player.ClassName) ?? allResults.length;
+    const existing = store[chatKey][player.playerName];
+    const fieldSize = divisionFieldSize.get(player.division) ?? allResults.length;
     if (fieldSize === 0) continue;
-    const positionPct = player.OrderNumber / fieldSize;
+    const positionPct = player.position / fieldSize;
 
     const prevGames = existing?.gamesPlayed ?? 0;
     const prevAvgPct = existing?.avgPositionPct ?? positionPct;
@@ -94,7 +89,7 @@ export function updateProfiles(chatId: number, trackedPlayers: TrackedPlayer[], 
       positionPct > prevAvgPct + 0.15 ? "cold" :
       "steady";
 
-    store[chatKey][player.Name] = {
+    store[chatKey][player.playerName] = {
       ...(existing ?? {}),
       recentForm,
       gamesPlayed: prevGames + 1,

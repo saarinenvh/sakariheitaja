@@ -19,10 +19,12 @@ A Telegram bot that follows and commentates disc golf competitions live from [Di
 Code computes every fact; the model only writes the message. Start reading at
 `Orchestrator.onPollResult` in `src/features/disc-golf/following/orchestrator.ts`:
 
-1. `metrix/metrixRound.ts` validates the response and matches tracked players.
-   Metrix reports ties and early-round places as 0 or not at all; those players get
-   a shared place derived from recorded totals.
-2. `commentary/roundCommentary.ts` compares scorecards (`metrix/scorecard.ts`) and
+1. `MetrixClient.getRound` (`src/integrations/metrix/`) fetches the round and
+   normalizes it; `trackRoundPlayers` matches the chat's players. Metrix reports
+   ties and early-round places as 0 or not at all; those players get a shared place
+   derived from recorded totals. What Metrix sends and how each field is normalized
+   is in [`src/integrations/metrix/README.md`](src/integrations/metrix/README.md).
+2. `commentary/roundCommentary.ts` compares scorecards (`commentary/detect/`) and
    queues each poll's changes in order. Updates are grouped by division, and each
    division's update becomes one message.
 3. `commentary/facts/` builds the facts: each player's brief with movement since the
@@ -209,10 +211,11 @@ src/
 ├── bot/
 │   ├── handlers/            # one file per command group
 │   └── system-prompts/      # persona, batch commentator, heckler, asker + context notes
+├── integrations/metrix/     # Metrix client: round, course layout/statistics/location (see its README)
 ├── features/disc-golf/
 │   ├── following/           # orchestrator, poller, top list
-│   ├── metrix/              # Metrix round, scorecard, course layout/statistics/location
 │   ├── commentary/
+│   │   ├── detect/          # scorecard changes, commentary snapshots
 │   │   ├── facts/           # facts computed in code for the model
 │   │   └── writer/          # model context, structured call, fallback
 │   ├── scores/              # bag tags, player profiles

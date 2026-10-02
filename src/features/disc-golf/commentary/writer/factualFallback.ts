@@ -1,4 +1,5 @@
-import { HoleScore, ScoreChange } from "../../metrix/scorecard";
+import { HoleScore } from "../../../../integrations/metrix/round/types";
+import { ScoreChange } from "../detect/scorecardChanges";
 import { FactualCommentaryBrief } from "../facts/playerBrief";
 
 /** Plain factual text for one player, used when the model is off, fails or replies unusably. */

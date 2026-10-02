@@ -1,24 +1,4 @@
-import { z } from "zod";
-import { parseOrThrow } from "../../../../util/validation";
-import { HoleScore, Scorecard } from "../../metrix/scorecard";
-import { optionalIntegerSchema } from "../../metrix/scoreSchemas";
-
-const optionalPositiveIntegerSchema = optionalIntegerSchema.refine(value => value === null || value > 0);
-
-const standingSchema = z.object({
-  position: optionalPositiveIntegerSchema,
-  fieldSize: optionalPositiveIntegerSchema,
-  isProvisional: z.boolean().default(true),
-}).refine(standing => standing.position === null || standing.fieldSize === null
-  || standing.position <= standing.fieldSize);
-
-const roundStateSchema = z.object({
-  totalHoles: optionalPositiveIntegerSchema,
-  status: z.enum(["unknown", "active", "complete", "dnf"]).default("unknown"),
-});
-
-export type Standing = Readonly<z.output<typeof standingSchema>>;
-export type RoundState = Readonly<z.output<typeof roundStateSchema>>;
+import { HoleScore, RoundState, Scorecard, Standing } from "../../../../integrations/metrix/round/types";
 
 export interface CommentaryScope {
   chatId: number;
@@ -54,14 +34,6 @@ export interface RoundSummary {
   recordedStrokes: number | null;
   recordedRelativeToPar: number | null;
   scores: ScoreCounts | null;
-}
-
-export function parseStanding(input: unknown): Standing {
-  return parseOrThrow(standingSchema, input, "commentary standing");
-}
-
-export function parseRoundState(input: unknown): RoundState {
-  return parseOrThrow(roundStateSchema, input, "commentary round state");
 }
 
 export function analyzeRound(scorecard: Scorecard, state: RoundState): RoundSummary {

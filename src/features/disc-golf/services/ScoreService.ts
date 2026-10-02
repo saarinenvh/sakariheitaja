@@ -1,8 +1,8 @@
-import { TrackedPlayer } from "../../../types/metrix";
+import { FinalScore } from "../../../integrations/metrix/round/results";
 import { ScoreRow } from "../../../db/repositories/ScoreRepository";
 import * as scoreRepo from "../../../db/repositories/ScoreRepository";
 import * as courseRepo from "../../../db/repositories/CourseRepository";
-import { ScoreChange } from "../metrix/scorecard";
+import { ScoreChange } from "../commentary/detect/scorecardChanges";
 
 export async function saveRecordedScores(
   playerId: number, changes: readonly ScoreChange[], chatId: number, competitionId: number, courseName: string,
@@ -22,13 +22,13 @@ export async function saveRecordedScores(
 }
 
 export async function saveResults(
-  players: readonly Pick<TrackedPlayer, "id" | "Diff" | "Sum">[],
+  scores: readonly FinalScore[],
   chatId: number,
   courseId: number,
   competitionId: number
 ): Promise<void> {
-  for (const player of players) {
-    await scoreRepo.addResult(player.id, chatId, courseId, competitionId, player.Diff, player.Sum ?? 0);
+  for (const score of scores) {
+    await scoreRepo.addResult(score.playerId, chatId, courseId, competitionId, score.relativeToPar, score.strokes);
   }
 }
 

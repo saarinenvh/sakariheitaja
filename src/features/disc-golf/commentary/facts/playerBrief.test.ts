@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseRoundState, parseStanding } from "./roundAnalysis";
-import { parseScorecard } from "../../metrix/scorecard";
+import { parseRoundState, parseStanding } from "../../../../integrations/metrix/round/normalize";
+import { parseScorecard } from "../../../../integrations/metrix/round/normalize";
 import {
   buildFactualCommentaryBrief, CommentarySnapshot, FactualBriefResult, FactualCommentaryBrief,
 } from "./playerBrief";

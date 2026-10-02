@@ -3,7 +3,7 @@ import { buildCourseCommentaryFacts, CourseInfo } from "../facts/holeFacts";
 import { buildDivisionStandings, DivisionStanding } from "../facts/standings";
 import { FactualCommentaryBrief } from "../facts/playerBrief";
 import { describeLeadHistory, isPlayOrderKnown } from "../facts/leadHistory";
-import { MetrixRound } from "../../metrix/metrixRound";
+import { MetrixRound } from "../../../../integrations/metrix/round/types";
 import { buildScorecardTable } from "../facts/scorecardTable";
 import { buildSpokenNames } from "../facts/spokenNames";
 

@@ -14,10 +14,10 @@ describe("formatBagtagAnnouncement", () => {
       tags.setBagtag(-100, "DNF", 1);
       tags.setBagtag(-100, "Finisher", 2);
       const players = [
-        { Name: "DNF", Diff: null, Group: "1", DNF: "1" },
-        { Name: "Finisher", Diff: 3, Group: "1", DNF: null },
+        { playerName: "DNF", relativeToPar: null, group: "1", dnf: true },
+        { playerName: "Finisher", relativeToPar: 3, group: "1", dnf: false },
       ];
-      expect(tags.computeAndApplySwaps(-100, players, players).swaps).toEqual([
+      expect(tags.computeAndApplySwaps(-100, players).swaps).toEqual([
         { playerName: "Finisher", from: 2, to: 1 },
         { playerName: "DNF", from: 1, to: 2 },
       ]);

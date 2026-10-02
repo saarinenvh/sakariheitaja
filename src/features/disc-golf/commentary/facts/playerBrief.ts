@@ -1,8 +1,7 @@
-import { compareScorecards, Scorecard, ScorecardComparison, ScoreChange } from "../../metrix/scorecard";
-import {
-  analyzeRound, CommentaryScope, comparePublishedStanding, PublishedStanding,
-  RoundState, RoundSummary, sameCommentaryScope, Standing, StandingMovement,
-} from "./roundAnalysis";
+import { compareScorecards, ScorecardComparison, ScoreChange } from "../detect/scorecardChanges";
+import { Scorecard } from "../../../../integrations/metrix/round/types";
+import { analyzeRound, CommentaryScope, comparePublishedStanding, PublishedStanding, RoundSummary, sameCommentaryScope, StandingMovement } from "./roundAnalysis";
+import { RoundState, Standing } from "../../../../integrations/metrix/round/types";
 
 export interface CommentarySnapshot {
   scope: CommentaryScope;

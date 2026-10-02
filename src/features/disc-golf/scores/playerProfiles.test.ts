@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { mkdtempSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { MetrixPlayerResult, TrackedPlayer } from "../../../types/metrix";
+import { RankedResult } from "../../../integrations/metrix/round/results";
 
 // The profile store reads DATA_DIR when the module loads, so it is set before the import.
 process.env.DATA_DIR = mkdtempSync(join(tmpdir(), "sakke-profiles-"));
@@ -14,8 +14,8 @@ beforeAll(async () => {
   ({ updateProfiles, getProfile } = await import("./playerProfiles"));
 });
 
-function player(name: string, className: string, orderNumber: number, diff: number): MetrixPlayerResult {
-  return { Name: name, ClassName: className, OrderNumber: orderNumber, Diff: diff, Sum: 54 + diff };
+function player(name: string, division: string, position: number, relativeToPar: number): RankedResult {
+  return { playerName: name, division, position, relativeToPar, strokes: 54 + relativeToPar };
 }
 
 describe("player profiles", () => {
@@ -25,7 +25,7 @@ describe("player profiles", () => {
       ...Array.from({ length: 40 }, (_, i) => player(`Pro${i + 1}`, "MPO", i + 1, i)),
       ...Array.from({ length: 10 }, (_, i) => player(`Ama${i + 1}`, "MA3", i + 1, i + 20)),
     ];
-    const tracked: TrackedPlayer[] = [{ ...player("Ama8", "MA3", 8, 27), id: 7 }];
+    const tracked = [player("Ama8", "MA3", 8, 27)];
 
     updateProfiles(chatId, tracked, results);
 

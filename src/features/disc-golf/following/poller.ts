@@ -1,5 +1,5 @@
 import EventEmitter from "events";
-import { getData } from "../../../shared/http";
+import { RoundFetchResult } from "../../../integrations/metrix/client";
 import { moduleLogger } from "../../../shared/logger";
 import { readConfig } from "../../../config";
 
@@ -15,16 +15,17 @@ const DORMANT_THRESHOLD = 10;
 
 export default class Poller extends EventEmitter {
   private metrixId: string;
-  private baseUrl: string;
+  private fetchRound: () => Promise<RoundFetchResult>;
   private running: boolean = false;
   private noChangeCount: number = 0;
   private errorCount: number = 0;
   private _timeoutId: NodeJS.Timeout | null = null;
 
-  constructor(metrixId: string, baseUrl: string) {
+  /** Emits "data" with each answered fetch (parsed or invalid); a failed request backs off instead. */
+  constructor(metrixId: string, fetchRound: () => Promise<RoundFetchResult>) {
     super();
     this.metrixId = metrixId;
-    this.baseUrl = baseUrl;
+    this.fetchRound = fetchRound;
   }
 
   start(initialDelay: number = 0): void {
@@ -60,15 +61,15 @@ export default class Poller extends EventEmitter {
     let hadError = false;
 
     try {
-      const data = await getData<unknown>(`${this.baseUrl}${this.metrixId}`);
+      const result = await this.fetchRound();
 
-      if (data === undefined) {
+      if (result.kind === "unavailable") {
         hadError = true;
         this.errorCount++;
-        log.warn({ metrixId: this.metrixId, attempt: this.errorCount }, "invalid or empty response, backing off");
+        log.warn({ metrixId: this.metrixId, attempt: this.errorCount }, "round request failed, backing off");
       } else {
         this.errorCount = 0;
-        this.emit("data", data);
+        this.emit("data", result);
       }
     } catch (err: any) {
       hadError = true;
