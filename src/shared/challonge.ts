@@ -1,8 +1,9 @@
-import Logger from "js-logger";
-import { env } from "./env";
+import { moduleLogger } from "./logger";
+import { readConfig } from "../config";
 
-const TOURNAMENT_URL = env("CHALLONGE_TOURNAMENT_URL") ?? "https://challonge.com/yvept9b5";
-const API_KEY = env("CHALLONGE_API_KEY");
+const log = moduleLogger("challonge");
+
+const { tournamentUrl: TOURNAMENT_URL, apiKey: API_KEY } = readConfig().challonge;
 
 // Extract tournament slug from URL, e.g. "yvept9b5" from "https://challonge.com/fi/yvept9b5"
 function tournamentSlug(): string {
@@ -39,7 +40,7 @@ export async function fetchBracketData(): Promise<BracketData> {
   if (!res.ok) throw new Error(`Challonge API ${res.status}`);
 
   const data = await res.json() as any;
-  Logger.debug(`Challonge v1 API fetch OK`);
+  log.debug("Challonge v1 API fetch OK");
 
   const t = data?.tournament ?? data;
   const participants = (t?.participants ?? []).map((p: any) => {
@@ -58,7 +59,7 @@ export async function fetchBracketData(): Promise<BracketData> {
     };
   });
 
-  Logger.debug(`Challonge bracket parsed: ${matches.length} matches, ${participants.length} participants`);
+  log.debug({ matches: matches.length, participants: participants.length }, "Challonge bracket parsed");
   return { tournamentName: t?.name ?? "Tournament", participants, matches };
 }
 

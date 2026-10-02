@@ -6,6 +6,7 @@ import { createDate } from "./utils";
 import { weather as MSG } from "../config/messages";
 import { HTML_OPTIONS } from "../config/bot";
 import { parseOrThrow } from "../util/validation";
+import { readConfig } from "../config";
 
 interface WeatherResponse {
   cod: string | number;
@@ -17,7 +18,7 @@ interface WeatherResponse {
 }
 
 export async function sendWeatherMessage(city: string, chatId: number, api: Api): Promise<void> {
-  const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=fi&appid=${process.env.OPENWEATHERMAP_APIKEY}`;
+  const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=fi&appid=${readConfig().openWeatherMapApiKey}`;
   const response = await getData<WeatherResponse>(url);
   if (!response || !response.weather?.length) {
     await api.sendMessage(chatId, MSG.notFound(city));
@@ -71,7 +72,7 @@ export type WeatherResult =
   | { kind: "failed"; reason: string };
 
 export async function fetchCurrentWeather(location: WeatherLocation): Promise<WeatherResult> {
-  const apiKey = process.env.OPENWEATHERMAP_APIKEY;
+  const apiKey = readConfig().openWeatherMapApiKey;
   if (!apiKey) return { kind: "failed", reason: "OPENWEATHERMAP_APIKEY is not set" };
 
   const input = await getData<unknown>(buildCurrentWeatherUrl(location, apiKey));

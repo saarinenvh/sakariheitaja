@@ -1,9 +1,11 @@
 import { Composer, Context } from "grammy";
-import Logger from "js-logger";
+import { moduleLogger } from "../../shared/logger";
 import * as scoreService from "../../features/disc-golf/services/ScoreService";
 import { ScoreRow } from "../../db/repositories/ScoreRepository";
 import { scores as MSG } from "../../config/messages";
 import { HTML_OPTIONS } from "../../config/bot";
+
+const log = moduleLogger("scores-command");
 
 export const scores = new Composer();
 
@@ -30,7 +32,7 @@ scores.command("tulokset", async ctx => {
       }
     }
   } catch (err: any) {
-    Logger.error(`tulokset error: ${err.message}`);
+    log.error({ err }, "/tulokset failed");
     await ctx.reply(MSG.error);
   }
 });

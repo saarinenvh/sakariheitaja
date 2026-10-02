@@ -1,18 +1,25 @@
-function toLocalISOString(date: Date): string {
-  const offset = -date.getTimezoneOffset();
-  const sign = offset >= 0 ? "+" : "-";
-  const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, "0");
-  return (
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}` +
-    `${sign}${pad(offset / 60)}:${pad(offset % 60)}`
-  );
+import pino, { Logger } from "pino";
+import { readConfig } from "../config";
+
+export type { Logger };
+
+// The same pino-pretty output as sakke-gateway, with the module name in front of the message.
+const PRETTY_OPTIONS = {
+  colorize: true,
+  translateTime: "HH:MM:ss",
+  ignore: "pid,hostname,module",
+  messageFormat: "[{module}] {msg}",
+};
+
+const rootLogger = createRootLogger();
+
+/** The logger for one module; every line it writes names that module. */
+export function moduleLogger(module: string): Logger {
+  return rootLogger.child({ module });
 }
 
-export const loggerSettings = {
-  formatter: function (messages: any[], context: any) {
-    const timestamp = toLocalISOString(new Date());
-    const level = context.level.name.toUpperCase().padEnd(5);
-    messages.unshift(`${timestamp} [${level}]`);
-  },
-};
+function createRootLogger(): Logger {
+  const { pretty, level } = readConfig().logging;
+  if (!pretty) return pino({ level });
+  return pino({ level, transport: { target: "pino-pretty", options: PRETTY_OPTIONS } });
+}

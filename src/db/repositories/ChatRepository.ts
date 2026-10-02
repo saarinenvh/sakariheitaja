@@ -1,6 +1,8 @@
-import Logger from "js-logger";
+import { moduleLogger } from "../../shared/logger";
 import { dataSource } from "../dataSource";
 import { Chat } from "../entities/Chat";
+
+const log = moduleLogger("chats");
 
 function repo() {
   return dataSource.getRepository(Chat);
@@ -17,5 +19,5 @@ export async function addIfAbsent(chatId: number, name: string): Promise<void> {
     "INSERT INTO chats (id, name) VALUES (?, ?)",
     [chatId, name]
   );
-  Logger.info(`Added new chat: ${chatId}, ${name}`);
+  log.info({ chatId, name }, "added new chat");
 }

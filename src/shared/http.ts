@@ -1,4 +1,6 @@
-import Logger from "js-logger";
+import { moduleLogger } from "./logger";
+
+const log = moduleLogger("http");
 
 const HEADERS = { "User-Agent": "SakariHeitajaBot/1.0 (disc golf commentary bot)" };
 
@@ -21,7 +23,7 @@ export async function getData<T = any>(url: string, timeoutMs: number = DEFAULT_
     // Previously unchecked - an upstream 500 or a rate-limit page was handed
     // back to callers as if it were data.
     if (!response.ok) {
-      Logger.warn(`getData ${safeUrl(url)}: HTTP ${response.status}`);
+      log.warn({ url: safeUrl(url), status: response.status }, "getData: HTTP error");
       return undefined;
     }
 
@@ -31,7 +33,7 @@ export async function getData<T = any>(url: string, timeoutMs: number = DEFAULT_
     // entirely and rejected at the caller instead.
     return await response.json() as T;
   } catch (error: any) {
-    Logger.error(`getData ${safeUrl(url)} failed: ${error.message}`);
+    log.error({ url: safeUrl(url), err: error }, "getData failed");
     return undefined;
   }
 }
@@ -40,12 +42,12 @@ export async function getGiphy(url: string, timeoutMs: number = DEFAULT_TIMEOUT_
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
     if (!response.ok) {
-      Logger.warn(`getGiphy ${safeUrl(url)}: HTTP ${response.status}`);
+      log.warn({ url: safeUrl(url), status: response.status }, "getGiphy: HTTP error");
       return undefined;
     }
     return await response.text();
   } catch (error: any) {
-    Logger.error(`getGiphy ${safeUrl(url)} failed: ${error.message}`);
+    log.error({ url: safeUrl(url), err: error }, "getGiphy failed");
     return undefined;
   }
 }

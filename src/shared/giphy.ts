@@ -1,8 +1,9 @@
 import { getRandom } from "./utils";
+import { readConfig } from "../config";
 
 // Searches Giphy for the given query and returns a random video/gif URL, or null if nothing found.
 export async function searchGiphy(query: string): Promise<string | null> {
-  const apiKey = process.env.GIPHY_API_KEY;
+  const apiKey = readConfig().giphyApiKey;
   if (!apiKey) return null;
 
   const url =

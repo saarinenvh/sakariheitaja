@@ -9,15 +9,18 @@ import { Score } from "./entities/Score";
 import { Ace } from "./entities/Ace";
 import { Eagle } from "./entities/Eagle";
 import { Albatross } from "./entities/Albatross";
+import { readConfig } from "../config";
+
+const database = readConfig().database;
 
 export const dataSource = new DataSource({
   type: "mysql",
-  host: process.env.DB_HOST || "localhost",
-  port: Number(process.env.DB_PORT) || 3306,
-  username: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  host: database.host,
+  port: database.port,
+  username: database.username,
+  password: database.password,
+  database: database.name,
   synchronize: false,
-  logging: process.env.NODE_ENV === "development",
+  logging: database.logQueries,
   entities: [Player, Chat, Competition, Course, PlayerToChat, Score, Ace, Eagle, Albatross],
 });

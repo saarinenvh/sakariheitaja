@@ -270,9 +270,15 @@ averages and difficulty) and today's field average; nothing else depends on it. 
 fetched once per round and is never allowed to delay commentary. `BOT_COMMENTARY_COUNTRY_CODE`
 (default `FI`) is only used to find the course for the weather when there's no integration code.
 
-Blank values are treated as unset. Note that the poll intervals are parsed as
-numbers — an empty string would become `NaN` and spin the Metrix poller, so
-leave them at their defaults rather than blanking them.
+`src/config.ts` is the only code that reads the environment. Blank values are
+treated as unset, so a blank poll interval uses its default. A value that can't be
+used (a poll interval, timeout or port that isn't a positive integer) stops the bot
+at startup with an error naming the variable.
+
+Logs use pino with pino-pretty, in the same format as sakke-gateway: the time, the
+level and `[module] message`, followed by the event's fields (`metrixId`, `err`, …).
+Each module gets its logger from `moduleLogger(name)` in `src/shared/logger.ts`.
+Tests log nothing.
 
 ### Run locally
 

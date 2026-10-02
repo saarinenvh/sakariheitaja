@@ -1,10 +1,14 @@
 import { join } from "path";
 import { createJsonStore } from "../../../shared/jsonStore";
+import { readConfig } from "../../../config";
 import { MetrixPlayerResult, TrackedPlayer } from "../../../types/metrix";
-import Logger from "js-logger";
+import { moduleLogger } from "../../../shared/logger";
 
-const PROFILES_PATH = process.env.DATA_DIR
-  ? join(process.env.DATA_DIR, "player_profiles.json")
+const log = moduleLogger("player-profiles");
+
+const DATA_DIR = readConfig().dataDir;
+const PROFILES_PATH = DATA_DIR
+  ? join(DATA_DIR, "player_profiles.json")
   : join(__dirname, "../../../bot/system-prompts/player_profiles.json");
 
 export interface PlayerProfile {
@@ -100,5 +104,5 @@ export function updateProfiles(chatId: number, trackedPlayers: TrackedPlayer[], 
   }
 
   save(store);
-  Logger.info(`Updated player profiles for ${trackedPlayers.length} players (chat ${chatId})`);
+  log.info({ chatId, players: trackedPlayers.length }, "player profiles updated");
 }

@@ -1,7 +1,9 @@
 import { generate, loadPrompt } from "../shared/llm/ollamaClient";
 import { getRandom } from "../shared/utils";
 import { sakariResponses } from "../config/phrases";
-import Logger from "js-logger";
+import { moduleLogger } from "../shared/logger";
+
+const log = moduleLogger("heckler");
 
 // In-memory ring buffer: last 10 messages per chat
 const messageBuffer = new Map<number, string[]>();
@@ -65,15 +67,15 @@ export async function heckle(chatId: number, trigger: string): Promise<string> {
   const useLlm = getRandom(2) === 1;
 
   if (!useLlm) {
-    Logger.debug(`Heckler → canned`);
+    log.debug("heckler → canned");
     return cannedHeckle();
   }
 
   try {
-    Logger.debug(`Heckler → LLM`);
+    log.debug("heckler → LLM");
     return await llmHeckle(chatId, trigger);
   } catch (err: any) {
-    Logger.warn(`Heckler LLM failed, using canned: ${err.message}`);
+    log.warn({ err }, "heckler LLM failed, using canned");
     return cannedHeckle();
   }
 }

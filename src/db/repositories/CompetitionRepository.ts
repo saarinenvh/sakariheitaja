@@ -1,6 +1,8 @@
-import Logger from "js-logger";
+import { moduleLogger } from "../../shared/logger";
 import { dataSource } from "../dataSource";
 import { Competition } from "../entities/Competition";
+
+const log = moduleLogger("competitions");
 
 function repo() {
   return dataSource.getRepository(Competition);
@@ -24,7 +26,7 @@ export async function create(chatId: number, metrixId: string): Promise<{ insert
 
 export async function deleteById(id: number): Promise<void> {
   await repo().delete(id);
-  Logger.info(`Competition ${id} removed successfully`);
+  log.info({ competitionId: id }, "competition removed");
 }
 
 export async function markFinished(id: number): Promise<void> {

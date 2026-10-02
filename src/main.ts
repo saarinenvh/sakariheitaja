@@ -1,13 +1,14 @@
 import "reflect-metadata";
-import dotenv from "dotenv";
-dotenv.config({ path: process.env.ENV_FILE ?? ".env" });
+import { loadEnvironmentFile, readConfig, requireStartupConfig } from "./config";
+loadEnvironmentFile();
+requireStartupConfig(readConfig());
 
-import Logger from "js-logger";
-import { loggerSettings } from "./shared/logger";
-Logger.useDefaults(loggerSettings);
+import { moduleLogger } from "./shared/logger";
+const log = moduleLogger("main");
 
 import { dataSource } from "./db/dataSource";
 import { bot } from "./bot/bot";
+import { telegramMessenger } from "./bot/messenger";
 import * as registry from "./state/competitionRegistry";
 import { Orchestrator } from "./features/disc-golf/following/orchestrator";
 import * as competitionService from "./features/disc-golf/services/CompetitionService";
@@ -34,18 +35,18 @@ bot.use(fun);
 
 bot.on("message:new_chat_members", ctx => {
   chatRepo.addIfAbsent(ctx.chat.id, ctx.chat.title ?? "")
-    .catch(error => Logger.error(`Could not register chat ${ctx.chat.id}`, error));
+    .catch(error => log.error({ err: error, chatId: ctx.chat.id }, "could not register chat"));
 });
 
 bot.on("message:group_chat_created", ctx => {
   chatRepo.addIfAbsent(ctx.chat.id, ctx.chat.title ?? "")
-    .catch(error => Logger.error(`Could not register chat ${ctx.chat.id}`, error));
+    .catch(error => log.error({ err: error, chatId: ctx.chat.id }, "could not register chat"));
 });
 
 // ── Error handling ────────────────────────────────────────────────────────────
 
-bot.catch(err => {
-  Logger.warn(`Bot error: ${err.message}`);
+bot.catch(botError => {
+  log.warn({ err: botError.error, updateId: botError.ctx.update.update_id }, "bot error");
 });
 
 // ── Startup ───────────────────────────────────────────────────────────────────
@@ -55,7 +56,7 @@ async function init(): Promise<void> {
 
   const unfinished = await competitionService.getUnfinished();
   for (const i of unfinished) {
-    const orchestrator = await new Orchestrator(i.id, i.metrixId, i.chatId, true).init();
+    const orchestrator = await new Orchestrator(i.id, i.metrixId, i.chatId, telegramMessenger, true).init();
     registry.add(i.chatId, orchestrator);
   }
 }
@@ -67,6 +68,6 @@ async function main(): Promise<void> {
 }
 
 main().catch(err => {
-  Logger.error(`Fatal startup error: ${err.message}`);
+  log.fatal({ err }, "fatal startup error");
   process.exit(1);
 });
