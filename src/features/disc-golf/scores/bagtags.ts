@@ -1,7 +1,8 @@
 import { join } from "path";
 import { createJsonStore } from "../../../shared/jsonStore";
 import { readConfig } from "../../../config";
-import { MetrixPlayerResult } from "../../../types/metrix";
+import { finalTotals } from "../../../integrations/metrix/round/results";
+import { TrackedRoundPlayer } from "../../../integrations/metrix/round/types";
 import { moduleLogger } from "../../../shared/logger";
 
 const log = moduleLogger("bagtags");
@@ -65,31 +66,31 @@ export interface BagtagRoundResult {
   noTag: string[];
 }
 
-export function computeAndApplySwaps(
-  chatId: number,
-  trackedPlayers: readonly { Name: string; Diff: number | null }[],
-  allResults: readonly Pick<MetrixPlayerResult, "Name" | "Group" | "DNF">[],
-): BagtagRoundResult {
+/** A tracked player at round end: tags swap within a group, by result, DNF players last. */
+export interface BagtagParticipant {
+  playerName: string;
+  relativeToPar: number | null;
+  group: string;
+  dnf: boolean;
+}
+
+export function selectBagtagParticipants(players: readonly TrackedRoundPlayer[]): BagtagParticipant[] {
+  return players.map(({ player }) => ({
+    playerName: player.name, relativeToPar: finalTotals(player).relativeToPar,
+    group: player.group || "1", dnf: player.round.status === "dnf",
+  }));
+}
+
+export function computeAndApplySwaps(chatId: number, participants: readonly BagtagParticipant[]): BagtagRoundResult {
   const store = load();
   const chatKey = String(chatId);
   const chatTags: Record<string, number> = { ...(store[chatKey] ?? {}) };
 
-  // Enrich tracked players with Group and DNF from allResults
-  const enriched = trackedPlayers.map(tp => {
-    const full = allResults.find(r => r.Name === tp.Name);
-    return {
-      Name: tp.Name,
-      Diff: tp.Diff,
-      Group: full?.Group ?? "1",
-      DNF: full?.DNF ?? null,
-    };
-  });
-
   // Partition by group
-  const groups = new Map<string, typeof enriched>();
-  for (const player of enriched) {
-    if (!groups.has(player.Group)) groups.set(player.Group, []);
-    groups.get(player.Group)!.push(player);
+  const groups = new Map<string, BagtagParticipant[]>();
+  for (const player of participants) {
+    if (!groups.has(player.group)) groups.set(player.group, []);
+    groups.get(player.group)!.push(player);
   }
 
   const swaps: BagtagSwap[] = [];
@@ -98,40 +99,40 @@ export function computeAndApplySwaps(
   const updatedTags = { ...chatTags };
 
   // Track who has no tag at all
-  for (const player of enriched) {
-    if (chatTags[player.Name] == null) noTag.push(player.Name);
+  for (const player of participants) {
+    if (chatTags[player.playerName] == null) noTag.push(player.playerName);
   }
 
   for (const [, groupPlayers] of groups) {
-    const tagHolders = groupPlayers.filter(p => chatTags[p.Name] != null);
+    const tagHolders = groupPlayers.filter(p => chatTags[p.playerName] != null);
     if (tagHolders.length < 2) {
       // No swap — just record unchanged
       for (const p of tagHolders) {
-        unchanged.push({ playerName: p.Name, tag: chatTags[p.Name] });
+        unchanged.push({ playerName: p.playerName, tag: chatTags[p.playerName] });
       }
       continue;
     }
 
     // Sort: active players by Diff ascending, DNF players last
     const sorted = [...tagHolders].sort((a, b) => {
-      if (a.DNF && !b.DNF) return 1;
-      if (!a.DNF && b.DNF) return -1;
-      if (a.Diff === null || b.Diff === null) return 0;
-      return a.Diff - b.Diff;
+      if (a.dnf && !b.dnf) return 1;
+      if (!a.dnf && b.dnf) return -1;
+      if (a.relativeToPar === null || b.relativeToPar === null) return 0;
+      return a.relativeToPar - b.relativeToPar;
     });
 
     // Collect tags sorted ascending (best player gets lowest tag)
-    const tags = sorted.map(p => chatTags[p.Name]).sort((a, b) => a - b);
+    const tags = sorted.map(p => chatTags[p.playerName]).sort((a, b) => a - b);
 
     for (let i = 0; i < sorted.length; i++) {
       const player = sorted[i];
       const newTag = tags[i];
-      const oldTag = chatTags[player.Name];
+      const oldTag = chatTags[player.playerName];
       if (newTag !== oldTag) {
-        swaps.push({ playerName: player.Name, from: oldTag, to: newTag });
-        updatedTags[player.Name] = newTag;
+        swaps.push({ playerName: player.playerName, from: oldTag, to: newTag });
+        updatedTags[player.playerName] = newTag;
       } else {
-        unchanged.push({ playerName: player.Name, tag: oldTag });
+        unchanged.push({ playerName: player.playerName, tag: oldTag });
       }
     }
   }

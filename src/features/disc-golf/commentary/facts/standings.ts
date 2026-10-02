@@ -1,5 +1,5 @@
 import { analyzeRound } from "./roundAnalysis";
-import { MetrixRound, RoundPlayer } from "../../../../integrations/metrix/round/normalize";
+import { MetrixRound, RoundPlayer } from "../../../../integrations/metrix/round/types";
 
 export interface DivisionStanding {
   playerName: string;

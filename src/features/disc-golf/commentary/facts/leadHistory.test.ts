@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { HoleScore } from "../../../../integrations/metrix/round/scorecard";
+import { HoleScore } from "../../../../integrations/metrix/round/types";
 import { describeLeadHistory } from "./leadHistory";
-import { RoundPlayer } from "../../../../integrations/metrix/round/normalize";
+import { RoundPlayer } from "../../../../integrations/metrix/round/types";
 
 const TOTAL_HOLES = 18;
 const PAR = 3;

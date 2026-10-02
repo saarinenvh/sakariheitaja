@@ -1,36 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { ValidationError } from "../../../../util/validation";
-import {
-  analyzeRound, CommentaryScope, comparePublishedStanding, parseRoundState, parseStanding,
-} from "./roundAnalysis";
-import { parseScorecard } from "../../../../integrations/metrix/round/scorecard";
+import { analyzeRound, CommentaryScope, comparePublishedStanding } from "./roundAnalysis";
+import { parseRoundState, parseScorecard, parseStanding } from "../../../../integrations/metrix/round/normalize";
 
 const scope: CommentaryScope = {
   chatId: -100, competitionId: "competition", division: "MA3", playerId: 1,
 };
-
-describe("standing and round metadata validation", () => {
-  it("normalizes numeric strings and defaults to unknown/provisional information", () => {
-    expect(parseStanding({ position: "10", fieldSize: "20" })).toEqual({
-      position: 10, fieldSize: 20, isProvisional: true,
-    });
-    expect(parseStanding({})).toEqual({ position: null, fieldSize: null, isProvisional: true });
-    expect(parseRoundState({})).toEqual({ totalHoles: null, status: "unknown" });
-  });
-
-  it.each([
-    { position: 0 }, { position: -1 }, { position: "tied 1" }, { fieldSize: 2.5 },
-    { position: 3, fieldSize: 2 }, { isProvisional: "false" },
-  ])("rejects invalid standing metadata (%j)", input => {
-    expect(() => parseStanding(input)).toThrow(ValidationError);
-  });
-
-  it.each([{ totalHoles: 0 }, { totalHoles: true }, { status: "finished-ish" }])(
-    "rejects invalid round metadata (%j)", input => {
-      expect(() => parseRoundState(input)).toThrow(ValidationError);
-    },
-  );
-});
 
 describe("round analysis", () => {
   it("counts played holes in a shotgun start instead of using the highest hole number", () => {

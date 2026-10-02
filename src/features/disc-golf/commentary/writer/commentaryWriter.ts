@@ -2,7 +2,7 @@ import { z } from "zod";
 import { OllamaMessage } from "../../../../shared/llm/ollamaClient";
 import { BatchCommentaryContext } from "./commentaryContext";
 import { RoundProgress, StandingMovement } from "../facts/roundAnalysis";
-import { ScoreChange } from "../../../../integrations/metrix/round/scorecard";
+import { ScoreChange } from "../detect/scorecardChanges";
 import { holeScoreName } from "../presentation";
 import { buildFactualFallback } from "./factualFallback";
 import { LeaderGap } from "../facts/standings";

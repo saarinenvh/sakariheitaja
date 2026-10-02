@@ -111,7 +111,8 @@ async function loadRuntime(options: EvalOptions): Promise<Runtime> {
 
 async function replayFixture(fixture: CommentaryFixture, run: number, runtime: Runtime): Promise<EvalRecord[]> {
   const { RoundCommentary } = await import("../../src/features/disc-golf/commentary/roundCommentary");
-  const { parseMetrixRound, trackRoundPlayers } = await import("../../src/integrations/metrix/round/normalize");
+  const { parseMetrixRound } = await import("../../src/integrations/metrix/round/normalize");
+  const { trackRoundPlayers } = await import("../../src/integrations/metrix/round/results");
   const tracked = fixture.tracked.map((name, index) => ({ id: index + 1, name }));
   const weather = [fixture.weather.start, fixture.weather.halfway];
   let weatherRequests = 0;

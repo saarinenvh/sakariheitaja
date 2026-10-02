@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { HoleScore } from "../../../../integrations/metrix/round/scorecard";
+import { HoleScore } from "../../../../integrations/metrix/round/types";
 import { isPlayOrderKnown } from "./leadHistory";
-import { RoundPlayer } from "../../../../integrations/metrix/round/normalize";
+import { RoundPlayer } from "../../../../integrations/metrix/round/types";
 import { buildScorecardTable } from "./scorecardTable";
 
 const HOLE_LABELS = ["1", "2", "3", "4"];

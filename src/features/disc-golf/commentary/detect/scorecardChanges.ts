@@ -1,47 +1,16 @@
-import { z } from "zod";
-import { parseOrThrow } from "../../../util/validation";
-import { integerSchema, optionalIntegerSchema } from "./scoreSchemas";
+import { HoleScore, Scorecard } from "../../../../integrations/metrix/round/types";
 
-const obScoreFieldsSchema = z.object({
-  PEN: optionalIntegerSchema.refine(value => value === null || value >= 0),
-  OB: optionalIntegerSchema.refine(value => value === null || value >= 0),
-}).refine(score => score.PEN === null || score.OB === null || score.PEN === score.OB);
-
-const holeScoreSchema = z.object({
-  Result: integerSchema.pipe(z.number().int().positive()),
-  Diff: optionalIntegerSchema,
-}).and(obScoreFieldsSchema).transform(score => ({
-  strokes: score.Result,
-  relativeToPar: score.Diff,
-  obCount: score.PEN ?? score.OB,
-}));
-
-const scorecardSchema = z.array(z.union([
-  holeScoreSchema,
-  z.tuple([]).transform(() => null),
-])).nullish();
-
-export type HoleScore = Readonly<z.output<typeof holeScoreSchema>>;
-
-export type Scorecard =
-  | { kind: "unavailable" }
-  | { kind: "available"; holes: readonly (HoleScore | null)[] };
-
+/** What changed on one hole between two observations of a card. */
 export type ScoreChange = (
   | { kind: "recorded"; holeNumber: number; score: HoleScore }
   | { kind: "corrected"; holeNumber: number; previous: HoleScore; current: HoleScore }
   | { kind: "removed"; holeNumber: number; previous: HoleScore }
 ) & { holeLabel?: string };
 
+/** `unavailable` when either card is missing or the layout's hole count changed in between. */
 export type ScorecardComparison =
   | { kind: "unavailable"; reason: "missing-scorecard" | "hole-count-changed" }
   | { kind: "compared"; changes: ScoreChange[] };
-
-export function parseScorecard(input: unknown): Scorecard {
-  const holes = parseOrThrow(scorecardSchema, input, "Metrix PlayerResults");
-  if (!holes || holes.length === 0) return { kind: "unavailable" };
-  return { kind: "available", holes };
-}
 
 export function compareScorecards(previous: Scorecard, current: Scorecard): ScorecardComparison {
   if (previous.kind === "unavailable" || current.kind === "unavailable") {

@@ -6,7 +6,7 @@ import {
 import { CourseStatistics } from "../../../../integrations/metrix/statistics/courseStatistics";
 import { FactualCommentaryBrief } from "./playerBrief";
 import { CourseDetails } from "../../../../integrations/metrix/course/courseDetails";
-import { MetrixRound, RoundPlayer } from "../../../../integrations/metrix/round/normalize";
+import { MetrixRound, RoundPlayer } from "../../../../integrations/metrix/round/types";
 
 /** What the round knows about its course; either part is missing when Metrix doesn't provide it. */
 export interface CourseInfo {

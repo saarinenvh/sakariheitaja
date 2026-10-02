@@ -20,6 +20,7 @@ vi.mock("../services/ScoreService", () => ({
 vi.mock("../scores/playerProfiles", () => ({ updateProfiles: vi.fn(), buildProfileSnippet: () => undefined }));
 vi.mock("../scores/bagtags", () => ({
   getMissingTagPlayers: () => [], computeAndApplySwaps: () => ({}), formatBagtagAnnouncement: () => "Tags",
+  selectBagtagParticipants: () => [],
 }));
 vi.mock("./poller", () => ({ default: class {
   constructor(private id: string) {}

@@ -1,5 +1,5 @@
-import { Scorecard } from "../../../../integrations/metrix/round/scorecard";
-import { RoundPlayer } from "../../../../integrations/metrix/round/normalize";
+import { Scorecard } from "../../../../integrations/metrix/round/types";
+import { RoundPlayer } from "../../../../integrations/metrix/round/types";
 
 export const MIN_HOLES_FOR_HISTORY = 2;
 export const RECENT_WINDOW_HOLES = 6;

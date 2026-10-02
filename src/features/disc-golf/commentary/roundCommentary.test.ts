@@ -3,7 +3,9 @@ import { WeatherObservation } from "../../../shared/weather";
 import { BatchCommentaryContext } from "./writer/commentaryContext";
 import { BatchCommentaryResult, writeBatchCommentary } from "./writer/commentaryWriter";
 import { CommentaryDelivery, RoundCommentary } from "./roundCommentary";
-import { hasTrackedRoundEnded, parseMetrixRound, toBagtagPlayers, toFinalScores, trackRoundPlayers } from "../../../integrations/metrix/round/normalize";
+import { hasTrackedRoundEnded, selectFinalScores, trackRoundPlayers } from "../../../integrations/metrix/round/results";
+import { parseMetrixRound } from "../../../integrations/metrix/round/normalize";
+import { selectBagtagParticipants } from "../scores/bagtags";
 import { formatBatchCommentaryMessages, TELEGRAM_MESSAGE_LIMIT } from "./presentation";
 import { FactualCommentaryBrief } from "./facts/playerBrief";
 
@@ -112,14 +114,14 @@ describe("Metrix round boundary", () => {
     expect(hasTrackedRoundEnded(trackRoundPlayers(active, tracked))).toBe(false);
     const full = parseMetrixRound(input([score(3), score(3), score(3), score(3)]), "123");
     expect(hasTrackedRoundEnded(trackRoundPlayers(full, tracked))).toBe(true);
-    expect(toFinalScores(trackRoundPlayers(full, tracked))).toEqual([{ id: 1, Sum: 12, Diff: 0 }]);
+    expect(selectFinalScores(trackRoundPlayers(full, tracked))).toEqual([{ playerId: 1, strokes: 12, relativeToPar: 0 }]);
     expect(full.players[0].round.status).toBe("complete");
     expect(active.players[0].round.status).toBe("active");
     const dnf = input();
     dnf.Competition.Results[0].DNF = "1";
     expect(hasTrackedRoundEnded(trackRoundPlayers(parseMetrixRound(dnf, "123"), tracked))).toBe(true);
-    expect(toBagtagPlayers(trackRoundPlayers(parseMetrixRound(dnf, "123"), tracked)))
-      .toEqual([{ Name: "Matti", Diff: null, Group: "1", DNF: "1" }]);
+    expect(selectBagtagParticipants(trackRoundPlayers(parseMetrixRound(dnf, "123"), tracked)))
+      .toEqual([{ playerName: "Matti", relativeToPar: null, group: "1", dnf: true }]);
     const incompleteMetadata = parseMetrixRound(input(Array.from({ length: 4 }, () => ({ Result: "3" }))), "123");
     expect(hasTrackedRoundEnded(trackRoundPlayers(incompleteMetadata, tracked))).toBe(false);
   });

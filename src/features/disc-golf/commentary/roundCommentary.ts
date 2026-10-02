@@ -1,7 +1,8 @@
 import { PublishedStanding } from "./facts/roundAnalysis";
-import { compareScorecards, ScoreChange } from "../../../integrations/metrix/round/scorecard";
+import { compareScorecards, ScoreChange } from "./detect/scorecardChanges";
 import { buildFactualCommentaryBrief, CommentarySnapshot, FactualCommentaryBrief } from "./facts/playerBrief";
-import { buildCommentarySnapshot, MetrixRound, TrackedRoundPlayer } from "../../../integrations/metrix/round/normalize";
+import { buildCommentarySnapshot } from "./detect/commentarySnapshot";
+import { MetrixRound, TrackedRoundPlayer } from "../../../integrations/metrix/round/types";
 import { formatBatchCommentaryMessages } from "./presentation";
 import { BatchCommentaryContext, BatchContextInput, buildBatchCommentaryContext, WeatherFacts } from "./writer/commentaryContext";
 import { BatchCommentaryResult } from "./writer/commentaryWriter";

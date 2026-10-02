@@ -7,14 +7,15 @@ import * as scoreService from "../services/ScoreService";
 import { competition as MSG } from "../../../config/messages";
 import { ChatMessenger } from "../../chatMessenger";
 import { updateProfiles } from "../scores/playerProfiles";
-import { computeAndApplySwaps, formatBagtagAnnouncement, getMissingTagPlayers } from "../scores/bagtags";
+import { computeAndApplySwaps, formatBagtagAnnouncement, getMissingTagPlayers, selectBagtagParticipants } from "../scores/bagtags";
 import { escapeHtml } from "../commentary/presentation";
 import { RoundCommentary } from "../commentary/roundCommentary";
 import { writeRoundCommentary } from "../commentary/writer/commentaryRuntime";
 import {
-  hasTrackedRoundEnded, MetrixRound, parseMetrixRound, toBagtagPlayers, toFinalScores, toLegacyResults, toLegacyTracked,
-  TrackedRoundPlayer, trackRoundPlayers, UnsupportedRoundError,
-} from "../../../integrations/metrix/round/normalize";
+  hasTrackedRoundEnded, selectFinalScores, selectRankedResults, selectTrackedRankedResults, trackRoundPlayers,
+} from "../../../integrations/metrix/round/results";
+import { MetrixRound, TrackedRoundPlayer } from "../../../integrations/metrix/round/types";
+import { parseMetrixRound, UnsupportedRoundError } from "../../../integrations/metrix/round/normalize";
 import { moduleLogger } from "../../../shared/logger";
 import { readConfig } from "../../../config";
 import { fetchCurrentWeather, WeatherObservation } from "../../../shared/weather";
@@ -159,7 +160,9 @@ export class Orchestrator {
     if (!this.snapshot) return;
     const { details } = await this.fetchCourseInfo();
     const ratings = buildRoundRatings(details?.rating ?? null, this.snapshot.players);
-    const message = formatTopList(this.snapshot.name, toLegacyResults(this.snapshot.players), toLegacyTracked(this.trackedPlayers), ratings);
+    const message = formatTopList(
+      this.snapshot.name, selectRankedResults(this.snapshot.players), selectTrackedRankedResults(this.trackedPlayers), ratings,
+    );
     await this.messenger.sendText(this.chatId, message);
   }
 
@@ -198,13 +201,10 @@ export class Orchestrator {
     log.info({ metrixId: this.metrixId, round: round.name }, "tracked scorecards are finished");
     await this.messenger.sendText(this.chatId, MSG.endSoon);
     await competitionService.markDone(this.id);
-    const completed = toLegacyTracked(tracked).filter(player => !player.DNF);
-    const results = toLegacyResults(round.players);
     const course = await courseService.getOrCreate(round.courseName);
-    if (course) await scoreService.saveResults(toFinalScores(tracked), this.chatId, course.id, this.id);
-    updateProfiles(this.chatId, completed, results);
-    const participants = toBagtagPlayers(tracked);
-    const bagtags = computeAndApplySwaps(this.chatId, participants, participants);
+    if (course) await scoreService.saveResults(selectFinalScores(tracked), this.chatId, course.id, this.id);
+    updateProfiles(this.chatId, selectTrackedRankedResults(tracked), selectRankedResults(round.players));
+    const bagtags = computeAndApplySwaps(this.chatId, selectBagtagParticipants(tracked));
     await this.sendTopList();
     await this.messenger.sendHtml(this.chatId, formatBagtagAnnouncement(bagtags));
   }

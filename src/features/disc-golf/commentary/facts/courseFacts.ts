@@ -1,4 +1,5 @@
-import { completedRoundStrokes, RoundPlayer } from "../../../../integrations/metrix/round/normalize";
+import { completedRoundStrokes } from "../../../../integrations/metrix/round/results";
+import { RoundPlayer } from "../../../../integrations/metrix/round/types";
 
 export interface CourseCoordinates { latitude: number; longitude: number }
 export interface CourseRatingAnchors { value1: number; result1: number; value2: number; result2: number }
