@@ -16,7 +16,7 @@ const recipeSchema = z.object({
   steps: z.array(z.object({ body: z.string() })),
   // The message sends the first photo, dropping its URL's first two characters; something must be left after them.
   media: z.array(z.object({ file: z.object({ url: z.string() }) })).min(1)
-    .refine(media => media[0].file.url.substring(2) !== "", "empty photo URL"),
+    .refine(media => (media[0]?.file.url ?? "").substring(2) !== "", "empty photo URL"),
 });
 const recipesResponseSchema = z.object({ results: z.array(z.unknown()) });
 
