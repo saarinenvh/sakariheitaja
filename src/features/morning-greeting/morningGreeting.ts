@@ -1,49 +1,59 @@
-import { Bot } from "grammy";
-import { openWeather } from "../../integrations/openweather";
+import { ChatMessenger } from "../chatMessenger";
+import { OpenWeatherClient } from "../../integrations/openweather/client";
+import { GiphyClient } from "../../integrations/giphy/client";
 import { buildCityWeatherReport } from "../weather-report/weatherReport";
-import { giphy } from "../../integrations/giphy";
-import { getRandom, formatDate } from "../../shared/utils";
-import { randomGoodMorning, giphySearchWords, citys } from "../../config/phrases";
+import { cities } from "../weather-report/phrases";
+import { giphySearchWords, randomGoodMorning } from "./phrases";
+import { formatClockTime, getRandom } from "../../shared/utils";
 import { moduleLogger } from "../../shared/logger";
-import { HTML_OPTIONS } from "../../config/bot";
-import { readConfig } from "../../config";
 
 const log = moduleLogger("morning-greeter");
 
-export async function sendMorningGreeting(api: Bot["api"], chatId: number): Promise<void> {
-  const greeting = randomGoodMorning[getRandom(randomGoodMorning.length)];
-  const message = `${greeting}Kello on <b>${formatDate(new Date())}</b> & tämmöstä keliä ois sit tänää taas luvassa.`;
+const GREETING_HOUR = 9;
+const MS_PER_DAY = 86_400_000;
 
-  try { await api.sendMessage(chatId, message, HTML_OPTIONS); } catch (e: any) { log.error({ err: e }, "morning greeting text failed"); }
-  try { await sendCityWeather(api, chatId, citys[getRandom(citys.length)]); } catch (e: any) { log.error({ err: e }, "morning greeting weather failed"); }
-  try { await api.sendMessage(chatId, "Ja tästä päivä käyntiin!"); } catch (e: any) { log.error({ err: e }, "morning greeting call to action failed"); }
+export interface MorningGreetingDependencies {
+  messenger: ChatMessenger;
+  openWeather: OpenWeatherClient;
+  giphy: GiphyClient;
+}
+
+/** The greeting, a random town's weather, the call to action and a gif; each part is sent even if another fails. */
+export async function sendMorningGreeting(deps: MorningGreetingDependencies, chatId: number): Promise<void> {
+  const { messenger } = deps;
+  const greeting = randomGoodMorning[getRandom(randomGoodMorning.length)];
+  const message = `${greeting}Kello on <b>${formatClockTime(new Date())}</b> & tämmöstä keliä ois sit tänää taas luvassa.`;
+
+  try { await messenger.sendHtml(chatId, message); } catch (e: any) { log.error({ err: e }, "morning greeting text failed"); }
+  try { await sendCityWeather(deps, chatId, cities[getRandom(cities.length)]); } catch (e: any) { log.error({ err: e }, "morning greeting weather failed"); }
+  try { await messenger.sendText(chatId, "Ja tästä päivä käyntiin!"); } catch (e: any) { log.error({ err: e }, "morning greeting call to action failed"); }
   try {
-    const gifUrl = await giphy.searchGif(giphySearchWords[getRandom(giphySearchWords.length)]);
-    if (gifUrl) await api.sendVideo(chatId, gifUrl);
+    const gifUrl = await deps.giphy.searchGif(giphySearchWords[getRandom(giphySearchWords.length)]);
+    if (gifUrl) await messenger.sendVideo(chatId, gifUrl);
   } catch (e: any) { log.error({ err: e }, "morning greeting gif failed"); }
 }
 
-export function startMorningGreeter(bot: Bot): void {
-  const chatId = readConfig().telegram.morningChatId;
+/** Greets `chatId` every day at 09:00; without a chat id there is no greeting. */
+export function startMorningGreeter(deps: MorningGreetingDependencies, chatId: number | undefined): void {
   if (chatId === undefined) {
     log.info("MORNING_CHAT_ID not set, skipping morning greeting");
     return;
   }
 
   const now = new Date();
-  let millisTill09 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0, 0).getTime() - now.getTime();
-  if (millisTill09 < 0) millisTill09 += 86400000;
+  let millisTill09 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), GREETING_HOUR, 0, 0, 0).getTime() - now.getTime();
+  if (millisTill09 < 0) millisTill09 += MS_PER_DAY;
 
   log.info({ delayMs: millisTill09 }, "next morning greeting scheduled");
 
   setTimeout(async () => {
-    await sendMorningGreeting(bot.api, chatId);
-    startMorningGreeter(bot);
+    await sendMorningGreeting(deps, chatId);
+    startMorningGreeter(deps, chatId);
   }, millisTill09);
 }
 
-async function sendCityWeather(api: Bot["api"], chatId: number, city: string): Promise<void> {
-  const report = await buildCityWeatherReport(openWeather, city);
-  if (report.kind === "found") await api.sendMessage(chatId, report.html, HTML_OPTIONS);
-  else await api.sendMessage(chatId, report.text);
+async function sendCityWeather(deps: MorningGreetingDependencies, chatId: number, city: string): Promise<void> {
+  const report = await buildCityWeatherReport(deps.openWeather, city);
+  if (report.kind === "found") await deps.messenger.sendHtml(chatId, report.html);
+  else await deps.messenger.sendText(chatId, report.text);
 }

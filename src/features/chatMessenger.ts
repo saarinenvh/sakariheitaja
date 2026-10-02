@@ -3,4 +3,6 @@ export interface ChatMessenger {
   sendText(chatId: number, text: string): Promise<void>;
   /** An HTML message without link previews. */
   sendHtml(chatId: number, html: string): Promise<void>;
+  /** A video (Telegram plays gifs as videos) from a URL. */
+  sendVideo(chatId: number, url: string): Promise<void>;
 }

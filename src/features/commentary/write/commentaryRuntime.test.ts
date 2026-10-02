@@ -1,18 +1,17 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { ollama } from "../../../integrations/ollama";
+import { OllamaClient } from "../../../integrations/ollama/client";
 import { loadPrompt } from "../../../prompts/prompts";
 import { BatchCommentaryContext } from "../facts/commentaryContext";
 import { buildBatchResponseJsonSchema } from "./commentaryWriter";
-import { writeRoundCommentary } from "./commentaryRuntime";
+import { createCommentaryWriter } from "./commentaryRuntime";
 
-vi.mock("../../../integrations/ollama", () => ({
-  ollama: {
-    generate: vi.fn(),
-    generateStructured: vi.fn().mockResolvedValue(JSON.stringify({
-      opening: "Avaus.", players: [{ name: "Testaaja", text: "ÄSSÄ!" }], closing: "Loppu.",
-    })),
-  },
-}));
+const ollama: OllamaClient = {
+  generate: vi.fn(),
+  generateStructured: vi.fn<OllamaClient["generateStructured"]>().mockResolvedValue(JSON.stringify({
+    opening: "Avaus.", players: [{ name: "Testaaja", text: "ÄSSÄ!" }], closing: "Loppu.",
+  })),
+};
+const writeRoundCommentary = createCommentaryWriter(ollama);
 
 afterEach(() => {
   vi.unstubAllEnvs();

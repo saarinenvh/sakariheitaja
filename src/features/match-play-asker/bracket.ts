@@ -37,12 +37,6 @@ export function findParticipantsByName(data: BracketData, query: string): { id: 
   });
 }
 
-/** Convenience wrapper for callers that don't need to distinguish "not found" from "ambiguous" - both come back null. */
-export function findParticipantByName(data: BracketData, query: string): { id: number; name: string } | null {
-  const matches = findParticipantsByName(data, query);
-  return matches.length === 1 ? matches[0] : null;
-}
-
 // The one thing the actual bug was about: "who do I play next". Returns a
 // single short line, deterministically - no LLM involved in finding the
 // right match in a list of 60, which is exactly the step that was going

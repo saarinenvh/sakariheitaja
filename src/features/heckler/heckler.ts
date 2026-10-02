@@ -1,7 +1,7 @@
-import { ollama } from "../../integrations/ollama";
+import { OllamaClient } from "../../integrations/ollama/client";
 import { loadPrompt } from "../../prompts/prompts";
 import { getRandom } from "../../shared/utils";
-import { sakariResponses } from "../../config/phrases";
+import { sakariResponses } from "./cannedHeckles";
 import { moduleLogger } from "../../shared/logger";
 
 const log = moduleLogger("heckler");
@@ -47,7 +47,7 @@ function buildContext(chatId: number, trigger: string): string {
   return lines.join("\n");
 }
 
-export async function llmHeckle(chatId: number, trigger: string): Promise<string> {
+export async function llmHeckle(ollama: OllamaClient, chatId: number, trigger: string): Promise<string> {
   const context = buildContext(chatId, trigger);
   const text = await ollama.generate(
     [
@@ -63,9 +63,9 @@ function cannedHeckle(): string {
   return sakariResponses[getRandom(sakariResponses.length)];
 }
 
-// 50% canned, 50% LLM — falls back to canned if LLM fails
-export async function heckle(chatId: number, trigger: string): Promise<string> {
-  const useLlm = getRandom(2) === 1;
+/** With the LLM enabled, half canned and half from the model (canned if it fails); otherwise always canned. */
+export async function heckle(ollama: OllamaClient, chatId: number, trigger: string, llmEnabled: boolean): Promise<string> {
+  const useLlm = llmEnabled && getRandom(2) === 1;
 
   if (!useLlm) {
     log.debug("heckler → canned");
@@ -74,7 +74,7 @@ export async function heckle(chatId: number, trigger: string): Promise<string> {
 
   try {
     log.debug("heckler → LLM");
-    return await llmHeckle(chatId, trigger);
+    return await llmHeckle(ollama, chatId, trigger);
   } catch (err: any) {
     log.warn({ err }, "heckler LLM failed, using canned");
     return cannedHeckle();

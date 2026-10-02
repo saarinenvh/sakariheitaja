@@ -38,16 +38,3 @@ export async function getData<T = any>(url: string, timeoutMs: number = DEFAULT_
   }
 }
 
-export async function getGiphy(url: string, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<string | undefined> {
-  try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-    if (!response.ok) {
-      log.warn({ url: safeUrl(url), status: response.status }, "getGiphy: HTTP error");
-      return undefined;
-    }
-    return await response.text();
-  } catch (error: any) {
-    log.error({ url: safeUrl(url), err: error }, "getGiphy failed");
-    return undefined;
-  }
-}

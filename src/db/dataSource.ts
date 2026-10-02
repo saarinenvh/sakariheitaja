@@ -4,11 +4,6 @@ import { Player } from "../features/players/Player.entity";
 import { Chat } from "../features/chats/Chat.entity";
 import { Competition } from "../features/live-scoring/Competition.entity";
 import { Course } from "../features/score-records/Course.entity";
-import { PlayerToChat } from "../features/players/PlayerToChat.entity";
-import { Score } from "../features/score-records/Score.entity";
-import { Ace } from "../features/score-records/Ace.entity";
-import { Eagle } from "../features/score-records/Eagle.entity";
-import { Albatross } from "../features/score-records/Albatross.entity";
 import { readConfig } from "../config";
 
 const database = readConfig().database;
@@ -22,5 +17,6 @@ export const dataSource = new DataSource({
   database: database.name,
   synchronize: false,
   logging: database.logQueries,
-  entities: [Player, Chat, Competition, Course, PlayerToChat, Score, Ace, Eagle, Albatross],
+  // Only the tables read through TypeORM; the rest (player_to_chat, scores, aces, eagles, albatrosses) use SQL.
+  entities: [Player, Chat, Competition, Course],
 });

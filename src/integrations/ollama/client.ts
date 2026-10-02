@@ -4,7 +4,7 @@ import { finishOllamaTrace, startOllamaTrace } from "./trace";
 const log = moduleLogger("ollama");
 
 export interface OllamaMessage {
-  role: "system" | "user" | "assistant" | "tool";
+  role: "system" | "user" | "assistant";
   content: string;
 }
 
@@ -16,17 +16,6 @@ export interface OllamaOptions {
   repeat_penalty?: number;
 }
 
-export interface OllamaTool {
-  type: "function";
-  function: {
-    name: string;
-    description: string;
-    parameters: Record<string, unknown>;
-  };
-}
-
-export type ToolHandler = (name: string, args: Record<string, unknown>) => Promise<string>;
-
 export interface OllamaConfig {
   baseUrl: string;
   model: string;
@@ -35,14 +24,14 @@ export interface OllamaConfig {
 
 export interface OllamaClient {
   /** A free-text reply, with model artifacts (think blocks, turn tokens, wrapping quotes) stripped. */
-  generate(messages: OllamaMessage[], options?: OllamaOptions, tools?: OllamaTool[], toolHandler?: ToolHandler): Promise<string>;
+  generate(messages: OllamaMessage[], options?: OllamaOptions): Promise<string>;
   /** A reply constrained to `jsonSchema`, as raw JSON text, unparsed. */
   generateStructured(messages: OllamaMessage[], jsonSchema: Record<string, unknown>, options?: OllamaOptions): Promise<string>;
 }
 
 export function createOllamaClient(config: OllamaConfig): OllamaClient {
   return {
-    generate: (messages, options, tools, toolHandler) => generate(config, messages, options, tools, toolHandler),
+    generate: (messages, options) => generate(config, messages, options),
     generateStructured: (messages, jsonSchema, options) => generateStructured(config, messages, jsonSchema, options),
   };
 }
@@ -51,9 +40,8 @@ async function callOllama(
   { baseUrl, model, timeoutMs }: OllamaConfig,
   messages: OllamaMessage[],
   options: OllamaOptions,
-  tools?: OllamaTool[],
   format?: Record<string, unknown>,
-): Promise<{ content: string; toolCalls?: { function: { name: string; arguments: Record<string, unknown> } }[] }> {
+): Promise<string> {
   const body: Record<string, unknown> = {
     model,
     messages,
@@ -68,7 +56,6 @@ async function callOllama(
     },
   };
 
-  if (tools?.length) body.tools = tools;
   if (format) body.format = format;
 
   const trace = await startOllamaTrace(body);
@@ -86,11 +73,8 @@ async function callOllama(
     responseReceived = true;
     if (!res.ok) throw new Error(`Ollama HTTP ${res.status}: ${res.statusText}`);
 
-    const json = JSON.parse(rawResponse) as { message?: { content?: string; tool_calls?: any[] } };
-    return {
-      content: json?.message?.content?.trim() ?? "",
-      toolCalls: json?.message?.tool_calls,
-    };
+    const json = JSON.parse(rawResponse) as { message?: { content?: string } };
+    return json?.message?.content?.trim() ?? "";
   } catch (error) {
     if (!responseReceived) {
       await finishOllamaTrace(trace, { error: error instanceof Error ? error.name : "UnknownError" });
@@ -122,44 +106,16 @@ function stripArtifacts(text: string): string {
     .trim() || stripped || text;
 }
 
-async function generate(
-  config: OllamaConfig,
-  messages: OllamaMessage[],
-  options: OllamaOptions = {},
-  tools?: OllamaTool[],
-  toolHandler?: ToolHandler,
-): Promise<string> {
+async function generate(config: OllamaConfig, messages: OllamaMessage[], options: OllamaOptions = {}): Promise<string> {
   const start = Date.now();
-  const history = [...messages];
+  log.debug({ model: config.model, url: config.baseUrl, input: messages.at(-1)?.content.slice(0, 80) ?? "" }, "LLM request");
 
-  const truncated = history.at(-1)?.content.slice(0, 80) ?? "";
-  log.debug({ model: config.model, url: config.baseUrl, input: truncated }, "LLM request");
+  const content = await callOllama(config, messages, options);
+  if (!content) throw new Error("Ollama returned empty response");
 
-  const MAX_TOOL_ROUNDS = 3;
-
-  for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-    const { content, toolCalls } = await callOllama(config, history, options, tools);
-
-    if (toolCalls?.length && toolHandler) {
-      log.debug({ tools: toolCalls.map(tc => tc.function.name) }, "LLM tool calls");
-      history.push({ role: "assistant", content: content ?? "" });
-
-      for (const tc of toolCalls) {
-        const result = await toolHandler(tc.function.name, tc.function.arguments ?? {});
-        history.push({ role: "tool", content: result });
-      }
-      continue;
-    }
-
-    if (!content) throw new Error("Ollama returned empty response");
-
-    const result = stripArtifacts(content);
-    const ms = Date.now() - start;
-    log.debug({ durationMs: ms, output: result.slice(0, 80) }, "LLM response");
-    return result;
-  }
-
-  throw new Error("Ollama tool call loop exceeded max rounds");
+  const result = stripArtifacts(content);
+  log.debug({ durationMs: Date.now() - start, output: result.slice(0, 80) }, "LLM response");
+  return result;
 }
 
 async function generateStructured(
@@ -168,7 +124,7 @@ async function generateStructured(
   jsonSchema: Record<string, unknown>,
   options: OllamaOptions = {},
 ): Promise<string> {
-  const { content } = await callOllama(config, messages, options, undefined, jsonSchema);
+  const content = await callOllama(config, messages, options, jsonSchema);
   if (!content) throw new Error("Ollama returned empty response");
   return content;
 }

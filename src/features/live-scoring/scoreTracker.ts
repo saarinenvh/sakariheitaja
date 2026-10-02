@@ -4,26 +4,28 @@ import { formatPlayerAnnouncement } from "./playerAnnouncement";
 import { finishRound } from "./roundFinalizer";
 import { formatRoundTopList } from "./topList";
 import { ChatMessenger } from "../chatMessenger";
-import { competition as MSG } from "../../config/messages";
+import { liveScoringMessages as MSG } from "./messages";
 import * as playerRepo from "../players/playerRepository";
 import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client";
 import { OpenWeatherClient } from "../../integrations/openweather/client";
+import { OllamaClient } from "../../integrations/ollama/client";
 import { UnsupportedRoundError } from "../../integrations/metrix/round/normalize";
 import { hasTrackedRoundEnded, trackRoundPlayers } from "../../integrations/metrix/round/results";
 import { MetrixRound, RoundPlayer, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
 import { RoundCommentary } from "../commentary/roundCommentary";
-import { writeRoundCommentary } from "../commentary/write/commentaryRuntime";
+import { createCommentaryWriter } from "../commentary/write/commentaryRuntime";
 import { getMissingTagPlayers } from "../bagtags/bagtags";
 import * as scoreService from "../score-records/scoreRecords";
 import { moduleLogger } from "../../shared/logger";
 
 const log = moduleLogger("live-scoring");
 
-/** What a tracker talks to: the chat, Metrix, and the weather service. */
+/** What a tracker talks to: the chat, Metrix, the weather service and the commentary model. */
 export interface TrackerDependencies {
   messenger: ChatMessenger;
   metrix: MetrixClient;
   openWeather: OpenWeatherClient;
+  ollama: OllamaClient;
 }
 
 /**
@@ -53,7 +55,7 @@ export class ScoreTracker {
     this.metrix = dependencies.metrix;
     this.course = new RoundCourseData(dependencies.metrix, dependencies.openWeather, metrixId, () => this.snapshot);
     this.commentary = new RoundCommentary(chatId, metrixId, {
-      write: writeRoundCommentary,
+      write: createCommentaryWriter(dependencies.ollama),
       fetchWeather: () => this.course.weather(),
       fetchCourse: () => this.course.info(),
       send: async html => {

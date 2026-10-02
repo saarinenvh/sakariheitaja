@@ -5,10 +5,6 @@ function repo() {
   return dataSource.getRepository(Player);
 }
 
-export async function findAll(): Promise<Player[]> {
-  return repo().find();
-}
-
 export async function findByName(name: string): Promise<Player | null> {
   return repo().findOneBy({ name });
 }
