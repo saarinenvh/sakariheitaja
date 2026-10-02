@@ -137,7 +137,7 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
 | Command | Description |
 |---|---|
 | `/follow <metrixId>` | Start following a competition |
-| `/lopeta <id>` | Stop following a competition |
+| `/lopeta <metrixId>` | Stop following a competition |
 | `/pelit` | List active competitions |
 | `/top5 <id>` | Show top 5 results by division |
 | `/score <name>` | Show a player's current score and position |
@@ -187,7 +187,8 @@ Only registered when `LLM_ENABLED=true`:
 | `/heckle [message]` | Force an LLM heckler response from the chat's message buffer |
 | `/aamuu` | Send the morning greeting on demand |
 
-> `/apua`'s own text is a subset of the above — it predates several of these commands.
+`/apua` is generated from the command definitions (`src/telegram/commands/*/command.ts`), so it
+lists every command above except `/isit`, `/heckle`, `/aamuu` and itself.
 
 ## Tech Stack
 
@@ -196,20 +197,25 @@ Only registered when `LLM_ENABLED=true`:
 - **TypeORM + mysql2** — type-safe DB access, parameterized queries
 - **MariaDB** — database
 - **Ollama** — local LLM for commentary and replies
-- **vitest** — 40 tests over scoring, change detection, divisions, commentary, bag tags and the JSON store
+- **vitest** — unit tests next to the code they cover
 - **Docker** — deployed as part of the [sakke-workspace](https://github.com/saarinenvh/sakke-workspace) compose stack
 
 ## Layout
 
+The layers, their import rules and every entry point are in
+[`docs/architecture/`](docs/architecture/README.md), with the live-scoring flow and where data
+is stored.
+
 ```
 src/
-├── main.ts                  # startup: config, database, resumed rounds, the bot
+├── main.ts                  # composition root: config, clients, commands, resumed rounds, the bot
 ├── config.ts                # the only reader of environment variables
-├── bot/                     # Telegram: bot, command handlers, the messenger
-├── features/                # one folder per capability
-│   ├── live-scoring/        # following a round: tracker, poller, course data, round end (see its README)
-│   ├── commentary/          # detect → facts → write → format (see its README)
-│   ├── bagtags/  player-profiles/  score-records/  players/  chats/
+├── telegram/                # grammY: the bot, the messenger, chat tracking
+│   └── commands/<feature>/  # command.ts (names, /apua help) and its handler; registry.ts registers them all
+├── features/                # one folder per capability, each with a README
+│   ├── live-scoring/        # following a round: tracker, poller, course data, round end
+│   ├── commentary/          # detect → facts → write → format
+│   ├── bagtags/  player-profiles/  score-records/  players/  chats/  games/
 │   ├── match-play-asker/  heckler/  morning-greeting/  weather-report/  recipes/
 │   └── chatMessenger.ts     # how features send to a chat
 ├── integrations/            # one client per external system: metrix (see its README),
@@ -219,11 +225,11 @@ src/
 ├── prompts/                 # the model prompts and context notes
 └── data/                    # fallback copies of the JSON stores (production uses DATA_DIR)
 scripts/eval-commentary/     # commentary eval harness and its fixtures
+docs/architecture/           # layers, entry points, live-scoring flow, data
 ```
 
-Each table belongs to one feature, which holds its entity and repository: `players` and
-`player_to_chat` → `players/`, `chats` → `chats/`, `competitions` → `live-scoring/`, `scores`,
-`aces`, `eagles`, `albatrosses` and `courses` → `score-records/`.
+Each table belongs to one feature, which holds its entity and repository
+([`docs/architecture/data.md`](docs/architecture/data.md)).
 
 ## Setup
 
