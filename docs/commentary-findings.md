@@ -170,7 +170,7 @@ player-line structure, and the q3 quantization's occasional broken words.
 ## Code reading path
 
 See "Commentary flow" in the README; it follows the code from
-`Orchestrator.onPollResult` through facts, writer and presentation.
+`Orchestrator.onPollResult` through detect, facts, write and format.
 
 ## Verification and remaining limits
 

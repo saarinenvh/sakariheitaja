@@ -24,21 +24,15 @@ Code computes every fact; the model only writes the message. Start reading at
    ties and early-round places as 0 or not at all; those players get a shared place
    derived from recorded totals. What Metrix sends and how each field is normalized
    is in [`src/integrations/metrix/README.md`](src/integrations/metrix/README.md).
-2. `commentary/roundCommentary.ts` compares scorecards (`commentary/detect/`) and
-   queues each poll's changes in order. Updates are grouped by division, and each
-   division's update becomes one message.
-3. `commentary/facts/` builds the facts: each player's brief with movement since the
-   last delivered message (`playerBrief.ts`), division standings with gaps to the
-   leader (`standings.ts`), the scorecard table, lead history, weather, and course
-   and hole facts (`holeFacts.ts`, `courseFacts.ts`).
-4. `commentary/writer/` sends compact JSON facts and the three latest delivered
-   messages to Ollama with a JSON response schema: an opening, one line per player
-   and a closing. Player names are an enum in the schema. Unusable replies, errors
-   and timeouts fall back to factual lines (`factualFallback.ts`).
-5. `commentary/presentation.ts` builds the Telegram message: hole heading, opening,
-   each player's line with a deterministic result row, closing. It escapes HTML and
-   splits oversized messages at block boundaries.
-6. Only acknowledged sends advance rankings and the recent-message history.
+2. `commentary/` turns the changes into one message per division, stage by stage
+   ([`src/features/disc-golf/commentary/README.md`](src/features/disc-golf/commentary/README.md)):
+   - `detect/`: what changed since the last poll and the last delivered message
+   - `facts/`: everything the model may say, computed in code
+   - `write/`: compact JSON facts and the three latest messages go to Ollama with a
+     JSON response schema (an opening, one line per player, a closing; player names
+     are an enum). Unusable replies, errors and timeouts fall back to factual lines.
+   - `format/`: the Telegram message, with a deterministic result row per player
+3. Only acknowledged sends advance rankings and the recent-message history.
 
 The prompt is `src/bot/system-prompts/batch_commentator.md`. The model may invent
 throw imagery as comic colour; results, OB entries, places and gaps must match the
@@ -215,9 +209,10 @@ src/
 ├── features/disc-golf/
 │   ├── following/           # orchestrator, poller, top list
 │   ├── commentary/
-│   │   ├── detect/          # scorecard changes, commentary snapshots
-│   │   ├── facts/           # facts computed in code for the model
-│   │   └── writer/          # model context, structured call, fallback
+│   │   ├── detect/          # scorecard changes, snapshots, movement since the last message
+│   │   ├── facts/           # facts computed in code, and the model input built from them
+│   │   ├── write/           # structured model call, fallback
+│   │   └── format/          # Telegram message
 │   ├── scores/              # bag tags, player profiles
 │   └── services/            # database services
 ├── shared/llm/              # Ollama client
