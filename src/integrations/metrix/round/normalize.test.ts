@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ValidationError } from "../../../util/validation";
+import { ValidationError } from "../../../shared/validation";
 import { parseMetrixRound, parseRoundState, parseScorecard, parseStanding } from "./normalize";
 
 describe("parseScorecard", () => {

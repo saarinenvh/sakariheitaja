@@ -1,5 +1,5 @@
 import { escapeHtml } from "../../shared/html";
-import { truncateCourseName } from "../disc-golf/courseName";
+import { truncateCourseName } from "../commentary/format/courseName";
 
 /** The message that starts following: the course, the tracked players, and who still has no bagtag. */
 export function formatPlayerAnnouncement(

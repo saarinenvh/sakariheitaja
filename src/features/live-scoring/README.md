@@ -2,7 +2,7 @@
 
 Follows a Disc Golf Metrix round in a chat. `/follow <id>` starts it; on startup, `main.ts`
 resumes every competition not marked done. The commentary on each update comes from
-`../disc-golf/commentary/`; this feature owns the round's lifecycle around it.
+`../commentary/`; this feature owns the round's lifecycle around it.
 
 ```mermaid
 sequenceDiagram

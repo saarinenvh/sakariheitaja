@@ -1,12 +1,12 @@
 import { Composer, Context } from "grammy";
 import { moduleLogger } from "../../shared/logger";
 import { getRandom } from "../../shared/utils";
-import { searchGiphy } from "../../shared/giphy";
+import { giphy } from "../../integrations/giphy";
 import { sakariNames, randomQuote } from "../../config/phrases";
 import { fun as MSG } from "../../config/messages";
-import { heckle, llmHeckle, recordMessage, getRecentMessages } from "../llmHeckler";
-import { llmAnswer } from "../llmAsker";
-import { sendMorningGreeting } from "../../scheduler/morningGreeter";
+import { heckle, llmHeckle, recordMessage, getRecentMessages } from "../../features/heckler/heckler";
+import { llmAnswer } from "../../features/match-play-asker/matchPlayAsker";
+import { sendMorningGreeting } from "../../features/morning-greeting/morningGreeting";
 import { readConfig } from "../../config";
 
 const log = moduleLogger("fun");
@@ -57,7 +57,7 @@ fun.command("kukakirjaa", async ctx => {
 // Searches Giphy for a matching GIF/video and sends a random result.
 fun.command("gifplz", async ctx => {
   if (!ctx.match) return ctx.reply(MSG.gifplzUsage);
-  const gifUrl = await searchGiphy(ctx.match);
+  const gifUrl = await giphy.searchGif(ctx.match);
   if (gifUrl) await ctx.replyWithVideo(gifUrl);
 });
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getData } from "../../../shared/http";
-import { parseOrThrow } from "../../../util/validation";
+import { parseOrThrow } from "../../../shared/validation";
 
 const COURSES_LIST_URL = "https://discgolfmetrix.com/api.php?content=courses_list";
 const COURSE_LAYOUT_SEPARATORS = ["&rarr;", "→"] as const;

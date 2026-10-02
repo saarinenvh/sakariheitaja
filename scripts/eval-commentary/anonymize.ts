@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { parseOrThrow } from "../../src/util/validation";
+import { parseOrThrow } from "../../src/shared/validation";
 import { CommentaryFixture, FixtureCourse, FixtureWeather, playerSchema, trackSchema } from "./fixtureFile";
 
 const FAKE_FIRST_NAMES = [

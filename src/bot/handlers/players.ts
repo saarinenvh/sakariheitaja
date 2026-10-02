@@ -1,5 +1,5 @@
 import { Composer } from "grammy";
-import * as playerService from "../../features/disc-golf/services/PlayerService";
+import * as playerService from "../../features/players/players";
 import { players as MSG } from "../../config/messages";
 
 export const players = new Composer();

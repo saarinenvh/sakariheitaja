@@ -1,6 +1,6 @@
 import { moduleLogger } from "../../../shared/logger";
 import { z } from "zod";
-import { parseOrThrow } from "../../../util/validation";
+import { parseOrThrow } from "../../../shared/validation";
 
 const log = moduleLogger("course-statistics");
 

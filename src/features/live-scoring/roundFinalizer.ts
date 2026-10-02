@@ -2,11 +2,11 @@ import { ChatMessenger } from "../chatMessenger";
 import { competition as MSG } from "../../config/messages";
 import { selectFinalScores, selectRankedResults, selectTrackedRankedResults } from "../../integrations/metrix/round/results";
 import { MetrixRound, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
-import { computeAndApplySwaps, formatBagtagAnnouncement, selectBagtagParticipants } from "../disc-golf/scores/bagtags";
-import { updateProfiles } from "../disc-golf/scores/playerProfiles";
-import * as competitionService from "../disc-golf/services/CompetitionService";
-import * as courseService from "../disc-golf/services/CourseService";
-import * as scoreService from "../disc-golf/services/ScoreService";
+import { computeAndApplySwaps, formatBagtagAnnouncement, selectBagtagParticipants } from "../bagtags/bagtags";
+import { updateProfiles } from "../player-profiles/playerProfiles";
+import * as competitionService from "./competitions";
+import * as courseService from "../score-records/courses";
+import * as scoreService from "../score-records/scoreRecords";
 
 export interface RoundEnd {
   chatId: number;

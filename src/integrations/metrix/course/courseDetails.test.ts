@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchCourseDetails, parseCourseDetails } from "./courseDetails";
-import { ValidationError } from "../../../util/validation";
+import { ValidationError } from "../../../shared/validation";
 
 const mocks = vi.hoisted(() => ({ getData: vi.fn<(url: string) => Promise<unknown>>() }));
 vi.mock("../../../shared/http", () => ({ getData: mocks.getData }));

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { OllamaMessage } from "../../shared/llm/ollamaClient";
+import { OllamaMessage } from "../../integrations/ollama/client";
 
 const mocks = vi.hoisted(() => ({
   getData: vi.fn<() => Promise<unknown>>(),
@@ -9,15 +9,16 @@ const mocks = vi.hoisted(() => ({
   markDone: vi.fn(), saveScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
 }));
 
-vi.mock("../../shared/llm/ollamaClient", () => ({ generateStructured: mocks.generate, loadPrompt: () => "Sakke" }));
-vi.mock("../../db/repositories/PlayerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
-vi.mock("../disc-golf/services/CompetitionService", () => ({ markDone: mocks.markDone }));
-vi.mock("../disc-golf/services/CourseService", () => ({ getOrCreate: async () => ({ id: 2 }) }));
-vi.mock("../disc-golf/services/ScoreService", () => ({
+vi.mock("../../integrations/ollama", () => ({ ollama: { generate: vi.fn(), generateStructured: mocks.generate } }));
+vi.mock("../../prompts/prompts", () => ({ loadPrompt: () => "Sakke", loadContext: () => "" }));
+vi.mock("../players/playerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
+vi.mock("./competitions", () => ({ markDone: mocks.markDone }));
+vi.mock("../score-records/courses", () => ({ getOrCreate: async () => ({ id: 2 }) }));
+vi.mock("../score-records/scoreRecords", () => ({
   saveRecordedScores: mocks.saveScores, saveResults: mocks.saveResults,
 }));
-vi.mock("../disc-golf/scores/playerProfiles", () => ({ updateProfiles: vi.fn(), buildProfileSnippet: () => undefined }));
-vi.mock("../disc-golf/scores/bagtags", () => ({
+vi.mock("../player-profiles/playerProfiles", () => ({ updateProfiles: vi.fn(), buildProfileSnippet: () => undefined }));
+vi.mock("../bagtags/bagtags", () => ({
   getMissingTagPlayers: () => [], computeAndApplySwaps: () => ({}), formatBagtagAnnouncement: () => "Tags",
   selectBagtagParticipants: () => [],
 }));
@@ -34,8 +35,10 @@ vi.mock("./poller", () => ({ default: class {
 import { ScoreTracker } from "./scoreTracker";
 import { ChatMessenger } from "../chatMessenger";
 import { MetrixClient, readRoundPayload, RoundFetchResult } from "../../integrations/metrix/client";
+import { OpenWeatherClient } from "../../integrations/openweather/client";
 
 const messenger: ChatMessenger = { sendText: mocks.send, sendHtml: mocks.send };
+const openWeather: OpenWeatherClient = { getCurrentWeather: vi.fn(), getCityWeather: vi.fn() };
 const metrix: MetrixClient = {
   getRound: async roundId => readRoundPayload(await mocks.getData(), roundId),
   getCourseDetails: async () => ({ kind: "unconfigured" }),
@@ -83,7 +86,7 @@ beforeEach(() => {
 describe("poll to publication", () => {
   it("announces offsetting corrections even when the total does not change", async () => {
     mocks.getData.mockResolvedValue(response([3, 4, null]));
-    const tracker = await new ScoreTracker(1, "123", -100, messenger, metrix, true).init();
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather }, true).init();
     await poll(response([4, 3, null]));
     await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
     expect(mocks.send.mock.calls[0][1]).toContain("korjaus");
@@ -92,7 +95,7 @@ describe("poll to publication", () => {
   });
 
   it("uses numeric live positions in the footer and passes delivered narrative to the model", async () => {
-    const tracker = await new ScoreTracker(1, "123", -100, messenger, metrix, true).init();
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather }, true).init();
     await poll(response([3, null, null], "11"));
     await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
     await poll(response([3, 4, null], "10"));
@@ -107,7 +110,7 @@ describe("poll to publication", () => {
 
   it("reports removals and preserves the last valid snapshot after malformed polling data", async () => {
     mocks.getData.mockResolvedValue(response([3, null, null]));
-    const tracker = await new ScoreTracker(1, "123", -100, messenger, metrix, true).init();
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather }, true).init();
     const snapshot = tracker.snapshot;
     await poll({ Competition: { Results: [] } });
     expect(tracker.snapshot).toBe(snapshot);
@@ -121,7 +124,7 @@ describe("poll to publication", () => {
     let release: (text: string) => void = () => { throw new Error("Generation has not started"); };
     mocks.generate.mockImplementationOnce(() => new Promise<string>(resolve => { release = resolve; }));
     mocks.getData.mockResolvedValue(response([3, 3, null]));
-    const tracker = await new ScoreTracker(1, "123", -100, messenger, metrix, true).init();
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather }, true).init();
     await poll(response([3, 3, 3]));
     await vi.waitFor(() => expect(mocks.generate).toHaveBeenCalledTimes(1));
     expect(mocks.markDone).not.toHaveBeenCalled();
@@ -133,7 +136,7 @@ describe("poll to publication", () => {
 
   it("posts the results before the bagtag announcement at round end", async () => {
     mocks.getData.mockResolvedValue(response([3, 3, null]));
-    await new ScoreTracker(1, "123", -100, messenger, metrix, true).init();
+    await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather }, true).init();
     await poll(response([3, 3, 3]));
     await vi.waitFor(() => expect(mocks.send.mock.calls.map(call => call[1])).toContain("Tags"));
     const texts = mocks.send.mock.calls.map(call => call[1]);
@@ -147,7 +150,7 @@ describe("poll to publication", () => {
     const parent = response([null, null, null]);
     parent.Competition.SubCompetitions = [{ ID: "124" }];
     mocks.getData.mockResolvedValue(parent);
-    const tracker = await new ScoreTracker(1, "123", -100, messenger, metrix, true).init();
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather }, true).init();
     expect(tracker.following).toBe(false);
     expect(tracker.initializationError).toContain("yksittäisiä kierroksia");
     expect(mocks.handlers.size).toBe(0);

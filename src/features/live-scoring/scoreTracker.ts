@@ -5,18 +5,26 @@ import { finishRound } from "./roundFinalizer";
 import { formatRoundTopList } from "./topList";
 import { ChatMessenger } from "../chatMessenger";
 import { competition as MSG } from "../../config/messages";
-import * as playerRepo from "../../db/repositories/PlayerRepository";
+import * as playerRepo from "../players/playerRepository";
 import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client";
+import { OpenWeatherClient } from "../../integrations/openweather/client";
 import { UnsupportedRoundError } from "../../integrations/metrix/round/normalize";
 import { hasTrackedRoundEnded, trackRoundPlayers } from "../../integrations/metrix/round/results";
 import { MetrixRound, RoundPlayer, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
-import { RoundCommentary } from "../disc-golf/commentary/roundCommentary";
-import { writeRoundCommentary } from "../disc-golf/commentary/write/commentaryRuntime";
-import { getMissingTagPlayers } from "../disc-golf/scores/bagtags";
-import * as scoreService from "../disc-golf/services/ScoreService";
+import { RoundCommentary } from "../commentary/roundCommentary";
+import { writeRoundCommentary } from "../commentary/write/commentaryRuntime";
+import { getMissingTagPlayers } from "../bagtags/bagtags";
+import * as scoreService from "../score-records/scoreRecords";
 import { moduleLogger } from "../../shared/logger";
 
 const log = moduleLogger("live-scoring");
+
+/** What a tracker talks to: the chat, Metrix, and the weather service. */
+export interface TrackerDependencies {
+  messenger: ChatMessenger;
+  metrix: MetrixClient;
+  openWeather: OpenWeatherClient;
+}
 
 /**
  * Follows one Metrix round in one chat: polls it, hands every change to commentary, and finishes the round
@@ -33,12 +41,17 @@ export class ScoreTracker {
   private endQueued = false;
   private readonly commentary: RoundCommentary;
   private readonly course: RoundCourseData;
+  private readonly messenger: ChatMessenger;
+  private readonly metrix: MetrixClient;
 
   constructor(
     public id: number, public metrixId: string, public chatId: number,
-    private readonly messenger: ChatMessenger, private readonly metrix: MetrixClient, private playersAnnounced = false,
+    dependencies: TrackerDependencies, private playersAnnounced = false,
   ) {
-    this.course = new RoundCourseData(metrix, metrixId, () => this.snapshot);
+    const { messenger } = dependencies;
+    this.messenger = messenger;
+    this.metrix = dependencies.metrix;
+    this.course = new RoundCourseData(dependencies.metrix, dependencies.openWeather, metrixId, () => this.snapshot);
     this.commentary = new RoundCommentary(chatId, metrixId, {
       write: writeRoundCommentary,
       fetchWeather: () => this.course.weather(),

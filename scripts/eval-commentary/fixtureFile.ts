@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, writeFileSync } from "fs";
 import { basename, join } from "path";
 import { z } from "zod";
-import { parseOrThrow } from "../../src/util/validation";
+import { parseOrThrow } from "../../src/shared/validation";
 
 export const FIXTURE_DIR = join(process.cwd(), "scripts", "eval-commentary", "fixtures");
 const FIXTURE_EXTENSION = ".json";

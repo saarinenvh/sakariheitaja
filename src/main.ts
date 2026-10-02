@@ -8,13 +8,12 @@ const log = moduleLogger("main");
 
 import { dataSource } from "./db/dataSource";
 import { bot } from "./bot/bot";
-import { telegramMessenger } from "./bot/messenger";
-import { metrixClient } from "./integrations/metrix";
+import { trackerDependencies } from "./bot/dependencies";
 import * as registry from "./features/live-scoring/trackerRegistry";
 import { ScoreTracker } from "./features/live-scoring/scoreTracker";
-import * as competitionService from "./features/disc-golf/services/CompetitionService";
-import * as chatRepo from "./db/repositories/ChatRepository";
-import { startMorningGreeter } from "./scheduler/morningGreeter";
+import * as competitionService from "./features/live-scoring/competitions";
+import * as chatRepo from "./features/chats/chatRepository";
+import { startMorningGreeter } from "./features/morning-greeting/morningGreeting";
 
 import { competition } from "./bot/handlers/competition";
 import { players } from "./bot/handlers/players";
@@ -57,7 +56,7 @@ async function init(): Promise<void> {
 
   const unfinished = await competitionService.getUnfinished();
   for (const i of unfinished) {
-    const tracker = await new ScoreTracker(i.id, i.metrixId, i.chatId, telegramMessenger, metrixClient, true).init();
+    const tracker = await new ScoreTracker(i.id, i.metrixId, i.chatId, trackerDependencies, true).init();
     registry.add(i.chatId, tracker);
   }
 }
