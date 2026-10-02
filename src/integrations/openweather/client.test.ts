@@ -47,9 +47,15 @@ describe("city weather", () => {
     const client = createOpenWeatherClient({ apiKey: "test-key" });
     const helsinki = { name: "Helsinki", main: { temp: 7 }, weather: [{ main: "Rain", description: "sade" }], wind: { speed: 3 }, sys: { sunrise: 1, sunset: 2 } };
     mocks.getData.mockResolvedValueOnce(helsinki);
-    expect(await client.getCityWeather("Helsinki")).toBe(helsinki);
+    expect(await client.getCityWeather("Helsinki")).toEqual(helsinki);
     expect(mocks.getData.mock.calls.at(-1)?.[0]).toBe("https://api.openweathermap.org/data/2.5/weather?q=Helsinki&units=metric&lang=fi&appid=test-key");
     mocks.getData.mockResolvedValueOnce({ cod: "404", message: "city not found" });
     expect(await client.getCityWeather("Atlantis")).toBeNull();
+  });
+
+  it("treats a reply missing what the /saa message shows as no city", async () => {
+    const client = createOpenWeatherClient({ apiKey: "test-key" });
+    mocks.getData.mockResolvedValueOnce({ name: "Helsinki", weather: [{ main: "Rain", description: "sade" }] });
+    expect(await client.getCityWeather("Helsinki")).toBeNull();
   });
 });

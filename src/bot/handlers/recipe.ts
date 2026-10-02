@@ -12,7 +12,7 @@ export const recipe = new Composer();
 // and a photo of the dish.
 recipe.command("mitatanaansyotaisiin", async ctx => {
   const results = await recipes.getRecipes();
-  if (!results) return ctx.reply(MSG.notFound);
+  if (!results?.length) return ctx.reply(MSG.notFound);
   const { text, photoUrl } = formatRecipe(results[getRandom(results.length)]);
 
   await ctx.reply(text);
