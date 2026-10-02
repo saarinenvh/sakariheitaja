@@ -1,6 +1,6 @@
 import { CityWeather, OpenWeatherClient } from "../../integrations/openweather/client";
 import { weatherEmojis } from "../../config/phrases";
-import { weather as MSG } from "../../config/messages";
+import { weather as MSG } from "../../telegram/messages";
 import { createDate } from "../../shared/utils";
 
 /** The `/saa` message: `html` for a found city, `text` when OpenWeatherMap doesn't know it. */

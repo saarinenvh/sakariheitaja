@@ -1,10 +1,10 @@
 import { Composer } from "grammy";
-import { ScoreTracker } from "../../features/live-scoring/scoreTracker";
-import * as competitionService from "../../features/live-scoring/competitions";
-import * as registry from "../../features/live-scoring/trackerRegistry";
-import { competition as MSG } from "../../config/messages";
-import { HTML_NO_PREVIEW } from "../../config/bot";
-import { trackerDependencies } from "../dependencies";
+import { ScoreTracker } from "../../../features/live-scoring/scoreTracker";
+import * as competitionService from "../../../features/live-scoring/competitions";
+import * as registry from "../../../features/live-scoring/trackerRegistry";
+import { competition as MSG } from "../../messages";
+import { HTML_NO_PREVIEW } from "../../sendOptions";
+import { trackerDependencies } from "../../dependencies";
 
 export const competition = new Composer();
 

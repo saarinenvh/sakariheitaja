@@ -1,6 +1,6 @@
 import { Api } from "grammy";
 import { bot } from "./bot";
-import { HTML_NO_PREVIEW } from "../config/bot";
+import { HTML_NO_PREVIEW } from "./sendOptions";
 import { ChatMessenger } from "../features/chatMessenger";
 
 export function createTelegramMessenger(api: Pick<Api, "sendMessage">): ChatMessenger {

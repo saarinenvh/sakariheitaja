@@ -4,7 +4,7 @@ import { formatPlayerAnnouncement } from "./playerAnnouncement";
 import { finishRound } from "./roundFinalizer";
 import { formatRoundTopList } from "./topList";
 import { ChatMessenger } from "../chatMessenger";
-import { competition as MSG } from "../../config/messages";
+import { competition as MSG } from "../../telegram/messages";
 import * as playerRepo from "../players/playerRepository";
 import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client";
 import { OpenWeatherClient } from "../../integrations/openweather/client";

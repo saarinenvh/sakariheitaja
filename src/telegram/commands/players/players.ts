@@ -1,6 +1,6 @@
 import { Composer } from "grammy";
-import * as playerService from "../../features/players/players";
-import { players as MSG } from "../../config/messages";
+import * as playerService from "../../../features/players/players";
+import { players as MSG } from "../../messages";
 
 export const players = new Composer();
 

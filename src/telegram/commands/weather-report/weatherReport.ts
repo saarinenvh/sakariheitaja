@@ -1,10 +1,10 @@
 import { Composer, Context } from "grammy";
-import { openWeather } from "../../integrations/openweather";
-import { buildCityWeatherReport } from "../../features/weather-report/weatherReport";
-import { HTML_OPTIONS } from "../../config/bot";
-import { citys } from "../../config/phrases";
-import { getRandom } from "../../shared/utils";
-import { weather as MSG } from "../../config/messages";
+import { openWeather } from "../../../integrations/openweather";
+import { buildCityWeatherReport } from "../../../features/weather-report/weatherReport";
+import { HTML_OPTIONS } from "../../sendOptions";
+import { citys } from "../../../config/phrases";
+import { getRandom } from "../../../shared/utils";
+import { weather as MSG } from "../../messages";
 
 export const weather = new Composer();
 

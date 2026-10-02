@@ -1,5 +1,5 @@
 import { ChatMessenger } from "../chatMessenger";
-import { competition as MSG } from "../../config/messages";
+import { competition as MSG } from "../../telegram/messages";
 import { selectFinalScores, selectRankedResults, selectTrackedRankedResults } from "../../integrations/metrix/round/results";
 import { MetrixRound, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
 import { computeAndApplySwaps, formatBagtagAnnouncement, selectBagtagParticipants } from "../bagtags/bagtags";

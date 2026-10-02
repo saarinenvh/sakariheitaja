@@ -3,8 +3,8 @@ import {
   formatBagtagList,
   setBagtag,
   removeBagtag,
-} from "../../features/bagtags/bagtags";
-import { HTML_NO_PREVIEW } from "../../config/bot";
+} from "../../../features/bagtags/bagtags";
+import { HTML_NO_PREVIEW } from "../../sendOptions";
 
 export const bagtag = new Composer();
 

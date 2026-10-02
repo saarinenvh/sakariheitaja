@@ -1,8 +1,8 @@
 import { Composer } from "grammy";
-import { recipes } from "../../integrations/recipes";
-import { formatRecipe } from "../../features/recipes/recipes";
-import { getRandom } from "../../shared/utils";
-import { recipe as MSG } from "../../config/messages";
+import { recipes } from "../../../integrations/recipes";
+import { formatRecipe } from "../../../features/recipes/recipes";
+import { getRandom } from "../../../shared/utils";
+import { recipe as MSG } from "../../messages";
 
 export const recipe = new Composer();
 

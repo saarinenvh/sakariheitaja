@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("./bot", () => ({ bot: { api: {} } }));
 
 import { createTelegramMessenger } from "./messenger";
-import { HTML_NO_PREVIEW } from "../config/bot";
+import { HTML_NO_PREVIEW } from "./sendOptions";
 
 describe("Telegram messenger", () => {
   it("sends text as is and HTML without link previews", async () => {

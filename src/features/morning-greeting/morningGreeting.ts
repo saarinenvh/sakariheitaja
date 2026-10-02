@@ -5,7 +5,7 @@ import { giphy } from "../../integrations/giphy";
 import { getRandom, formatDate } from "../../shared/utils";
 import { randomGoodMorning, giphySearchWords, citys } from "../../config/phrases";
 import { moduleLogger } from "../../shared/logger";
-import { HTML_OPTIONS } from "../../config/bot";
+import { HTML_OPTIONS } from "../../telegram/sendOptions";
 import { readConfig } from "../../config";
 
 const log = moduleLogger("morning-greeter");

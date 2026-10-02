@@ -7,21 +7,21 @@ import { moduleLogger } from "./shared/logger";
 const log = moduleLogger("main");
 
 import { dataSource } from "./db/dataSource";
-import { bot } from "./bot/bot";
-import { trackerDependencies } from "./bot/dependencies";
+import { bot } from "./telegram/bot";
+import { trackerDependencies } from "./telegram/dependencies";
 import * as registry from "./features/live-scoring/trackerRegistry";
 import { ScoreTracker } from "./features/live-scoring/scoreTracker";
 import * as competitionService from "./features/live-scoring/competitions";
 import * as chatRepo from "./features/chats/chatRepository";
 import { startMorningGreeter } from "./features/morning-greeting/morningGreeting";
 
-import { competition } from "./bot/handlers/competition";
-import { players } from "./bot/handlers/players";
-import { scores } from "./bot/handlers/scores";
-import { weather } from "./bot/handlers/weather";
-import { recipe } from "./bot/handlers/recipe";
-import { bagtag } from "./bot/handlers/bagtag";
-import { fun } from "./bot/handlers/fun"; // must be last — catches all message:text
+import { competition } from "./telegram/commands/live-scoring/liveScoring";
+import { players } from "./telegram/commands/players/players";
+import { scores } from "./telegram/commands/score-records/scoreRecords";
+import { weather } from "./telegram/commands/weather-report/weatherReport";
+import { recipe } from "./telegram/commands/recipes/recipes";
+import { bagtag } from "./telegram/commands/bagtags/bagtags";
+import { fun } from "./telegram/commands/games/games"; // must be last — catches all message:text
 
 bot.use(competition);
 bot.use(players);
