@@ -3,7 +3,7 @@ export const liveScoringCommandMessages = {
   followNoNumber:   "Ei löydy numeroa viestistä, urpo.",
   followStarted:    "Okei, aletaan kattoo vähä kiekkogolffii (c) Ian Andersson",
 
-  lopetaUsage:      "Anna kisan id. Esim: /lopeta 42",
+  lopetaUsage:      "Anna kisan metrixId. Esim: /lopeta 3809486 (näkyy /pelit-listassa)",
   lopetaOk:         "No olihan se kivaa taas, jatketaan ens kerralla.",
   lopetaNotFound:   "Eihän tommost kisaa ookkaa! URPå!",
 
