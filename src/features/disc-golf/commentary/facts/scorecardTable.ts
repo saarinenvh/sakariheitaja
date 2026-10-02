@@ -1,6 +1,6 @@
-import { HoleScore } from "../../metrix/scorecard";
+import { HoleScore } from "../../../../integrations/metrix/round/scorecard";
 import { formatHoleScore } from "../presentation";
-import { RoundPlayer } from "../../metrix/metrixRound";
+import { RoundPlayer } from "../../../../integrations/metrix/round/normalize";
 
 const NOT_RECORDED = "-";
 const UNKNOWN_PAR = "?";

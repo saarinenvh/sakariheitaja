@@ -3,7 +3,7 @@ import { WeatherObservation } from "../../../shared/weather";
 import { BatchCommentaryContext } from "./writer/commentaryContext";
 import { BatchCommentaryResult, writeBatchCommentary } from "./writer/commentaryWriter";
 import { CommentaryDelivery, RoundCommentary } from "./roundCommentary";
-import { hasTrackedRoundEnded, parseMetrixRound, toBagtagPlayers, toFinalScores, trackRoundPlayers } from "../metrix/metrixRound";
+import { hasTrackedRoundEnded, parseMetrixRound, toBagtagPlayers, toFinalScores, trackRoundPlayers } from "../../../integrations/metrix/round/normalize";
 import { formatBatchCommentaryMessages, TELEGRAM_MESSAGE_LIMIT } from "./presentation";
 import { FactualCommentaryBrief } from "./facts/playerBrief";
 

@@ -1,4 +1,4 @@
-import { compareScorecards, Scorecard, ScorecardComparison, ScoreChange } from "../../metrix/scorecard";
+import { compareScorecards, Scorecard, ScorecardComparison, ScoreChange } from "../../../../integrations/metrix/round/scorecard";
 import {
   analyzeRound, CommentaryScope, comparePublishedStanding, PublishedStanding,
   RoundState, RoundSummary, sameCommentaryScope, Standing, StandingMovement,

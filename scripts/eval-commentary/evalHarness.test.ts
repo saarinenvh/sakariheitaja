@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseMetrixRound } from "../../src/features/disc-golf/metrix/metrixRound";
+import { parseMetrixRound } from "../../src/integrations/metrix/round/normalize";
 import { buildAnonymizedFixture, buildFakeNames } from "./anonymize";
 import { countSentences, runChecks } from "./checks";
 import { parseHoleRange } from "./cliFlags";

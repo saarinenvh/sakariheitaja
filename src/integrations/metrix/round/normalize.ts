@@ -3,8 +3,8 @@ import { parseOrThrow } from "../../../util/validation";
 import { MetrixPlayerResult, TrackedPlayer } from "../../../types/metrix";
 import { integerSchema, optionalIntegerSchema } from "./scoreSchemas";
 import { parseScorecard, Scorecard } from "./scorecard";
-import { analyzeRound, parseRoundState, parseStanding, RoundState, Standing } from "../commentary/facts/roundAnalysis";
-import { CommentarySnapshot } from "../commentary/facts/playerBrief";
+import { analyzeRound, parseRoundState, parseStanding, RoundState, Standing } from "../../../features/disc-golf/commentary/facts/roundAnalysis";
+import { CommentarySnapshot } from "../../../features/disc-golf/commentary/facts/playerBrief";
 
 const positiveInteger = integerSchema.pipe(z.number().int().positive());
 const identifier = positiveInteger.transform(String);

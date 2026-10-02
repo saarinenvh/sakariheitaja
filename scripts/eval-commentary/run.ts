@@ -111,7 +111,7 @@ async function loadRuntime(options: EvalOptions): Promise<Runtime> {
 
 async function replayFixture(fixture: CommentaryFixture, run: number, runtime: Runtime): Promise<EvalRecord[]> {
   const { RoundCommentary } = await import("../../src/features/disc-golf/commentary/roundCommentary");
-  const { parseMetrixRound, trackRoundPlayers } = await import("../../src/features/disc-golf/metrix/metrixRound");
+  const { parseMetrixRound, trackRoundPlayers } = await import("../../src/integrations/metrix/round/normalize");
   const tracked = fixture.tracked.map((name, index) => ({ id: index + 1, name }));
   const weather = [fixture.weather.start, fixture.weather.halfway];
   let weatherRequests = 0;
@@ -217,8 +217,8 @@ function describeFacts(context: BatchCommentaryContext): string {
 }
 
 async function loadFixtureCourse(fixture: CommentaryFixture): Promise<CourseInfo> {
-  const { parseCourseDetails } = await import("../../src/features/disc-golf/metrix/metrixCourse");
-  const { parseStoredCourseStatistics } = await import("../../src/features/disc-golf/metrix/courseStatistics");
+  const { parseCourseDetails } = await import("../../src/integrations/metrix/course/courseDetails");
+  const { parseStoredCourseStatistics } = await import("../../src/integrations/metrix/statistics/courseStatistics");
   const course = fixture.course;
   return {
     details: course?.detailsResponse ? parseCourseDetails(course.detailsResponse, course.courseId) : null,

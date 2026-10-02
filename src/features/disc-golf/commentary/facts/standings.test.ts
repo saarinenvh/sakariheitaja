@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildDivisionStandings } from "./standings";
-import { parseMetrixRound } from "../../metrix/metrixRound";
+import { parseMetrixRound } from "../../../../integrations/metrix/round/normalize";
 
 function round() {
   return parseMetrixRound({ Competition: {

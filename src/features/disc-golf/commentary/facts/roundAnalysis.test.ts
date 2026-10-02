@@ -3,7 +3,7 @@ import { ValidationError } from "../../../../util/validation";
 import {
   analyzeRound, CommentaryScope, comparePublishedStanding, parseRoundState, parseStanding,
 } from "./roundAnalysis";
-import { parseScorecard } from "../../metrix/scorecard";
+import { parseScorecard } from "../../../../integrations/metrix/round/scorecard";
 
 const scope: CommentaryScope = {
   chatId: -100, competitionId: "competition", division: "MA3", playerId: 1,

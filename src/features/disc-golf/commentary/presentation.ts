@@ -1,5 +1,5 @@
 import { FactualCommentaryBrief } from "./facts/playerBrief";
-import { HoleScore, ScoreChange } from "../metrix/scorecard";
+import { HoleScore, ScoreChange } from "../../../integrations/metrix/round/scorecard";
 
 export const TELEGRAM_MESSAGE_LIMIT = 4096;
 const BLOCK_SEPARATOR = "\n\n";

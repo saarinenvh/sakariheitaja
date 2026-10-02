@@ -14,15 +14,15 @@ import { writeRoundCommentary } from "../commentary/writer/commentaryRuntime";
 import {
   hasTrackedRoundEnded, MetrixRound, parseMetrixRound, toBagtagPlayers, toFinalScores, toLegacyResults, toLegacyTracked,
   TrackedRoundPlayer, trackRoundPlayers, UnsupportedRoundError,
-} from "../metrix/metrixRound";
+} from "../../../integrations/metrix/round/normalize";
 import { moduleLogger } from "../../../shared/logger";
 import { readConfig } from "../../../config";
 import { fetchCurrentWeather, WeatherObservation } from "../../../shared/weather";
-import { CourseLocationResult, fetchCourseLocation } from "../metrix/courseLocation";
+import { CourseLocationResult, fetchCourseLocation } from "../../../integrations/metrix/location/courseLocation";
 import { CourseInfo } from "../commentary/facts/holeFacts";
 import { buildRoundRatings } from "../commentary/facts/courseFacts";
-import { CourseDetails, fetchCourseDetails } from "../metrix/metrixCourse";
-import { CourseStatistics, fetchCourseStatistics } from "../metrix/courseStatistics";
+import { CourseDetails, fetchCourseDetails } from "../../../integrations/metrix/course/courseDetails";
+import { CourseStatistics, fetchCourseStatistics } from "../../../integrations/metrix/statistics/courseStatistics";
 
 const log = moduleLogger("orchestrator");
 

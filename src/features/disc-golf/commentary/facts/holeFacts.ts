@@ -3,10 +3,10 @@ import {
   buildRoundRatings, describeCourseDifficulty, describeHoleHistory, describeHoleLength, describeTodayFieldAverage,
   describeWindOnHole,
 } from "./courseFacts";
-import { CourseStatistics } from "../../metrix/courseStatistics";
+import { CourseStatistics } from "../../../../integrations/metrix/statistics/courseStatistics";
 import { FactualCommentaryBrief } from "./playerBrief";
-import { CourseDetails } from "../../metrix/metrixCourse";
-import { MetrixRound, RoundPlayer } from "../../metrix/metrixRound";
+import { CourseDetails } from "../../../../integrations/metrix/course/courseDetails";
+import { MetrixRound, RoundPlayer } from "../../../../integrations/metrix/round/normalize";
 
 /** What the round knows about its course; either part is missing when Metrix doesn't provide it. */
 export interface CourseInfo {

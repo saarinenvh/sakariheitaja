@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { parseOrThrow } from "../../../../util/validation";
-import { HoleScore, Scorecard } from "../../metrix/scorecard";
-import { optionalIntegerSchema } from "../../metrix/scoreSchemas";
+import { HoleScore, Scorecard } from "../../../../integrations/metrix/round/scorecard";
+import { optionalIntegerSchema } from "../../../../integrations/metrix/round/scoreSchemas";
 
 const optionalPositiveIntegerSchema = optionalIntegerSchema.refine(value => value === null || value > 0);
 

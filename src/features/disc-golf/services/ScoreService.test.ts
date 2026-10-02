@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ScoreChange } from "../metrix/scorecard";
+import { ScoreChange } from "../../../integrations/metrix/round/scorecard";
 
 // Mocked so this exercises which rows get written, without a database.
 vi.mock("../../../db/repositories/ScoreRepository", () => ({
