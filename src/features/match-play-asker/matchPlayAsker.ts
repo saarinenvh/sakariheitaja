@@ -1,4 +1,5 @@
-import { generate, loadPrompt, loadContext } from "../../integrations/ollama/client";
+import { ollama } from "../../integrations/ollama";
+import { loadContext, loadPrompt } from "../../prompts/prompts";
 import { type BracketData } from "../../integrations/challonge/client";
 import { challonge } from "../../integrations/challonge";
 import { findParticipantsByName, findPlayerMatch, formatFullBracket } from "./bracket";
@@ -137,7 +138,7 @@ export async function llmAnswer(question: string, senderName?: string, recentMes
       }
     }
 
-    const answer = await generate(
+    const answer = await ollama.generate(
       [
         { role: "system", content: systemContent },
         { role: "user",   content: userContent },

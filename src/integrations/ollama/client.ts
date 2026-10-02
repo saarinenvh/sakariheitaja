@@ -1,7 +1,4 @@
-import { readFileSync } from "fs";
-import { join } from "path";
 import { moduleLogger } from "../../shared/logger";
-import { readConfig } from "../../config";
 import { finishOllamaTrace, startOllamaTrace } from "./trace";
 
 const log = moduleLogger("ollama");
@@ -30,9 +27,28 @@ export interface OllamaTool {
 
 export type ToolHandler = (name: string, args: Record<string, unknown>) => Promise<string>;
 
-const { baseUrl, model, timeoutMs } = readConfig().ollama;
+export interface OllamaConfig {
+  baseUrl: string;
+  model: string;
+  timeoutMs: number;
+}
+
+export interface OllamaClient {
+  /** A free-text reply, with model artifacts (think blocks, turn tokens, wrapping quotes) stripped. */
+  generate(messages: OllamaMessage[], options?: OllamaOptions, tools?: OllamaTool[], toolHandler?: ToolHandler): Promise<string>;
+  /** A reply constrained to `jsonSchema`, as raw JSON text, unparsed. */
+  generateStructured(messages: OllamaMessage[], jsonSchema: Record<string, unknown>, options?: OllamaOptions): Promise<string>;
+}
+
+export function createOllamaClient(config: OllamaConfig): OllamaClient {
+  return {
+    generate: (messages, options, tools, toolHandler) => generate(config, messages, options, tools, toolHandler),
+    generateStructured: (messages, jsonSchema, options) => generateStructured(config, messages, jsonSchema, options),
+  };
+}
 
 async function callOllama(
+  { baseUrl, model, timeoutMs }: OllamaConfig,
   messages: OllamaMessage[],
   options: OllamaOptions,
   tools?: OllamaTool[],
@@ -106,7 +122,8 @@ function stripArtifacts(text: string): string {
     .trim() || stripped || text;
 }
 
-export async function generate(
+async function generate(
+  config: OllamaConfig,
   messages: OllamaMessage[],
   options: OllamaOptions = {},
   tools?: OllamaTool[],
@@ -116,12 +133,12 @@ export async function generate(
   const history = [...messages];
 
   const truncated = history.at(-1)?.content.slice(0, 80) ?? "";
-  log.debug({ model, url: baseUrl, input: truncated }, "LLM request");
+  log.debug({ model: config.model, url: config.baseUrl, input: truncated }, "LLM request");
 
   const MAX_TOOL_ROUNDS = 3;
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-    const { content, toolCalls } = await callOllama(history, options, tools);
+    const { content, toolCalls } = await callOllama(config, history, options, tools);
 
     if (toolCalls?.length && toolHandler) {
       log.debug({ tools: toolCalls.map(tc => tc.function.name) }, "LLM tool calls");
@@ -145,31 +162,13 @@ export async function generate(
   throw new Error("Ollama tool call loop exceeded max rounds");
 }
 
-/** Requests a reply constrained to `jsonSchema` and returns the raw JSON text, unparsed. */
-export async function generateStructured(
+async function generateStructured(
+  config: OllamaConfig,
   messages: OllamaMessage[],
   jsonSchema: Record<string, unknown>,
   options: OllamaOptions = {},
 ): Promise<string> {
-  const { content } = await callOllama(messages, options, undefined, jsonSchema);
+  const { content } = await callOllama(config, messages, options, undefined, jsonSchema);
   if (!content) throw new Error("Ollama returned empty response");
   return content;
-}
-
-export function loadPrompt(filename: string): string {
-  const filePath = join(__dirname, "../../prompts", filename);
-  return readFileSync(filePath, "utf-8").trim();
-}
-
-export function loadContext(filenames: string[]): string {
-  return filenames
-    .map(filename => {
-      try {
-        return readFileSync(join(__dirname, "../../prompts", filename), "utf-8").trim();
-      } catch {
-        return "";
-      }
-    })
-    .filter(Boolean)
-    .join("\n\n---\n\n");
 }

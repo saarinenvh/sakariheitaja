@@ -1,5 +1,6 @@
 import { moduleLogger } from "../../../shared/logger";
-import { generateStructured, loadPrompt } from "../../../integrations/ollama/client";
+import { ollama } from "../../../integrations/ollama";
+import { loadPrompt } from "../../../prompts/prompts";
 import { BatchCommentaryContext } from "../facts/commentaryContext";
 import { readConfig } from "../../../config";
 import { BatchCommentaryResult, buildBatchFallback, writeBatchCommentary } from "./commentaryWriter";
@@ -19,7 +20,7 @@ export async function writeRoundCommentary(context: BatchCommentaryContext): Pro
   const startedAt = Date.now();
   log.info({ players: context.players.map(brief => brief.playerName) }, "writing a commentary batch");
   const result = await writeBatchCommentary(context, systemPrompt,
-    (messages, jsonSchema) => generateStructured(messages, jsonSchema, COMMENTARY_MODEL_OPTIONS));
+    (messages, jsonSchema) => ollama.generateStructured(messages, jsonSchema, COMMENTARY_MODEL_OPTIONS));
   const outcome = result.kind === "generated" ? "generated" : `fallback (${result.reason})`;
   log.info({ durationS: Math.round((Date.now() - startedAt) / MS_PER_SECOND) }, `commentary batch ${outcome}`);
   return result;

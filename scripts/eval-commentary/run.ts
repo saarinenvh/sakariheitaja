@@ -98,10 +98,10 @@ function configureOllamaEnvironment(options: EvalOptions): void {
 }
 
 async function loadRuntime(options: EvalOptions): Promise<Runtime> {
-  const { generateStructured } = await import("../../src/integrations/ollama/client");
+  const { ollama } = await import("../../src/integrations/ollama");
   const { COMMENTARY_MODEL_OPTIONS } = await import("../../src/features/commentary/write/commentaryRuntime");
   return {
-    generate: generateStructured,
+    generate: ollama.generateStructured,
     modelOptions: COMMENTARY_MODEL_OPTIONS,
     prompt: readFileSync(options.promptPath, "utf-8").trim(),
     holeRange: options.holeRange,

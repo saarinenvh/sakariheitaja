@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
   markDone: vi.fn(), saveScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
 }));
 
-vi.mock("../../integrations/ollama/client", () => ({ generateStructured: mocks.generate, loadPrompt: () => "Sakke" }));
+vi.mock("../../integrations/ollama", () => ({ ollama: { generate: vi.fn(), generateStructured: mocks.generate } }));
+vi.mock("../../prompts/prompts", () => ({ loadPrompt: () => "Sakke", loadContext: () => "" }));
 vi.mock("../players/playerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
 vi.mock("./competitions", () => ({ markDone: mocks.markDone }));
 vi.mock("../score-records/courses", () => ({ getOrCreate: async () => ({ id: 2 }) }));

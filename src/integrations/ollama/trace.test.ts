@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdir, writeFile } from "node:fs/promises";
-import { generate } from "./client";
+import { createOllamaClient } from "./client";
 
 vi.mock("node:fs/promises", () => ({ mkdir: vi.fn(), writeFile: vi.fn() }));
 
@@ -9,6 +9,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
+
+const { generate } = createOllamaClient({ baseUrl: "http://ollama.test", model: "test-model", timeoutMs: 1000 });
 
 describe("Ollama diagnostic traces", () => {
   const messages = [{ role: "user" as const, content: JSON.stringify({ factualBrief: { playerName: "Test" }, narrativeHistory: [] }) }];

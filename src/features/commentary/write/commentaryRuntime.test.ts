@@ -1,18 +1,18 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { generateStructured, loadPrompt } from "../../../integrations/ollama/client";
+import { ollama } from "../../../integrations/ollama";
+import { loadPrompt } from "../../../prompts/prompts";
 import { BatchCommentaryContext } from "../facts/commentaryContext";
 import { buildBatchResponseJsonSchema } from "./commentaryWriter";
 import { writeRoundCommentary } from "./commentaryRuntime";
 
-vi.mock("../../../integrations/ollama/client", async importOriginal => {
-  const original = await importOriginal<typeof import("../../../integrations/ollama/client")>();
-  return {
-    ...original,
+vi.mock("../../../integrations/ollama", () => ({
+  ollama: {
+    generate: vi.fn(),
     generateStructured: vi.fn().mockResolvedValue(JSON.stringify({
       opening: "Avaus.", players: [{ name: "Testaaja", text: "ÄSSÄ!" }], closing: "Loppu.",
     })),
-  };
-});
+  },
+}));
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -36,7 +36,7 @@ const context: BatchCommentaryContext = {
 it("asks for a structured batch reply with the batch prompt and a 16k context", async () => {
   vi.stubEnv("LLM_ENABLED", "true");
   const result = await writeRoundCommentary(context);
-  const [messages, jsonSchema, options] = vi.mocked(generateStructured).mock.calls[0];
+  const [messages, jsonSchema, options] = vi.mocked(ollama.generateStructured).mock.calls[0];
   expect(messages[0].content).toBe(loadPrompt("batch_commentator.md"));
   expect(jsonSchema).toEqual(buildBatchResponseJsonSchema(["Testaaja"]));
   expect(options).toMatchObject({ num_ctx: 16384 });
@@ -46,5 +46,5 @@ it("asks for a structured batch reply with the batch prompt and a 16k context", 
 it("does not invoke the model when commentary generation is disabled", async () => {
   vi.stubEnv("LLM_ENABLED", "false");
   expect(await writeRoundCommentary(context)).toMatchObject({ kind: "fallback", reason: "disabled" });
-  expect(generateStructured).not.toHaveBeenCalled();
+  expect(ollama.generateStructured).not.toHaveBeenCalled();
 });

@@ -1,4 +1,5 @@
-import { generate, loadPrompt } from "../../integrations/ollama/client";
+import { ollama } from "../../integrations/ollama";
+import { loadPrompt } from "../../prompts/prompts";
 import { getRandom } from "../../shared/utils";
 import { sakariResponses } from "../../config/phrases";
 import { moduleLogger } from "../../shared/logger";
@@ -48,7 +49,7 @@ function buildContext(chatId: number, trigger: string): string {
 
 export async function llmHeckle(chatId: number, trigger: string): Promise<string> {
   const context = buildContext(chatId, trigger);
-  const text = await generate(
+  const text = await ollama.generate(
     [
       { role: "system", content: getSystemPrompt() },
       { role: "user",   content: context },
