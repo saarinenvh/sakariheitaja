@@ -1,10 +1,10 @@
-import { CommandGroup } from "../types";
+import { CommandDependencies, CommandGroup } from "../types";
 import { suggestRecipe } from "./recipes";
 
-export const recipeCommands: CommandGroup = {
+export const recipeCommands = ({ recipes }: CommandDependencies): CommandGroup => ({
   title: "Ruoka:",
   commands: [
-    { name: "mitatanaansyotaisiin", handle: suggestRecipe,
+    { name: "mitatanaansyotaisiin", handle: ctx => suggestRecipe(ctx, recipes),
       help: [{ usage: "/mitatanaansyotaisiin", description: "Ehdotan reseptin, jos ei muuten keksi mitä syödä." }] },
   ],
-};
+});

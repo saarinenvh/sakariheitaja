@@ -1,4 +1,23 @@
 import { CommandContext, Context } from "grammy";
+import { ChatMessenger } from "../../features/chatMessenger";
+import { MetrixClient } from "../../integrations/metrix/client";
+import { OpenWeatherClient } from "../../integrations/openweather/client";
+import { OllamaClient } from "../../integrations/ollama/client";
+import { ChallongeClient } from "../../integrations/challonge/client";
+import { GiphyClient } from "../../integrations/giphy/client";
+import { RecipesClient } from "../../integrations/recipes/client";
+
+/** Everything the commands reach: built once in main.ts. */
+export interface CommandDependencies {
+  messenger: ChatMessenger;
+  metrix: MetrixClient;
+  openWeather: OpenWeatherClient;
+  ollama: OllamaClient;
+  challonge: ChallongeClient;
+  giphy: GiphyClient;
+  recipes: RecipesClient;
+  llmEnabled: boolean;
+}
 
 export type CommandHandler = (ctx: CommandContext<Context>) => Promise<unknown>;
 

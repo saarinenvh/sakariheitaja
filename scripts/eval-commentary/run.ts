@@ -51,7 +51,6 @@ interface Runtime {
 
 async function main(): Promise<void> {
   const options = parseOptions(parseFlags(process.argv.slice(2)));
-  configureOllamaEnvironment(options);
   const runtime = await loadRuntime(options);
   const fixtures = loadFixtures(options.fixtureNames);
   const meta = buildMeta(options, runtime.prompt, fixtures);
@@ -90,15 +89,10 @@ function parseOptions(flags: ReadonlyMap<string, string>): EvalOptions {
   };
 }
 
-// The Ollama client reads its model, URL and timeout when first imported, so they are set before it loads.
-function configureOllamaEnvironment(options: EvalOptions): void {
-  process.env.BOT_OLLAMA_MODEL = options.model;
-  process.env.OLLAMA_BASE_URL = options.baseUrl;
-  process.env.BOT_OLLAMA_TIMEOUT_MS ??= String(DEFAULT_TIMEOUT_MS);
-}
-
 async function loadRuntime(options: EvalOptions): Promise<Runtime> {
-  const { ollama } = await import("../../src/integrations/ollama");
+  const { createOllamaClient } = await import("../../src/integrations/ollama/client");
+  const timeoutMs = Number(process.env.BOT_OLLAMA_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS;
+  const ollama = createOllamaClient({ baseUrl: options.baseUrl, model: options.model, timeoutMs });
   const { COMMENTARY_MODEL_OPTIONS } = await import("../../src/features/commentary/write/commentaryRuntime");
   return {
     generate: ollama.generateStructured,

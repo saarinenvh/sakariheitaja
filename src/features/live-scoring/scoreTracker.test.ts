@@ -9,7 +9,6 @@ const mocks = vi.hoisted(() => ({
   markDone: vi.fn(), saveScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
 }));
 
-vi.mock("../../integrations/ollama", () => ({ ollama: { generate: vi.fn(), generateStructured: mocks.generate } }));
 vi.mock("../../prompts/prompts", () => ({ loadPrompt: () => "Sakke", loadContext: () => "" }));
 vi.mock("../players/playerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
 vi.mock("./competitions", () => ({ markDone: mocks.markDone }));
@@ -86,7 +85,7 @@ beforeEach(() => {
 describe("poll to publication", () => {
   it("announces offsetting corrections even when the total does not change", async () => {
     mocks.getData.mockResolvedValue(response([3, 4, null]));
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather }, true).init();
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
     await poll(response([4, 3, null]));
     await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
     expect(mocks.send.mock.calls[0][1]).toContain("korjaus");
@@ -95,7 +94,7 @@ describe("poll to publication", () => {
   });
 
   it("uses numeric live positions in the footer and passes delivered narrative to the model", async () => {
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather }, true).init();
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
     await poll(response([3, null, null], "11"));
     await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
     await poll(response([3, 4, null], "10"));
@@ -110,7 +109,7 @@ describe("poll to publication", () => {
 
   it("reports removals and preserves the last valid snapshot after malformed polling data", async () => {
     mocks.getData.mockResolvedValue(response([3, null, null]));
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather }, true).init();
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
     const snapshot = tracker.snapshot;
     await poll({ Competition: { Results: [] } });
     expect(tracker.snapshot).toBe(snapshot);
@@ -124,7 +123,7 @@ describe("poll to publication", () => {
     let release: (text: string) => void = () => { throw new Error("Generation has not started"); };
     mocks.generate.mockImplementationOnce(() => new Promise<string>(resolve => { release = resolve; }));
     mocks.getData.mockResolvedValue(response([3, 3, null]));
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather }, true).init();
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
     await poll(response([3, 3, 3]));
     await vi.waitFor(() => expect(mocks.generate).toHaveBeenCalledTimes(1));
     expect(mocks.markDone).not.toHaveBeenCalled();
@@ -136,7 +135,7 @@ describe("poll to publication", () => {
 
   it("posts the results before the bagtag announcement at round end", async () => {
     mocks.getData.mockResolvedValue(response([3, 3, null]));
-    await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather }, true).init();
+    await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
     await poll(response([3, 3, 3]));
     await vi.waitFor(() => expect(mocks.send.mock.calls.map(call => call[1])).toContain("Tags"));
     const texts = mocks.send.mock.calls.map(call => call[1]);
@@ -150,7 +149,7 @@ describe("poll to publication", () => {
     const parent = response([null, null, null]);
     parent.Competition.SubCompetitions = [{ ID: "124" }];
     mocks.getData.mockResolvedValue(parent);
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather }, true).init();
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
     expect(tracker.following).toBe(false);
     expect(tracker.initializationError).toContain("yksittäisiä kierroksia");
     expect(mocks.handlers.size).toBe(0);

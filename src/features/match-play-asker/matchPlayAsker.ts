@@ -1,7 +1,6 @@
-import { ollama } from "../../integrations/ollama";
+import { OllamaClient } from "../../integrations/ollama/client";
 import { loadContext, loadPrompt } from "../../prompts/prompts";
-import { type BracketData } from "../../integrations/challonge/client";
-import { challonge } from "../../integrations/challonge";
+import { type BracketData, ChallongeClient } from "../../integrations/challonge/client";
 import { findParticipantsByName, findPlayerMatch, formatFullBracket } from "./bracket";
 import { moduleLogger } from "../../shared/logger";
 
@@ -95,7 +94,15 @@ export function resolveTargetPlayer(data: BracketData, question: string, senderN
   return null;
 }
 
-export async function llmAnswer(question: string, senderName?: string, recentMessages?: string[]): Promise<string | null> {
+/** What the asker talks to: the model, and Challonge for match-play questions. */
+export interface AskerClients {
+  ollama: OllamaClient;
+  challonge: ChallongeClient;
+}
+
+export async function llmAnswer(
+  clients: AskerClients, question: string, senderName?: string, recentMessages?: string[],
+): Promise<string | null> {
   try {
     const contextBlock = recentMessages?.length
       ? `[Viimeisimmät viestit chatissa]\n${recentMessages.map((m, i) => `${i + 1}. "${m}"`).join("\n")}\n\n`
@@ -114,7 +121,7 @@ export async function llmAnswer(question: string, senderName?: string, recentMes
       const matchplay = getMatchplayContext();
       if (matchplay) systemContent += `\n\n---\n\n${matchplay}`;
       try {
-        const data = await challonge.fetchBracket();
+        const data = await clients.challonge.fetchBracket();
 
         // The common case ("who do I play next") gets one deterministic line
         // instead of the entire bracket as text - both cheaper (a few dozen
@@ -138,7 +145,7 @@ export async function llmAnswer(question: string, senderName?: string, recentMes
       }
     }
 
-    const answer = await ollama.generate(
+    const answer = await clients.ollama.generate(
       [
         { role: "system", content: systemContent },
         { role: "user",   content: userContent },

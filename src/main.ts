@@ -1,44 +1,59 @@
 import "reflect-metadata";
 import { loadEnvironmentFile, readConfig, requireStartupConfig } from "./config";
 loadEnvironmentFile();
-requireStartupConfig(readConfig());
+const config = requireStartupConfig(readConfig());
 
 import { moduleLogger } from "./shared/logger";
-const log = moduleLogger("main");
-
 import { dataSource } from "./db/dataSource";
-import { bot } from "./telegram/bot";
-import { morningGreetingDependencies, trackerDependencies } from "./telegram/dependencies";
+import { createBot } from "./telegram/bot";
+import { createTelegramMessenger } from "./telegram/messenger";
+import { registerCommands } from "./telegram/commands/registry";
+import { CommandDependencies } from "./telegram/commands/types";
+import { createMetrixClient } from "./integrations/metrix/client";
+import { createOpenWeatherClient } from "./integrations/openweather/client";
+import { createOllamaClient } from "./integrations/ollama/client";
+import { createChallongeClient } from "./integrations/challonge/client";
+import { createGiphyClient } from "./integrations/giphy/client";
+import { createRecipesClient } from "./integrations/recipes/client";
 import * as registry from "./features/live-scoring/trackerRegistry";
 import { ScoreTracker } from "./features/live-scoring/scoreTracker";
 import * as competitionService from "./features/live-scoring/competitions";
 import { startMorningGreeter } from "./features/morning-greeting/morningGreeting";
 
-import { registerCommands } from "./telegram/commands/registry";
+// The composition root: everything the bot talks to is created here, once, and passed down.
 
-registerCommands(bot, readConfig().llmEnabled);
+const log = moduleLogger("main");
 
-// ── Error handling ────────────────────────────────────────────────────────────
+const bot = createBot(config.telegram.token);
+const dependencies: CommandDependencies = {
+  messenger: createTelegramMessenger(bot.api),
+  metrix: createMetrixClient(config.metrix),
+  openWeather: createOpenWeatherClient({ apiKey: config.openWeatherMapApiKey }),
+  ollama: createOllamaClient(config.ollama),
+  challonge: createChallongeClient(config.challonge),
+  giphy: createGiphyClient({ apiKey: config.giphyApiKey }),
+  recipes: createRecipesClient(),
+  llmEnabled: config.llmEnabled,
+};
+
+registerCommands(bot, dependencies);
 
 bot.catch(botError => {
   log.warn({ err: botError.error, updateId: botError.ctx.update.update_id }, "bot error");
 });
 
-// ── Startup ───────────────────────────────────────────────────────────────────
-
-async function init(): Promise<void> {
-  startMorningGreeter(morningGreetingDependencies, readConfig().telegram.morningChatId);
-
-  const unfinished = await competitionService.getUnfinished();
-  for (const i of unfinished) {
-    const tracker = await new ScoreTracker(i.id, i.metrixId, i.chatId, trackerDependencies, true).init();
-    registry.add(i.chatId, tracker);
+/** Rounds left unfinished by the last run resume without a new player announcement. */
+async function resumeUnfinishedRounds(): Promise<void> {
+  for (const competition of await competitionService.getUnfinished()) {
+    const tracker = await new ScoreTracker(competition.id, competition.metrixId, competition.chatId, dependencies, true).init();
+    registry.add(competition.chatId, tracker);
   }
 }
 
 async function main(): Promise<void> {
   await dataSource.initialize();
-  await init();
+  startMorningGreeter(dependencies, config.telegram.morningChatId);
+  await resumeUnfinishedRounds();
   bot.start();
 }
 

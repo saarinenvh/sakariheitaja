@@ -1,16 +1,17 @@
 import { CommandContext, Context } from "grammy";
 import { llmHeckle } from "../../../features/heckler/heckler";
 import { sendMorningGreeting } from "../../../features/morning-greeting/morningGreeting";
-import { morningGreetingDependencies } from "../../dependencies";
+import { MorningGreetingDependencies } from "../../../features/morning-greeting/morningGreeting";
+import { OllamaClient } from "../../../integrations/ollama/client";
 
 type Command = CommandContext<Context>;
 
 /** An LLM heckle on demand, from the chat's recent messages; the argument overrides the trigger. */
-export async function forceHeckle(ctx: Command): Promise<unknown> {
+export async function forceHeckle(ctx: Command, ollama: OllamaClient): Promise<unknown> {
   const trigger = ctx.match?.trim() || ctx.message?.text || "Sakke";
-  return ctx.reply(await llmHeckle(ctx.chat.id, trigger));
+  return ctx.reply(await llmHeckle(ollama, ctx.chat.id, trigger));
 }
 
-export async function sendMorningGreetingNow(ctx: Command): Promise<void> {
-  await sendMorningGreeting(morningGreetingDependencies, ctx.chat.id);
+export async function sendMorningGreetingNow(ctx: Command, deps: MorningGreetingDependencies): Promise<void> {
+  await sendMorningGreeting(deps, ctx.chat.id);
 }

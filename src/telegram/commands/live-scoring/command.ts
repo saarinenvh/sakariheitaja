@@ -1,10 +1,10 @@
-import { CommandGroup } from "../types";
+import { CommandDependencies, CommandGroup } from "../types";
 import { follow, listFollowedRounds, showPlayerScore, showTopList, stopFollowing } from "./liveScoring";
 
-export const liveScoringCommands: CommandGroup = {
+export const liveScoringCommands = (deps: CommandDependencies): CommandGroup => ({
   title: "Kilpailua seurailen seuraavasti:",
   commands: [
-    { name: "follow", handle: follow,
+    { name: "follow", handle: ctx => follow(ctx, deps),
       help: [{ usage: "/follow [metrixId]", description: "Alan seuraamaan kyseistä kisaa ja kommentoin kisan tapahtumia." }] },
     { name: "pelit", handle: listFollowedRounds,
       help: [{ usage: "/pelit", description: "Listaan kisat, joita seuraan nyt." }] },
@@ -15,4 +15,4 @@ export const liveScoringCommands: CommandGroup = {
     { name: "lopeta", handle: stopFollowing,
       help: [{ usage: "/lopeta [metrixId]", description: "Lopetan kyseisen kisan seuraamisen." }] },
   ],
-};
+});

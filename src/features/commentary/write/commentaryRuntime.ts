@@ -1,5 +1,5 @@
 import { moduleLogger } from "../../../shared/logger";
-import { ollama } from "../../../integrations/ollama";
+import { OllamaClient } from "../../../integrations/ollama/client";
 import { loadPrompt } from "../../../prompts/prompts";
 import { BatchCommentaryContext } from "../facts/commentaryContext";
 import { readConfig } from "../../../config";
@@ -12,7 +12,12 @@ export const BATCH_PROMPT_FILE = "batch_commentator.md";
 const MS_PER_SECOND = 1000;
 let systemPrompt: string | undefined;
 
-export async function writeRoundCommentary(context: BatchCommentaryContext): Promise<BatchCommentaryResult> {
+/** Writes one division update with the bot's prompt and model options, or the factual fallback with the LLM off. */
+export function createCommentaryWriter(ollama: OllamaClient): (context: BatchCommentaryContext) => Promise<BatchCommentaryResult> {
+  return context => writeRoundCommentary(ollama, context);
+}
+
+async function writeRoundCommentary(ollama: OllamaClient, context: BatchCommentaryContext): Promise<BatchCommentaryResult> {
   if (!readConfig().llmEnabled) {
     return { kind: "fallback", commentary: buildBatchFallback(context), reason: "disabled" };
   }

@@ -1,16 +1,15 @@
 import { CommandContext, Context } from "grammy";
-import { ScoreTracker } from "../../../features/live-scoring/scoreTracker";
+import { ScoreTracker, TrackerDependencies } from "../../../features/live-scoring/scoreTracker";
 import * as competitionService from "../../../features/live-scoring/competitions";
 import * as registry from "../../../features/live-scoring/trackerRegistry";
 import { liveScoringMessages } from "../../../features/live-scoring/messages";
 import { liveScoringCommandMessages as MSG } from "./messages";
 import { HTML_NO_PREVIEW } from "../../sendOptions";
-import { trackerDependencies } from "../../dependencies";
 
 type Command = CommandContext<Context>;
 
 /** Saves the competition, starts a tracker and keeps it in the chat's registry if it could start. */
-export async function follow(ctx: Command): Promise<unknown> {
+export async function follow(ctx: Command, trackerDependencies: TrackerDependencies): Promise<unknown> {
   if (!ctx.match) return ctx.reply(MSG.followUsage);
 
   const metrixId = ctx.match.match(/\d+/)?.[0];
