@@ -76,7 +76,8 @@ export default class Poller extends EventEmitter {
     if (!this.running) return;
 
     const baseInterval = hadError ? errorBackoffMs(this.errorCount) : quietPollIntervalMs(POLL_INTERVALS, this.noChangeCount);
-    const nextInterval = withJitter(baseInterval, Math.random());
+    // Jitter only spreads poll timing; nothing here needs a secure random source.
+    const nextInterval = withJitter(baseInterval, Math.random()); // NOSONAR
     log.debug({
       metrixId: this.metrixId, nextPollS: Math.round(nextInterval / 1000), noChange: this.noChangeCount, errors: this.errorCount,
     }, "next poll scheduled");
