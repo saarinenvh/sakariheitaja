@@ -1,6 +1,6 @@
 import { CommandContext, Context } from "grammy";
 import { RecipesClient } from "../../../integrations/recipes/client";
-import { formatRecipe } from "../../../features/recipes/recipes";
+import { formatRecipe } from "../../../features/recipes/messages";
 import { getRandom } from "../../../shared/utils";
 import { recipeMessages as MSG } from "./messages";
 

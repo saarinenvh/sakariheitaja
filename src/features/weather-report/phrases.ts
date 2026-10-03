@@ -1,11 +1,3 @@
-export const weatherEmojis: Record<string, string> = {
-  Clouds: "\u{2601}",
-  Clear: "\u{2600}",
-  Rain: "\u{2614}",
-  Snow: "\u{2744}",
-  Drizzle: "\u{2614}",
-};
-
 /** Finnish towns for /randomsaa and the morning weather. */
 export const cities = [
   "Akaa", "Alajärvi", "Alavus", "Espoo", "Forssa", "Haapajärvi", "Haapavesi",
@@ -25,5 +17,3 @@ export const cities = [
   "Seinäjoki", "Somero", "Suonenjoki", "Tampere", "Tornio", "Turku",
   "Ulvila", "Uusikaarlepyy", "Uusikaupunki", "Vaasa", "Valkeakoski", "Vantaa",
 ];
-
-export const cityNotFound = (city: string): string => `Mikä vitun ${city}? - Eihän tommosta mestaa oo ees olemassakaa.`;

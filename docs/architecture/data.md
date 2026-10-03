@@ -46,5 +46,5 @@ Lost on restart, by design.
 | commentary memory: published places, recent messages, welcome flags | `RoundCommentary` | a resumed round starts from the current cards |
 | course details and statistics, course location | `RoundCourseData` | fetched once per round |
 | the last 10 messages per chat | `heckler/heckler.ts` | heckles and mention answers |
-| today's `/hep` plans | `games/todaysPlans.ts` | cleared when the date changes |
-| loaded prompts | `commentaryRuntime`, `heckler`, `matchPlayAsker` | read once from `src/prompts/` |
+| today's `/hep` plans | `games/games.ts` | cleared when the date changes |
+| loaded prompts | `commentaryRuntime`, `heckler/prompts.ts`, `match-play-asker/prompts.ts` | read once from `src/prompts/` |
