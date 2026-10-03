@@ -1,5 +1,5 @@
-import { Course } from "./Course.entity";
-import * as courseRepo from "./courseRepository";
+import { Course } from "./db/Course.entity";
+import * as courseRepo from "./db/courseRepository";
 
 export async function getOrCreate(name: string): Promise<Course | null> {
   await courseRepo.upsert(name);

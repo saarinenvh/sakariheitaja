@@ -7,5 +7,5 @@
     "outDir": "./.eval-dist"
   },
   "include": ["src/**/*", "scripts/**/*"],
-  "exclude": ["node_modules", "dist", ".eval-dist", "**/*.test.ts"]
+  "exclude": ["node_modules", "dist", ".eval-dist", "**/tests/**", "**/*.test.ts"]
 }

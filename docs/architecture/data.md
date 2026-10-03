@@ -5,8 +5,8 @@ games; everything about a followed round is in memory.
 
 ## MariaDB
 
-Each table belongs to one feature, which holds its entity and repository. Tables without an
-entity are reached with SQL in the repository.
+Each table belongs to one feature, which holds its entity and repository in its `db/` folder.
+Tables without an entity are reached with SQL in the repository.
 
 | Table | Owner | Holds |
 | --- | --- | --- |

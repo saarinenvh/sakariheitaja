@@ -1,6 +1,6 @@
-import { Competition } from "./Competition.entity";
-import * as competitionRepo from "./competitionRepository";
-import * as chatRepo from "../chats/chatRepository";
+import { Competition } from "./db/Competition.entity";
+import * as competitionRepo from "./db/competitionRepository";
+import * as chatRepo from "../chats/db/chatRepository";
 
 export async function start(chatId: number, chatName: string, metrixId: string): Promise<{ insertId: number }> {
   await chatRepo.addIfAbsent(chatId, chatName);
