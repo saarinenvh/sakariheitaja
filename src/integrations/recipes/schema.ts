@@ -19,7 +19,7 @@ export const recipeExample = {
   _updatedAt: "2026-10-01T02:40:09.454Z", // ignored
   name: "Esimerkkikakku",
   description: "Helppo kakku, joka valmistuu sekoittamalla taikinan ainekset.",
-  // The live API now sends `damAsset: { url, … }` in place of `file`, which this schema rejects.
+  // The live API now sends `damAsset: { url, … }` in place of `file`, which this schema rejects (Trello Q2zsQ8P3).
   media: [{ file: { url: "//images.example.com/esimerkkikakku.jpg" } }],
   categories: { foodType: ["Kakut"], preparation: ["Leivonta"] }, // ignored
   publisher: { id: "yhteishyva", _id: "publisher-1", _type: "publisher" }, // ignored
