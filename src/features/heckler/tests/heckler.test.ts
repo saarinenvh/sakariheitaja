@@ -4,7 +4,7 @@ vi.mock("../../../shared/utils", () => ({ getRandom: () => 1 }));
 vi.mock("../../../prompts/prompts", () => ({ loadPrompt: () => "Sakke" }));
 
 import { heckle } from "../heckler";
-import { sakariResponses } from "../cannedHeckles";
+import { sakariResponses } from "../phrases";
 import { OllamaClient } from "../../../integrations/ollama/client";
 
 function ollama(): OllamaClient {

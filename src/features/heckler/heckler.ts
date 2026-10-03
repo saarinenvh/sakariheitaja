@@ -1,7 +1,7 @@
 import { OllamaClient } from "../../integrations/ollama/client";
-import { loadPrompt } from "../../prompts/prompts";
 import { getRandom } from "../../shared/utils";
-import { sakariResponses } from "./cannedHeckles";
+import { sakariResponses } from "./phrases";
+import { buildHeckleContext, hecklerSystemPrompt } from "./prompts";
 import { moduleLogger } from "../../shared/logger";
 
 const log = moduleLogger("heckler");
@@ -20,38 +20,11 @@ export function getRecentMessages(chatId: number): string[] {
   return messageBuffer.get(chatId) ?? [];
 }
 
-let systemPrompt: string | null = null;
-
-function getSystemPrompt(): string {
-  if (!systemPrompt) {
-    const persona = loadPrompt("persona.md");
-    const base = loadPrompt("heckler.md");
-    systemPrompt = `${persona}\n\n---\n\n${base}`;
-  }
-  return systemPrompt;
-}
-
-function buildContext(chatId: number, trigger: string): string {
-  const recent = messageBuffer.get(chatId) ?? [];
-  const lines: string[] = [];
-
-  if (recent.length > 0) {
-    lines.push("Recent messages:");
-    recent.forEach((msg, i) => lines.push(`${i + 1}. "${msg}"`));
-    lines.push("");
-  }
-
-  lines.push(`Trigger message:\n"${trigger}"`);
-  lines.push("");
-  lines.push("Write a very short Sakke-style reaction.");
-  return lines.join("\n");
-}
-
 export async function llmHeckle(ollama: OllamaClient, chatId: number, trigger: string): Promise<string> {
-  const context = buildContext(chatId, trigger);
+  const context = buildHeckleContext(getRecentMessages(chatId), trigger);
   const text = await ollama.generate(
     [
-      { role: "system", content: getSystemPrompt() },
+      { role: "system", content: hecklerSystemPrompt() },
       { role: "user",   content: context },
     ],
     { temperature: 1.0, num_predict: 60 },
