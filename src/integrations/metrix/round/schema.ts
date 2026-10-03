@@ -1,7 +1,65 @@
 import { z } from "zod";
 
-// Zod schemas for Metrix's `api.php?content=result` payload. They accept Metrix's loose encodings
-// and declare only the fields the bot reads; ../README.md lists what each field becomes.
+// Metrix → bot, GET api.php?content=result&id=<round id> (JSON).
+// The schemas accept Metrix's loose encodings; ../README.md lists what each field becomes.
+
+export const scorecardExample = [
+  { Result: "3", Diff: 0, PEN: "0", BUE: "0", GRH: "0", OCP: "0", ICP: "0", IBP: "0" }, // ignored: BUE, GRH, OCP, ICP, IBP
+  { Result: "5", Diff: 1, PEN: "1", BUE: "0", GRH: "0", OCP: "0", ICP: "0", IBP: "0" },
+  [], // not recorded yet
+];
+
+export const roundExample = {
+  Competition: {
+    ID: 1234567,
+    Name: "Example Weekly &rarr; Round 1",
+    Type: "2", // ignored
+    TourDateStart: null, // ignored
+    TourDateEnd: null, // ignored
+    Date: "2026-10-03",
+    Time: "18:00:00", // ignored
+    Comment: "", // ignored
+    CourseName: "Example Park &rarr; Main Layout",
+    CourseID: "12345",
+    MetrixMode: "1", // ignored
+    ShowPreviousRoundsSum: null,
+    HasSubcompetitions: 0,
+    // SubCompetitions: only sent for an event or series, which the bot rejects.
+    WeeklyHCSummary: null, // ignored
+    WeeklyHC: [], // ignored
+    Results: [
+      {
+        UserID: "100001",
+        ScorecardID: "2000001", // ignored
+        Name: "Player One",
+        ClassName: "MA3",
+        CountryCode: "FI", // ignored
+        Group: "1",
+        PlayerResults: scorecardExample,
+        Penalty: null, // ignored
+        Sum: 8,
+        Diff: 1,
+        DNF: null,
+        BUETotal: "", // ignored
+        GRHTotal: "", // ignored
+        OCPTotal: "", // ignored
+        ICPTotal: "", // ignored
+        IBPTotal: "", // ignored
+        PenaltiesTotal: "", // ignored
+        PreviousRoundsSum: null,
+        PreviousRoundsDiff: null,
+        Place: 1, // ignored: the place comes from OrderNumber
+        OrderNumber: 1,
+      },
+    ],
+    Tracks: [
+      { Number: "1", NumberAlt: "", Par: "3" },
+      { Number: "2", NumberAlt: "", Par: "4" },
+      { Number: "3", NumberAlt: "3A", Par: "3" },
+    ],
+  },
+  Errors: [],
+};
 
 /** Metrix sends numbers as numbers or numeric strings ("3", "-1", "+2"). */
 export const integerSchema = z.union([

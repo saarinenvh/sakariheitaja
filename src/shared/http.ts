@@ -16,7 +16,7 @@ function safeUrl(url: string): string {
   return url.split("?")[0];
 }
 
-export async function getData<T = any>(url: string, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<T | undefined> {
+export async function getData(url: string, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<unknown> {
   try {
     const response = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(timeoutMs) });
 
@@ -31,8 +31,8 @@ export async function getData<T = any>(url: string, timeoutMs: number = DEFAULT_
     // which returns the promise rather than awaiting it - so a JSON parse
     // failure (an HTML error page, a truncated response) escaped this catch
     // entirely and rejected at the caller instead.
-    return await response.json() as T;
-  } catch (error: any) {
+    return await response.json();
+  } catch (error) {
     log.error({ url: safeUrl(url), err: error }, "getData failed");
     return undefined;
   }

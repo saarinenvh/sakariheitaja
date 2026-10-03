@@ -1,4 +1,6 @@
 import { getRandom } from "../../shared/utils";
+import { parseOrThrow } from "../../shared/validation";
+import { gifSearchSchema } from "./schema";
 
 const SEARCH_URL = "https://api.giphy.com/v1/gifs/search";
 const RESULTS_TO_PICK_FROM = 10;
@@ -23,10 +25,9 @@ async function searchGif(query: string, apiKey: string | undefined): Promise<str
   const res = await fetch(url);
   if (!res.ok) return null;
 
-  const json = await res.json();
-  const items: any[] = json?.data ?? [];
+  const items = parseOrThrow(gifSearchSchema, await res.json(), "Giphy search").data ?? [];
   if (!items.length) return null;
 
   const picked = items[getRandom(items.length)];
-  return picked?.images?.original?.mp4 || picked?.images?.original?.url || null;
+  return picked.images?.original?.mp4 || picked.images?.original?.url || null;
 }

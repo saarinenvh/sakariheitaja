@@ -1,21 +1,11 @@
-import { z } from "zod";
 import { getData } from "../../shared/http";
 import { parseOrThrow } from "../../shared/validation";
+import { CityWeather, cityWeatherSchema, CurrentWeatherResponse, currentWeatherSchema } from "./schema";
+
+export type { CityWeather } from "./schema";
 
 const CURRENT_WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather";
 const MS_PER_SECOND = 1000;
-
-const precipitationSchema = z.object({ "1h": z.number().nonnegative().optional() }).optional();
-const currentWeatherSchema = z.object({
-  dt: z.number().int().positive(),
-  main: z.object({ temp: z.number() }),
-  wind: z.object({ speed: z.number().nonnegative(), deg: z.number().min(0).max(360).optional() }),
-  weather: z.array(z.object({ description: z.string() })).min(1),
-  rain: precipitationSchema,
-  snow: precipitationSchema,
-});
-
-type CurrentWeatherResponse = z.output<typeof currentWeatherSchema>;
 
 export interface WeatherLocation {
   latitude: number;
@@ -36,17 +26,6 @@ export type WeatherResult =
   | { kind: "observed"; observation: WeatherObservation }
   | { kind: "failed"; reason: string };
 
-const cityWeatherSchema = z.object({
-  name: z.string(),
-  main: z.object({ temp: z.number() }),
-  weather: z.array(z.object({ main: z.string(), description: z.string() })).min(1),
-  wind: z.object({ speed: z.number() }),
-  sys: z.object({ sunrise: z.number(), sunset: z.number() }),
-});
-
-/** The weather at a city, as `/saa` shows it. */
-export type CityWeather = z.output<typeof cityWeatherSchema>;
-
 export interface OpenWeatherClient {
   /** Current conditions at coordinates, for commentary; `failed` without an API key or a usable reply. */
   getCurrentWeather(location: WeatherLocation): Promise<WeatherResult>;
@@ -59,7 +38,7 @@ export function createOpenWeatherClient(config: { apiKey: string | undefined }):
     getCurrentWeather: location => fetchCurrentWeather(location, config.apiKey),
     getCityWeather: async city => {
       const url = `${CURRENT_WEATHER_URL}?q=${city}&units=metric&lang=fi&appid=${config.apiKey}`;
-      const result = cityWeatherSchema.safeParse(await getData<unknown>(url));
+      const result = cityWeatherSchema.safeParse(await getData(url));
       return result.success ? result.data : null;
     },
   };
@@ -68,7 +47,7 @@ export function createOpenWeatherClient(config: { apiKey: string | undefined }):
 async function fetchCurrentWeather(location: WeatherLocation, apiKey: string | undefined): Promise<WeatherResult> {
   if (!apiKey) return { kind: "failed", reason: "OPENWEATHERMAP_APIKEY is not set" };
 
-  const input = await getData<unknown>(buildCurrentWeatherUrl(location, apiKey));
+  const input = await getData(buildCurrentWeatherUrl(location, apiKey));
   if (input === undefined) return { kind: "failed", reason: "OpenWeatherMap request failed" };
 
   let response: CurrentWeatherResponse;

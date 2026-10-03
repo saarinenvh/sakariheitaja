@@ -1,4 +1,6 @@
 import { moduleLogger } from "../../shared/logger";
+import { parseOrThrow } from "../../shared/validation";
+import { chatResponseSchema } from "./schema";
 import { finishOllamaTrace, startOllamaTrace } from "./trace";
 
 const log = moduleLogger("ollama");
@@ -73,8 +75,8 @@ async function callOllama(
     responseReceived = true;
     if (!res.ok) throw new Error(`Ollama HTTP ${res.status}: ${res.statusText}`);
 
-    const json = JSON.parse(rawResponse) as { message?: { content?: string } };
-    return json?.message?.content?.trim() ?? "";
+    const json = parseOrThrow(chatResponseSchema, JSON.parse(rawResponse), "Ollama chat response");
+    return json.message?.content?.trim() ?? "";
   } catch (error) {
     if (!responseReceived) {
       await finishOllamaTrace(trace, { error: error instanceof Error ? error.name : "UnknownError" });

@@ -1,42 +1,8 @@
-import { z } from "zod";
 import { moduleLogger } from "../../shared/logger";
 import { parseOrThrow } from "../../shared/validation";
+import { bracketSchema } from "./schema";
 
 const log = moduleLogger("challonge");
-
-// Challonge v1 wraps each item ({ participant: {...} }, { match: {...} }) and the whole reply ({ tournament });
-// the bare forms are accepted too.
-const optionalId = z.number().int().nullish().transform(value => value ?? null);
-
-const participantFields = z.object({
-  id: z.number().int(),
-  name: z.string().nullish(),
-  display_name: z.string().nullish(),
-});
-const participantSchema = z.union([
-  z.object({ participant: participantFields }).transform(wrapped => wrapped.participant),
-  participantFields,
-]);
-
-const matchFields = z.object({
-  round: z.number().int(),
-  player1_id: optionalId,
-  player2_id: optionalId,
-  winner_id: optionalId,
-  state: z.enum(["complete", "open", "pending"]),
-  scores_csv: z.string().nullish().transform(value => value ?? null),
-});
-const matchSchema = z.union([z.object({ match: matchFields }).transform(wrapped => wrapped.match), matchFields]);
-
-const tournamentFields = z.object({
-  name: z.string().nullish(),
-  participants: z.array(participantSchema),
-  matches: z.array(matchSchema),
-});
-const bracketResponseSchema = z.union([
-  z.object({ tournament: tournamentFields }).transform(wrapped => wrapped.tournament),
-  tournamentFields,
-]);
 
 export interface BracketMatch {
   round: number;
@@ -76,7 +42,7 @@ async function fetchBracketData({ tournamentUrl, apiKey }: ChallongeConfig): Pro
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) throw new Error(`Challonge API ${res.status}`);
 
-  const tournament = parseOrThrow(bracketResponseSchema, await res.json(), "Challonge bracket");
+  const tournament = parseOrThrow(bracketSchema, await res.json(), "Challonge bracket");
   log.debug("Challonge v1 API fetch OK");
 
   const participants = tournament.participants.map(part => ({
