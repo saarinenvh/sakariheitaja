@@ -29,7 +29,7 @@ flowchart TD
 | --- | --- | --- |
 | `main.ts` | Builds the bot, every client and the `CommandDependencies`, registers the commands, starts the bot. | everything |
 | `telegram/` | grammY: the bot, `commands/<feature>/` (a `command.ts` with the names and `/apua` help, a handler), the text listener, chat tracking, the Telegram `ChatMessenger`. | features, integrations (types), shared |
-| `features/` | The application: live scoring, commentary, bagtags, players, score records, … Each table's entity and repository live in the feature that owns it. | integrations, db, shared |
+| `features/` | The application: live scoring, commentary, bagtags, players, score records, … Each table's entity and repository live in the owning feature's `db/` folder. | integrations, db, shared |
 | `integrations/` | `createXClient(config)` for Metrix, OpenWeatherMap, Ollama, Challonge, Giphy and the recipe API. Clients own URLs, keys, timeouts, validation and normalization, and return normalized types or a result union. Each boundary's Zod schemas, with an example payload, live in a `schema.ts` next to the code that fetches it: the client, or for Metrix the endpoint folder (`round/`, `course/`, `location/`, `statistics/`). | shared |
 | `db/` | The TypeORM data source and its entity list. | entities (`*.entity.ts`) |
 | `shared/` | Generic helpers only. | shared |
@@ -41,6 +41,13 @@ The rules are ESLint errors (`eslint.config.mjs`), so CI fails on a violation:
 - `integrations/` never imports `features/`, and `db/` imports only entities.
 - `fetch` and `shared/http` only in `integrations/`: features get clients injected.
 - `process.env` only in `config.ts`.
+
+Inside a module the layout is fixed where it can be: every feature has a
+`README.md`, its tables in `db/`, and its tests (and fakes) in a `tests/` folder, as
+does every other module. Reserved names like `route.ts`, `schema.ts`, `policy.ts`,
+`prompts.ts` and `messages.ts` mean the same everywhere. The convention is
+sakke-workspace `.agents/code-style.md`, "Folder structure". `src/tests/testLayout.test.ts`
+fails if a test sits outside a `tests/` folder.
 
 ## Entry points
 

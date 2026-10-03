@@ -197,7 +197,7 @@ lists every command above except `/isit`, `/heckle`, `/aamuu` and itself.
 - **TypeORM + mysql2** — type-safe DB access, parameterized queries
 - **MariaDB** — database
 - **Ollama** — local LLM for commentary and replies
-- **vitest** — unit tests next to the code they cover
+- **vitest** — unit tests in each module's `tests/` folder
 - **Docker** — deployed as part of the [sakke-workspace](https://github.com/saarinenvh/sakke-workspace) compose stack
 
 ## Layout
