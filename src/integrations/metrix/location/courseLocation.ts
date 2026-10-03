@@ -1,6 +1,6 @@
-import { z } from "zod";
 import { getData } from "../../../shared/http";
 import { parseOrThrow } from "../../../shared/validation";
+import { coursesListSchema, MetrixCourse } from "./schema";
 
 const COURSES_LIST_URL = "https://discgolfmetrix.com/api.php?content=courses_list";
 const COURSE_LAYOUT_SEPARATORS = ["&rarr;", "→"] as const;
@@ -8,19 +8,6 @@ const LATITUDE_LIMIT_DEG = 90;
 const LONGITUDE_LIMIT_DEG = 180;
 
 const PARENT_COURSE_TYPE = "1";
-
-const courseSchema = z.object({
-  ID: z.string(),
-  Name: z.string().nullish(),
-  Type: z.string().nullish(),
-  Enddate: z.string().nullish(),
-  City: z.string().nullish(),
-  X: z.string().nullish(),
-  Y: z.string().nullish(),
-});
-const coursesListSchema = z.object({ courses: z.array(courseSchema) });
-
-export type MetrixCourse = z.output<typeof courseSchema>;
 
 export interface CourseLocation {
   latitude: number;
@@ -47,7 +34,7 @@ export async function fetchCourseLocation(
   const parentName = buildCourseSearchTerm(courseName);
   if (parentName === null) return { kind: "not-found" };
 
-  const input = await getData<unknown>(buildCoursesListUrl(parentName, countryCode));
+  const input = await getData(buildCoursesListUrl(parentName, countryCode));
   if (input === undefined) return { kind: "failed", reason: "Metrix course list request failed" };
 
   let courses: MetrixCourse[];

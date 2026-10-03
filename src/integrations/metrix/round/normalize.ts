@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { parseOrThrow } from "../../../shared/validation";
-import { optionalIntegerSchema, RawCompetition, RawPlayer, roundSchema, scorecardSchema } from "./rawSchema";
+import { optionalIntegerSchema, RawCompetition, RawPlayer, roundSchema, scorecardSchema } from "./schema";
 import { MetrixRound, RoundPlayer, RoundState, Scorecard, Standing } from "./types";
 
 // Metrix reports tied players, and many players early in a round, with place 0 or no place at all.

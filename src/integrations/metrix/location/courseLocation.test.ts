@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildCourseSearchTerm, fetchCourseLocation, MetrixCourse, selectCourseLocation } from "./courseLocation";
+import { buildCourseSearchTerm, fetchCourseLocation, selectCourseLocation } from "./courseLocation";
+import { MetrixCourse } from "./schema";
 import { parseMetrixRound } from "../round/normalize";
 
 const mocks = vi.hoisted(() => ({ getData: vi.fn<(url: string) => Promise<unknown>>() }));

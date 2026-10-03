@@ -1,6 +1,6 @@
 import { moduleLogger } from "../../../shared/logger";
-import { z } from "zod";
 import { parseOrThrow } from "../../../shared/validation";
+import { courseStatisticsSchema, holeResultCountsSchema } from "./schema";
 
 const log = moduleLogger("course-statistics");
 
@@ -66,29 +66,6 @@ export type CourseStatisticsResult =
   | { kind: "found"; statistics: CourseStatistics }
   | { kind: "not-found" }
   | { kind: "failed"; reason: string };
-
-const countSchema = z.number().int().nonnegative();
-
-const holeResultCountsSchema = z.object({
-  aces: countSchema,
-  eagles: countSchema,
-  birdies: countSchema,
-  pars: countSchema,
-  bogeys: countSchema,
-  doubleBogeys: countSchema,
-  tripleBogeys: countSchema,
-  worse: countSchema,
-}) satisfies z.ZodType<HoleResultCounts>;
-
-const courseStatisticsSchema = z.object({
-  holes: z.array(z.object({
-    label: z.string(),
-    par: z.number().int().positive().nullable(),
-    averageStrokes: z.number().positive().nullable(),
-    difficultyRank: z.number().int().positive().nullable(),
-    counts: holeResultCountsSchema.nullable(),
-  })),
-}) satisfies z.ZodType<CourseStatistics>;
 
 type CountKey = keyof HoleResultCounts;
 type TableRows = ReadonlyMap<string, readonly string[]>;

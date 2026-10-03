@@ -12,11 +12,15 @@ raw payload.
 | `getCourseStatistics(courseId)` | the public course page `/course/<id>` (HTML, scraped) | `found` with `CourseStatistics`, `not-found` when the table is missing, or `failed` |
 | `findCourseLocation(courseId, courseName)` | `api.php?content=courses_list&country_code=&name=` (JSON) | `found` with a `CourseLocation`, `not-found`, or `failed` |
 
+Each endpoint's folder (`round/`, `course/`, `location/`, `statistics/`) has a `schema.ts` with its
+Zod schemas and an example of what Metrix sends, with the fields the bot ignores marked `// ignored`.
+The course page is HTML, so its example is the statistics parsed from it.
+
 ## The round
 
 ```mermaid
 flowchart LR
-    Payload["result payload<br/>Competition.Tracks, Results[]"] --> Raw["round/rawSchema.ts<br/>Zod: loose encodings → typed raw values"]
+    Payload["result payload<br/>Competition.Tracks, Results[]"] --> Raw["round/schema.ts<br/>Zod: loose encodings → typed raw values"]
     Raw --> Normalize["round/normalize.ts<br/>parseMetrixRound"]
     Normalize --> Round["MetrixRound<br/>round/types.ts"]
     Round --> Results["round/results.ts<br/>tracked players, ranked results,<br/>final scores, round ended?"]
@@ -25,7 +29,7 @@ flowchart LR
 ```
 
 `parseMetrixRound` takes the raw payload in three steps:
-1. `rawSchema.ts` validates it with Zod and accepts Metrix's loose encodings.
+1. `round/schema.ts` validates it with Zod and accepts Metrix's loose encodings.
 2. Each player's `PlayerResults` is parsed into a `Scorecard`.
 3. Each player is normalized: round status, standing and totals.
 
@@ -36,24 +40,24 @@ event or series throws `UnsupportedRoundError`.
 
 | Metrix sends | Normalized to | Where |
 | --- | --- | --- |
-| numbers as numbers or numeric strings (`"3"`, `"-1"`, `"+2"`) | integers | `rawSchema.ts` `integerSchema` |
-| `""`, `null` or a missing field for an unknown number | `null` | `rawSchema.ts` `optionalIntegerSchema` |
+| numbers as numbers or numeric strings (`"3"`, `"-1"`, `"+2"`) | integers | `schema.ts` `integerSchema` |
+| `""`, `null` or a missing field for an unknown number | `null` | `schema.ts` `optionalIntegerSchema` |
 | `SubCompetitions` or `HasSubcompetitions` (an event or series), or no `Tracks` | `UnsupportedRoundError`; only single rounds are followed | `normalize.ts` |
 | `Tracks[].NumberAlt` (e.g. `"10A"`) | the hole label, else the hole `Number`; duplicate labels are rejected | `normalize.ts` |
-| `PlayerResults` entry `[]` | `null`: hole not recorded yet | `rawSchema.ts` `scorecardSchema` |
+| `PlayerResults` entry `[]` | `null`: hole not recorded yet | `schema.ts` `scorecardSchema` |
 | `PlayerResults` `null` or `[]` | `Scorecard { kind: "unavailable" }` | `normalize.ts` `parseScorecard` |
 | `PlayerResults` with a different length from `Tracks` | `Scorecard { kind: "unavailable" }`, and it doesn't count when places are derived | `normalize.ts` `matchLayout` |
-| hole `Result` | `strokes`, a positive integer | `rawSchema.ts` |
-| hole `Diff` empty or missing | `relativeToPar: null`; totals that need it stay unknown | `rawSchema.ts` |
-| hole `PEN` and/or `OB` | one `obCount`; when both are sent they must agree | `rawSchema.ts` |
-| `DNF` as `"1"`, `1`, `true` or `"DNF"` (`"0"`, `0`, `false`, `""` or none: finished) | `round.status: "dnf"` and no place | `rawSchema.ts`, `normalize.ts` |
+| hole `Result` | `strokes`, a positive integer | `schema.ts` |
+| hole `Diff` empty or missing | `relativeToPar: null`; totals that need it stay unknown | `schema.ts` |
+| hole `PEN` and/or `OB` | one `obCount`; when both are sent they must agree | `schema.ts` |
+| `DNF` as `"1"`, `1`, `true` or `"DNF"` (`"0"`, `0`, `false`, `""` or none: finished) | `round.status: "dnf"` and no place | `schema.ts`, `normalize.ts` |
 | no completion flag at all | a full card without DNF → `round.status: "complete"`, else `"active"` | `normalize.ts` `resolveRoundStatus` |
 | `OrderNumber` 0 or missing (ties, and many players early in a round) | a shared place from recorded card totals, per division | `normalize.ts` `rankByRecordedTotals` |
 | `OrderNumber` larger than the division's field | no place | `normalize.ts` `resolvePosition` |
 | `PreviousRoundsSum`/`PreviousRoundsDiff`, or `ShowPreviousRoundsSum` | the standing is provisional: it includes earlier rounds | `normalize.ts` |
 | `UserID` 0 (unregistered player) | `sourceId: null` | `normalize.ts` |
 | `Sum`, `Diff` | `totalStrokes`, `totalRelativeToPar`; null until Metrix reports them | `normalize.ts` |
-| `Errors` non-empty, or a different `ID` | `ValidationError` / `Error` | `rawSchema.ts`, `normalize.ts` |
+| `Errors` non-empty, or a different `ID` | `ValidationError` / `Error` | `schema.ts`, `normalize.ts` |
 
 ### The normalized model (`round/types.ts`)
 

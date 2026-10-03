@@ -30,7 +30,7 @@ flowchart TD
 | `main.ts` | Builds the bot, every client and the `CommandDependencies`, registers the commands, starts the bot. | everything |
 | `telegram/` | grammY: the bot, `commands/<feature>/` (a `command.ts` with the names and `/apua` help, a handler), the text listener, chat tracking, the Telegram `ChatMessenger`. | features, integrations (types), shared |
 | `features/` | The application: live scoring, commentary, bagtags, players, score records, … Each table's entity and repository live in the feature that owns it. | integrations, db, shared |
-| `integrations/` | `createXClient(config)` for Metrix, OpenWeatherMap, Ollama, Challonge, Giphy and the recipe API. Clients own URLs, keys, timeouts, validation and normalization, and return normalized types or a result union. | shared |
+| `integrations/` | `createXClient(config)` for Metrix, OpenWeatherMap, Ollama, Challonge, Giphy and the recipe API. Clients own URLs, keys, timeouts, validation and normalization, and return normalized types or a result union. Each boundary's Zod schemas, with an example payload, live in a `schema.ts` next to its client. | shared |
 | `db/` | The TypeORM data source and its entity list. | entities (`*.entity.ts`) |
 | `shared/` | Generic helpers only. | shared |
 

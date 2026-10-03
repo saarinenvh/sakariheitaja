@@ -41,7 +41,7 @@ export interface MetrixClient {
 export function createMetrixClient(config: MetrixClientConfig): MetrixClient {
   return {
     getRound: async roundId => {
-      const payload = await getData<unknown>(`${RESULT_API_URL}${encodeURIComponent(roundId)}`);
+      const payload = await getData(`${RESULT_API_URL}${encodeURIComponent(roundId)}`);
       return payload === undefined ? { kind: "unavailable" } : readRoundPayload(payload, roundId);
     },
     getCourseDetails: async courseId => {

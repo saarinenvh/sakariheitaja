@@ -1,6 +1,6 @@
-import { z } from "zod";
 import { getData } from "../../../shared/http";
 import { parseOrThrow } from "../../../shared/validation";
+import { courseErrorsSchema, courseResponseSchema, MetrixBasket, MetrixValue } from "./schema";
 
 const COURSE_API_URL = "https://discgolfmetrix.com/api.php?content=course";
 const METRES_PER_FOOT = 0.3048;
@@ -43,39 +43,8 @@ export type CourseDetailsResult =
   | { kind: "found"; details: CourseDetails }
   | { kind: "failed"; reason: string };
 
-const metrixValueSchema = z.union([z.string(), z.number()]).nullish();
-
-const basketSchema = z.object({
-  Number: metrixValueSchema,
-  NumberAlt: metrixValueSchema,
-  Par: metrixValueSchema,
-  Length: metrixValueSchema,
-  Unit: metrixValueSchema,
-  TeeLat: metrixValueSchema,
-  TeeLng: metrixValueSchema,
-  BasketLat: metrixValueSchema,
-  BasketLng: metrixValueSchema,
-});
-
-const courseResponseSchema = z.object({
-  course: z.object({
-    Lat: metrixValueSchema,
-    Lng: metrixValueSchema,
-    RatingValue1: metrixValueSchema,
-    RatingResult1: metrixValueSchema,
-    RatingValue2: metrixValueSchema,
-    RatingResult2: metrixValueSchema,
-  }),
-  baskets: z.array(basketSchema).nullish(),
-});
-
-const errorsResponseSchema = z.object({ Errors: z.array(z.string()).nullish() });
-
-type MetrixValue = z.output<typeof metrixValueSchema>;
-type MetrixBasket = z.output<typeof basketSchema>;
-
 export async function fetchCourseDetails(courseId: string, integrationCode: string): Promise<CourseDetailsResult> {
-  const input = await getData<unknown>(buildCourseUrl(courseId, integrationCode));
+  const input = await getData(buildCourseUrl(courseId, integrationCode));
   if (input === undefined) return { kind: "failed", reason: "Metrix course request failed" };
 
   const apiErrors = readApiErrors(input);
@@ -109,7 +78,7 @@ function buildCourseUrl(courseId: string, integrationCode: string): string {
 }
 
 function readApiErrors(input: unknown): string[] {
-  const result = errorsResponseSchema.safeParse(input);
+  const result = courseErrorsSchema.safeParse(input);
   if (!result.success) return [];
   return result.data.Errors ?? [];
 }
