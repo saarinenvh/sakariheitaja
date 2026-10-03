@@ -1,8 +1,7 @@
 import { ChatMessenger } from "../chatMessenger";
 import { OpenWeatherClient } from "../../integrations/openweather/client";
 import { GiphyClient } from "../../integrations/giphy/client";
-import { buildCityWeatherReport } from "../weather-report/weatherReport";
-import { cities } from "../weather-report/phrases";
+import { buildCityWeatherReport, cities } from "../weather-report";
 import { giphySearchWords, randomGoodMorning } from "./phrases";
 import { formatMorningGreeting, morningCallToAction } from "./messages";
 import { formatClockTime, getRandom } from "../../shared/utils";

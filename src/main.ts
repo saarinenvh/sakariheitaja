@@ -15,10 +15,8 @@ import { createOllamaClient } from "./integrations/ollama/client";
 import { createChallongeClient } from "./integrations/challonge/client";
 import { createGiphyClient } from "./integrations/giphy/client";
 import { createRecipesClient } from "./integrations/recipes/client";
-import * as registry from "./features/live-scoring/trackerRegistry";
-import { ScoreTracker } from "./features/live-scoring/liveScoring";
-import * as competitionRepo from "./features/live-scoring/db/competitionRepository";
-import { startMorningGreeter } from "./features/morning-greeting/morningGreeting";
+import { competitionRepository as competitionRepo, ScoreTracker, trackerRegistry as registry } from "./features/live-scoring";
+import { startMorningGreeter } from "./features/morning-greeting";
 
 // The composition root: everything the bot talks to is created here, once, and passed down.
 

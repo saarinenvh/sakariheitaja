@@ -1,8 +1,12 @@
 import { CommandContext, Context } from "grammy";
-import { registerCompetition, ScoreTracker, TrackerDependencies } from "../../../features/live-scoring/liveScoring";
-import * as competitionRepo from "../../../features/live-scoring/db/competitionRepository";
-import * as registry from "../../../features/live-scoring/trackerRegistry";
-import { liveScoringMessages } from "../../../features/live-scoring/messages";
+import {
+  competitionRepository as competitionRepo,
+  liveScoringMessages,
+  registerCompetition,
+  ScoreTracker,
+  TrackerDependencies,
+  trackerRegistry as registry,
+} from "../../../features/live-scoring";
 import { liveScoringCommandMessages as MSG } from "./messages";
 import { HTML_NO_PREVIEW } from "../../sendOptions";
 

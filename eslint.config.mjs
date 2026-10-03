@@ -22,6 +22,21 @@ const noUpwardImports = {
   group: ["**/features/**"],
   message: "shared/ and integrations/ sit below the features; they must not import them.",
 };
+// Another feature is reached through its public module, ../<feature> (its index.ts). The
+// path is relative, so what names another feature depends on how deep the importing file
+// sits: from src/features/<a>/<depth - 1 folders>/, "../" * depth is src/features/.
+const INTERNALS_MESSAGE = "Import another feature through its public module (its index.ts), not its internals.";
+const noFeatureInternalsByPath = {
+  regex: "(^|/)features/[^/]+/(?!index$)",
+  message: INTERNALS_MESSAGE,
+};
+const noOtherFeatureInternals = depth => ({
+  regex: `^(\\.\\./){${depth}}[^./][^/]*/(?!index$)`,
+  message: INTERNALS_MESSAGE,
+});
+const FEATURE_DEPTHS = [1, 2, 3];
+const featureFilesAt = depth => [`src/features/${"*/".repeat(depth)}*.ts`];
+
 // db/ lists the entities, which live with the features that own their tables.
 const noUpwardImportsFromDb = {
   regex: "(^|/)features/(?!.*\\.entity$)",
@@ -48,10 +63,19 @@ export default tseslint.config(
     },
   },
   {
-    files: ["src/features/**/*.ts"],
+    files: ["src/features/*.ts"],
     ignores: TEST_FILES,
-    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noTelegramFromBelow, noHttpOutsideIntegrations] }] },
+    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noTelegramFromBelow, noHttpOutsideIntegrations, noFeatureInternalsByPath] }] },
   },
+  ...FEATURE_DEPTHS.map(depth => ({
+    files: featureFilesAt(depth),
+    ignores: TEST_FILES,
+    rules: {
+      "no-restricted-imports": [LAYER_RULE, {
+        patterns: [noTelegramFromBelow, noHttpOutsideIntegrations, noFeatureInternalsByPath, noOtherFeatureInternals(depth)],
+      }],
+    },
+  })),
   {
     files: ["src/shared/**/*.ts"],
     ignores: [...TEST_FILES, "src/shared/http.ts"],
@@ -63,9 +87,9 @@ export default tseslint.config(
     rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noTelegramFromBelow, noUpwardImportsFromDb, noHttpOutsideIntegrations] }] },
   },
   {
-    files: ["src/telegram/**/*.ts"],
+    files: ["src/telegram/**/*.ts", "src/main.ts"],
     ignores: TEST_FILES,
-    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noHttpOutsideIntegrations] }] },
+    rules: { "no-restricted-imports": [LAYER_RULE, { patterns: [noHttpOutsideIntegrations, noFeatureInternalsByPath] }] },
   },
   {
     files: ["src/integrations/**/*.ts"],

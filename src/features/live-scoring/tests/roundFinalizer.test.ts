@@ -7,13 +7,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../db/competitionRepository", () => ({ markFinished: async () => { steps.push("done"); } }));
-vi.mock("../../score-records/scoreRecords", () => ({ saveResults: mocks.saveResults, getOrCreateCourse: mocks.getOrCreate }));
-vi.mock("../../player-profiles/playerProfiles", () => ({ updateProfiles: () => { steps.push("profiles"); } }));
-vi.mock("../../bagtags/bagtags", () => ({
+vi.mock("../../score-records", () => ({ saveResults: mocks.saveResults, getOrCreateCourse: mocks.getOrCreate }));
+vi.mock("../../player-profiles", () => ({ updateProfiles: () => { steps.push("profiles"); } }));
+vi.mock("../../bagtags", () => ({
   computeAndApplySwaps: () => { steps.push("bagtags"); return { swaps: [], unchanged: [], noTag: [] }; },
-  selectBagtagParticipants: () => [],
+  selectBagtagParticipants: () => [], formatBagtagAnnouncement: () => "Tags",
 }));
-vi.mock("../../bagtags/messages", () => ({ formatBagtagAnnouncement: () => "Tags" }));
 
 import { finishRound, RoundEnd } from "../roundFinalizer";
 import { MetrixRound } from "../../../integrations/metrix/round/types";
