@@ -2,11 +2,10 @@ import { ChatMessenger } from "../chatMessenger";
 import { liveScoringMessages as MSG } from "./messages";
 import { selectFinalScores, selectRankedResults, selectTrackedRankedResults } from "../../integrations/metrix/round/results";
 import { MetrixRound, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
-import { computeAndApplySwaps, selectBagtagParticipants } from "../bagtags/bagtags";
-import { formatBagtagAnnouncement } from "../bagtags/messages";
-import { updateProfiles } from "../player-profiles/playerProfiles";
+import { computeAndApplySwaps, formatBagtagAnnouncement, selectBagtagParticipants } from "../bagtags";
+import { updateProfiles } from "../player-profiles";
 import * as competitionRepo from "./db/competitionRepository";
-import * as scoreService from "../score-records/scoreRecords";
+import * as scoreService from "../score-records";
 
 export interface RoundEnd {
   chatId: number;

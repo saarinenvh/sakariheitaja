@@ -1,5 +1,5 @@
 import { CommandContext, Context } from "grammy";
-import * as playerService from "../../../features/players/players";
+import * as playerService from "../../../features/players";
 import { playerMessages as MSG } from "./messages";
 
 type Command = CommandContext<Context>;

@@ -1,7 +1,6 @@
 import { CommandContext, Context } from "grammy";
-import { llmHeckle } from "../../../features/heckler/heckler";
-import { sendMorningGreeting } from "../../../features/morning-greeting/morningGreeting";
-import { MorningGreetingDependencies } from "../../../features/morning-greeting/morningGreeting";
+import { llmHeckle } from "../../../features/heckler";
+import { MorningGreetingDependencies, sendMorningGreeting } from "../../../features/morning-greeting";
 import { OllamaClient } from "../../../integrations/ollama/client";
 
 type Command = CommandContext<Context>;

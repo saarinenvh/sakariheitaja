@@ -28,8 +28,8 @@ flowchart TD
 | Layer | Holds | May import |
 | --- | --- | --- |
 | `main.ts` | Builds the bot, every client and the `CommandDependencies`, registers the commands, starts the bot. | everything |
-| `telegram/` | grammY: the bot, `commands/<feature>/` (a `command.ts` with the names and `/apua` help, a handler), the text listener, chat tracking, the Telegram `ChatMessenger`. | features, integrations (types), shared |
-| `features/` | The application: live scoring, commentary, bagtags, players, score records, … Each table's entity and repository live in the owning feature's `db/` folder. | integrations, db, shared |
+| `telegram/` | grammY: the bot, `commands/<feature>/` (a `command.ts` with the names and `/apua` help, a handler), the text listener, chat tracking, the Telegram `ChatMessenger`. | features (their `index.ts`), integrations (types), shared |
+| `features/` | The application: live scoring, commentary, bagtags, players, score records, … Each table's entity and repository live in the owning feature's `db/` folder. A feature's `index.ts` is its public module: what other modules may use. | its own files, other features' `index.ts`, integrations, db, shared |
 | `integrations/` | `createXClient(config)` for Metrix, OpenWeatherMap, Ollama, Challonge, Giphy and the recipe API. Clients own URLs, keys, timeouts, validation and normalization, and return normalized types or a result union. Each boundary's Zod schemas, with an example payload, live in a `schema.ts` next to the code that fetches it: the client, or for Metrix the endpoint folder (`round/`, `course/`, `location/`, `statistics/`). | shared |
 | `db/` | The TypeORM data source and its entity list. | entities (`*.entity.ts`) |
 | `shared/` | Generic helpers only. | shared |
@@ -39,6 +39,8 @@ The rules are ESLint errors (`eslint.config.mjs`), so CI fails on a violation:
 - Nothing below `telegram/` imports it. Features send through the `ChatMessenger` port
   (`features/chatMessenger.ts`) that `main.ts` fills with the Telegram one.
 - `integrations/` never imports `features/`, and `db/` imports only entities.
+- A feature, `telegram/` and `main.ts` reach a feature only through its `index.ts`
+  (`../bagtags`, not `../bagtags/messages`). A feature nobody outside uses has none.
 - `fetch` and `shared/http` only in `integrations/`: features get clients injected.
 - `process.env` only in `config.ts`.
 

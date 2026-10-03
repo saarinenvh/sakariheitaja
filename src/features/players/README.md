@@ -8,7 +8,7 @@ that Metrix name.
 | Entry point | Called by |
 | --- | --- |
 | `addToGroup`, `removeFromGroup`, `getGroupPlayers` | `/lisaa`, `/poista`, `/pelaajat` (`telegram/commands/players/`) |
-| `db/playerRepository.findByChatId` | live scoring, for the chat's tracked players |
+| `findByChatId` (`db/playerRepository.ts`) | live scoring, for the chat's tracked players |
 
 ## Data
 

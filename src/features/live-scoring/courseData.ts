@@ -3,7 +3,7 @@ import { CourseDetails } from "../../integrations/metrix/course/courseDetails";
 import { CourseLocationResult } from "../../integrations/metrix/location/courseLocation";
 import { MetrixRound } from "../../integrations/metrix/round/types";
 import { CourseStatistics } from "../../integrations/metrix/statistics/courseStatistics";
-import { CourseInfo } from "../commentary/facts/courseCommentaryFacts";
+import { CourseInfo } from "../commentary";
 import { moduleLogger } from "../../shared/logger";
 import { OpenWeatherClient, WeatherObservation } from "../../integrations/openweather/client";
 

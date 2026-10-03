@@ -1,5 +1,5 @@
 import { CommandContext, Context } from "grammy";
-import { announcePlan, todaysPlans } from "../../../features/games/games";
+import { announcePlan, todaysPlans } from "../../../features/games";
 import { getRandom } from "../../../shared/utils";
 import { gameMessages as MSG } from "./messages";
 

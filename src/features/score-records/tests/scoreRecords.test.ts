@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ScoreChange } from "../../commentary/detect/scorecardChanges";
+import { ScoreChange } from "../../commentary";
 
 // Mocked so this exercises which rows get written, without a database.
 vi.mock("../db/scoreRepository", () => ({

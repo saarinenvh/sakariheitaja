@@ -1,7 +1,6 @@
 import { CommandContext, Context } from "grammy";
 import { OpenWeatherClient } from "../../../integrations/openweather/client";
-import { buildCityWeatherReport } from "../../../features/weather-report/weatherReport";
-import { cities } from "../../../features/weather-report/phrases";
+import { buildCityWeatherReport, cities } from "../../../features/weather-report";
 import { getRandom } from "../../../shared/utils";
 import { HTML_OPTIONS } from "../../sendOptions";
 import { weatherMessages as MSG } from "./messages";

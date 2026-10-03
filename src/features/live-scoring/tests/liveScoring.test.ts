@@ -10,17 +10,16 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../../prompts/prompts", () => ({ loadPrompt: () => "Sakke", loadContext: () => "" }));
-vi.mock("../../players/db/playerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
+vi.mock("../../players", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
 vi.mock("../db/competitionRepository", () => ({ markFinished: mocks.markDone }));
-vi.mock("../../score-records/scoreRecords", () => ({
+vi.mock("../../score-records", () => ({
   saveRecordedScores: mocks.saveScores, saveResults: mocks.saveResults, getOrCreateCourse: async () => ({ id: 2 }),
 }));
-vi.mock("../../player-profiles/playerProfiles", () => ({ updateProfiles: vi.fn() }));
-vi.mock("../../bagtags/bagtags", () => ({
+vi.mock("../../player-profiles", () => ({ updateProfiles: vi.fn() }));
+vi.mock("../../bagtags", () => ({
   getMissingTagPlayers: () => [], computeAndApplySwaps: () => ({}),
-  selectBagtagParticipants: () => [],
+  selectBagtagParticipants: () => [], formatBagtagAnnouncement: () => "Tags",
 }));
-vi.mock("../../bagtags/messages", () => ({ formatBagtagAnnouncement: () => "Tags" }));
 vi.mock("../poller", () => ({ default: class {
   constructor(private id: string) {}
   on(event: string, handler: (result: RoundFetchResult) => Promise<void>): void {

@@ -6,7 +6,7 @@ The groups the bot is in.
 
 | Entry point | Called by |
 | --- | --- |
-| `db/chatRepository.addIfAbsent` | `telegram/chatRegistration.ts`, when the bot is added to a group or a group is created with it; `/follow`, in case the bot missed the join |
+| `addIfAbsent` (`db/chatRepository.ts`) | `telegram/chatRegistration.ts`, when the bot is added to a group or a group is created with it; `/follow`, in case the bot missed the join |
 
 ## Data
 

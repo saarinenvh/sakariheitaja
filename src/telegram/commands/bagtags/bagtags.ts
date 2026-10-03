@@ -3,8 +3,8 @@ import {
   getAllBagtags,
   setBagtag,
   removeBagtag,
-} from "../../../features/bagtags/bagtags";
-import { formatBagtagList } from "../../../features/bagtags/messages";
+  formatBagtagList,
+} from "../../../features/bagtags";
 import { HTML_NO_PREVIEW } from "../../sendOptions";
 
 /** /bagtag lists the tags; "set [nimi] [numero]" and "remove [nimi]" change them. */

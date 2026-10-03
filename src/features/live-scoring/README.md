@@ -31,9 +31,9 @@ sequenceDiagram
 | --- | --- |
 | `new ScoreTracker(...).init()` (`liveScoring.ts`) | `/follow` (`telegram/commands/live-scoring/`), and `main.ts` at startup for every competition not marked done |
 | `registerCompetition` (`liveScoring.ts`) | `/follow`: stores the chat, if new, and the competition |
-| `trackerRegistry` | the `/follow`, `/lopeta`, `/pelit`, `/top5` and `/score` handlers |
+| `trackerRegistry` (`trackerRegistry.ts`) | the `/follow`, `/lopeta`, `/pelit`, `/top5` and `/score` handlers |
 | `ScoreTracker.sendTopList`, `ScoreTracker.getScoreByPlayerName` | `/top5`, `/score` |
-| `db/competitionRepository` | `/follow` (delete when the round can't start), `/lopeta` (delete), `main.ts` (unfinished rounds), `finishRound` (mark done) |
+| `competitionRepository` (`db/competitionRepository.ts`) | `/follow` (delete when the round can't start), `/lopeta` (delete), `main.ts` (unfinished rounds), `finishRound` (mark done) |
 
 `registerCompetition` also stores the chat through the `chats` feature, in case the bot missed joining it.
 

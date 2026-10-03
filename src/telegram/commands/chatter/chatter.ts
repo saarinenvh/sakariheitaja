@@ -1,6 +1,6 @@
 import { Context, Filter } from "grammy";
-import { heckle, recordMessage, getRecentMessages } from "../../../features/heckler/heckler";
-import { llmAnswer } from "../../../features/match-play-asker/matchPlayAsker";
+import { heckle, recordMessage, getRecentMessages } from "../../../features/heckler";
+import { llmAnswer } from "../../../features/match-play-asker";
 import { CommandDependencies } from "../types";
 import { moduleLogger } from "../../../shared/logger";
 import { getRandom } from "../../../shared/utils";

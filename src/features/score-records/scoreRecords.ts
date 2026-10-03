@@ -2,7 +2,7 @@ import { FinalScore } from "../../integrations/metrix/round/results";
 import { ScoreRow } from "./db/scoreRepository";
 import * as scoreRepo from "./db/scoreRepository";
 import * as courseRepo from "./db/courseRepository";
-import { ScoreChange } from "../commentary/detect/scorecardChanges";
+import { ScoreChange } from "../commentary";
 import { Course } from "./db/Course.entity";
 import { NotableScoreKind, notableScoreKind } from "./policy";
 

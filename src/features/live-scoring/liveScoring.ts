@@ -3,8 +3,8 @@ import { RoundCourseData } from "./courseData";
 import { finishRound } from "./roundFinalizer";
 import { ChatMessenger } from "../chatMessenger";
 import { formatPlayerAnnouncement, formatRoundTopList, liveScoringMessages as MSG } from "./messages";
-import * as playerRepo from "../players/db/playerRepository";
-import * as chatRepo from "../chats/db/chatRepository";
+import { findByChatId } from "../players";
+import { addIfAbsent } from "../chats";
 import * as competitionRepo from "./db/competitionRepository";
 import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client";
 import { OpenWeatherClient } from "../../integrations/openweather/client";
@@ -12,10 +12,9 @@ import { OllamaClient } from "../../integrations/ollama/client";
 import { UnsupportedRoundError } from "../../integrations/metrix/round/normalize";
 import { hasTrackedRoundEnded, trackRoundPlayers } from "../../integrations/metrix/round/results";
 import { MetrixRound, RoundPlayer, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
-import { RoundCommentary } from "../commentary/commentary";
-import { createCommentaryWriter } from "../commentary/write/commentaryRuntime";
-import { getMissingTagPlayers } from "../bagtags/bagtags";
-import * as scoreService from "../score-records/scoreRecords";
+import { createCommentaryWriter, RoundCommentary } from "../commentary";
+import { getMissingTagPlayers } from "../bagtags";
+import * as scoreService from "../score-records";
 import { moduleLogger } from "../../shared/logger";
 
 const log = moduleLogger("live-scoring");
@@ -23,7 +22,7 @@ const log = moduleLogger("live-scoring");
 /** What a tracker talks to: the chat, Metrix, the weather service and the commentary model. */
 /** Stores the chat, if it's new, and the competition it starts following. */
 export async function registerCompetition(chatId: number, chatName: string, metrixId: string): Promise<{ insertId: number }> {
-  await chatRepo.addIfAbsent(chatId, chatName);
+  await addIfAbsent(chatId, chatName);
   return competitionRepo.create(chatId, metrixId);
 }
 
@@ -157,7 +156,7 @@ export class ScoreTracker {
   }
 
   private async refreshTrackedPlayers(round: MetrixRound): Promise<TrackedRoundPlayer[]> {
-    const players = await playerRepo.findByChatId(this.chatId);
+    const players = await findByChatId(this.chatId);
     return trackRoundPlayers(round, players);
   }
 

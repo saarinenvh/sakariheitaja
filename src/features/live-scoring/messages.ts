@@ -1,9 +1,7 @@
 import { escapeHtml } from "../../shared/html";
 import { RankedResult, selectRankedResults, selectTrackedRankedResults } from "../../integrations/metrix/round/results";
 import { MetrixRound, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
-import { truncateCourseName } from "../commentary/format/courseName";
-import { CourseInfo } from "../commentary/facts/courseCommentaryFacts";
-import { buildRoundRatings } from "../commentary/facts/roundRatings";
+import { buildRoundRatings, CourseInfo, truncateCourseName } from "../commentary";
 import { rankTopList } from "./topListRanking";
 
 /** What live scoring itself says in the chat. */
