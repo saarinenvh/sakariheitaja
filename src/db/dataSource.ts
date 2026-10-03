@@ -1,9 +1,9 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { Player } from "../features/players/Player.entity";
-import { Chat } from "../features/chats/Chat.entity";
-import { Competition } from "../features/live-scoring/Competition.entity";
-import { Course } from "../features/score-records/Course.entity";
+import { Player } from "../features/players/db/Player.entity";
+import { Chat } from "../features/chats/db/Chat.entity";
+import { Competition } from "../features/live-scoring/db/Competition.entity";
+import { Course } from "../features/score-records/db/Course.entity";
 import { readConfig } from "../config";
 
 const database = readConfig().database;

@@ -5,7 +5,7 @@ import { finishRound } from "./roundFinalizer";
 import { formatRoundTopList } from "./topList";
 import { ChatMessenger } from "../chatMessenger";
 import { liveScoringMessages as MSG } from "./messages";
-import * as playerRepo from "../players/playerRepository";
+import * as playerRepo from "../players/db/playerRepository";
 import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client";
 import { OpenWeatherClient } from "../../integrations/openweather/client";
 import { OllamaClient } from "../../integrations/ollama/client";

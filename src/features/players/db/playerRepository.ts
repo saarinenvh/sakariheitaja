@@ -1,4 +1,4 @@
-import { dataSource } from "../../db/dataSource";
+import { dataSource } from "../../../db/dataSource";
 import { Player } from "./Player.entity";
 
 function repo() {

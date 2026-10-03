@@ -1,5 +1,5 @@
-import { moduleLogger } from "../../shared/logger";
-import { dataSource } from "../../db/dataSource";
+import { moduleLogger } from "../../../shared/logger";
+import { dataSource } from "../../../db/dataSource";
 import { Chat } from "./Chat.entity";
 
 const log = moduleLogger("chats");

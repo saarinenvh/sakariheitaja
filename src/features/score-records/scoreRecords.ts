@@ -1,7 +1,7 @@
 import { FinalScore } from "../../integrations/metrix/round/results";
-import { ScoreRow } from "./scoreRepository";
-import * as scoreRepo from "./scoreRepository";
-import * as courseRepo from "./courseRepository";
+import { ScoreRow } from "./db/scoreRepository";
+import * as scoreRepo from "./db/scoreRepository";
+import * as courseRepo from "./db/courseRepository";
 import { ScoreChange } from "../commentary/detect/scorecardChanges";
 
 export async function saveRecordedScores(

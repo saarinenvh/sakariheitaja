@@ -1,5 +1,5 @@
 import { Bot } from "grammy";
-import * as chatRepo from "../features/chats/chatRepository";
+import * as chatRepo from "../features/chats/db/chatRepository";
 import { moduleLogger } from "../shared/logger";
 
 const log = moduleLogger("chats");

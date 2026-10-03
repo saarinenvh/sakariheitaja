@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../../prompts/prompts", () => ({ loadPrompt: () => "Sakke", loadContext: () => "" }));
-vi.mock("../../players/playerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
+vi.mock("../../players/db/playerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
 vi.mock("../competitions", () => ({ markDone: mocks.markDone }));
 vi.mock("../../score-records/courses", () => ({ getOrCreate: async () => ({ id: 2 }) }));
 vi.mock("../../score-records/scoreRecords", () => ({

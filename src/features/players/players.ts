@@ -1,5 +1,5 @@
-import { Player } from "./Player.entity";
-import * as playerRepo from "./playerRepository";
+import { Player } from "./db/Player.entity";
+import * as playerRepo from "./db/playerRepository";
 
 export async function addToGroup(name: string, chatId: number): Promise<{ added: boolean }> {
   await playerRepo.upsertByName(name);

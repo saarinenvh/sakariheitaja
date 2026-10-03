@@ -2,18 +2,18 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ScoreChange } from "../../commentary/detect/scorecardChanges";
 
 // Mocked so this exercises which rows get written, without a database.
-vi.mock("../scoreRepository", () => ({
+vi.mock("../db/scoreRepository", () => ({
   addAce: vi.fn(),
   addEagle: vi.fn(),
   addAlbatross: vi.fn(),
   addResult: vi.fn(),
   findResultPlayerIds: vi.fn(async () => [] as number[]),
 }));
-vi.mock("../courseRepository", () => ({
+vi.mock("../db/courseRepository", () => ({
   findByName: vi.fn(async () => ({ id: 7, name: "Talin frisbeegolfrata" })),
 }));
 
-import * as scoreRepo from "../scoreRepository";
+import * as scoreRepo from "../db/scoreRepository";
 import { saveRecordedScores, saveResults } from "../scoreRecords";
 
 const recorded = (holeNumber: number, strokes: number, relativeToPar: number): ScoreChange =>
