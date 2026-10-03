@@ -5,6 +5,17 @@ fact; the model only writes the words.** The ScoreTracker (`../live-scoring/`) c
 `RoundCommentary.observe` after every poll, and commentary reaches the chat through the
 `CommentaryDelivery` it was given.
 
+## Entry points
+
+| Entry point | Called by |
+| --- | --- |
+| `RoundCommentary` (`commentary.ts`): `observe`, `idle`, `stop` | `ScoreTracker` (`../live-scoring/liveScoring.ts`) |
+| `createCommentaryWriter` (`write/commentaryRuntime.ts`) | `ScoreTracker`, which passes it to `RoundCommentary` |
+| the stage modules | `scripts/eval-commentary/`, which replays rounds through them |
+
+Commentary owns no tables. The notable scores it reports are saved through the
+`saveScores` callback (`../score-records/`), and its state is in memory (see State).
+
 ```mermaid
 flowchart LR
     Poll[MetrixRound<br/>+ tracked players] --> Detect
@@ -24,11 +35,11 @@ flowchart LR
 
 | Stage | Files | Does |
 | --- | --- | --- |
-| coordinate | `roundCommentary.ts` | Queues observations in order. Groups updates by division. Loads weather and course data with timeouts (they never hold back a message). Sends, then acknowledges only what was delivered. |
+| coordinate | `commentary.ts` | Queues observations in order. Groups updates by division. Loads weather and course data with timeouts (they never hold back a message). Sends, then acknowledges only what was delivered. |
 | detect | `detect/` | `commentarySnapshot`: what is remembered of a player. `scorecardChanges`: recorded / corrected / removed holes. `standingMovement`: place now against the last delivered message. |
 | facts | `facts/` | Pure builders of everything the model may say. `commentaryContext.ts` assembles them into the model's input (`BatchCommentaryContext`). |
 | write | `write/` | `commentaryWriter`: serializes the facts and calls the model with a JSON response schema (player names are an enum), validates the reply, falls back to factual lines (`factualFallback`). `commentaryRuntime`: the prompt and model options. |
-| format | `format/` | `commentaryMessage`: the Telegram HTML; it escapes text and splits a message at block boundaries to fit the 4096-character limit. |
+| format | `format/` | `commentaryMessage`: the Telegram HTML; it escapes text and splits a message at block boundaries to fit Telegram's message limit. |
 
 ## Facts
 
@@ -41,7 +52,7 @@ flowchart LR
 | `leadHistory.ts` | how the lead changed, and whether hole order is play order |
 | `courseCommentaryFacts.ts` | the course and hole facts for one update (`CourseInfo` in) |
 | `holeDescriptions.ts` | sentences about a hole: length, wind relative to the hole, history, today's field |
-| `roundRatings.ts` | course difficulty from the par rating; round ratings, and which reach the model (≥ 1000, 980–999, < 750) |
+| `roundRatings.ts` | course difficulty from the par rating; round ratings, and which of them reach the model |
 | `weatherFacts.ts` | the weather and its change since the start |
 | `holeResults.ts`, `numberText.ts`, `spokenNames.ts` | Finnish result names, decimals, the names the model uses |
 

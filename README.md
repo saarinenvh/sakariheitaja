@@ -17,7 +17,7 @@ A Telegram bot that follows and commentates disc golf competitions live from [Di
 ## Commentary flow
 
 Code computes every fact; the model only writes the message. Start reading at
-`ScoreTracker.onPollResult` in `src/features/live-scoring/scoreTracker.ts`
+`ScoreTracker.onPollResult` in `src/features/live-scoring/liveScoring.ts`
 ([`src/features/live-scoring/README.md`](src/features/live-scoring/README.md)):
 
 1. `MetrixClient.getRound` (`src/integrations/metrix/`) fetches the round and

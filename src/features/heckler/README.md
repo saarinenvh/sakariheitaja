@@ -1,7 +1,26 @@
 # Heckler
 
-Short insults for the chat. Every text message is remembered (the last 10 per chat, in memory);
-with the LLM enabled, half of the heckles are written by the model from those with
-`prompts/heckler.md` and half picked from `cannedHeckles.ts`; with it disabled, or when the
-model fails, they are always canned. Used by the text listener when
-Sakari is named, and by `/heckle`.
+Short insults for the chat. With the LLM enabled, some heckles are written by the model from the
+chat's recent messages and the rest are canned; with it disabled, or when the model fails, they
+are always canned.
+
+## Entry points
+
+| Entry point | Called by |
+| --- | --- |
+| `recordMessage` | the text listener (`telegram/commands/chatter/`), for every text message |
+| `heckle` | the text listener, when Sakari is named and the asker gave no answer (LLM off or the model failed) |
+| `getRecentMessages` | the text listener, for the match-play asker's context |
+| `llmHeckle` | `/heckle` (`telegram/commands/dev/`) |
+
+## Data
+
+In memory only: each chat's latest messages, a bounded number per chat.
+
+## Files
+
+| File | Does |
+| --- | --- |
+| `heckler.ts` | Remembers messages, picks canned or model, calls the model. |
+| `prompts.ts` | The system prompt (`src/prompts/persona.md` and `heckler.md`) and the user message. |
+| `phrases.ts` | The canned heckles. |

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { WeatherObservation } from "../../../integrations/openweather/client";
 import { BatchCommentaryContext } from "../facts/commentaryContext";
 import { BatchCommentaryResult, writeBatchCommentary } from "../write/commentaryWriter";
-import { CommentaryDelivery, RoundCommentary } from "../roundCommentary";
+import { CommentaryDelivery, RoundCommentary } from "../commentary";
 import { hasTrackedRoundEnded, selectFinalScores, trackRoundPlayers } from "../../../integrations/metrix/round/results";
 import { parseMetrixRound } from "../../../integrations/metrix/round/normalize";
 import { selectBagtagParticipants } from "../../bagtags/bagtags";

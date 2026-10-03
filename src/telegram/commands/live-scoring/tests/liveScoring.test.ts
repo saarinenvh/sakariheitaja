@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ remove: vi.fn(), registryRemove: vi.fn() }));
-vi.mock("../../../../features/live-scoring/competitions", () => ({ remove: mocks.remove, start: vi.fn() }));
+vi.mock("../../../../features/live-scoring/db/competitionRepository", () => ({ deleteById: mocks.remove, create: vi.fn() }));
+vi.mock("../../../../features/chats/db/chatRepository", () => ({ addIfAbsent: vi.fn() }));
 vi.mock("../../../../features/live-scoring/trackerRegistry", () => ({ remove: mocks.registryRemove }));
 
 import { CommandContext, Context } from "grammy";
@@ -25,6 +26,6 @@ describe("/lopeta", () => {
     const { ctx } = command("3809486");
     await stopFollowing(ctx);
     expect(mocks.registryRemove).toHaveBeenCalledWith(-100, "3809486");
-    expect(mocks.remove).toHaveBeenCalledWith("7");
+    expect(mocks.remove).toHaveBeenCalledWith(7);
   });
 });

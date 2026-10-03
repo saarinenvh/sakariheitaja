@@ -4,6 +4,7 @@ import { GiphyClient } from "../../integrations/giphy/client";
 import { buildCityWeatherReport } from "../weather-report/weatherReport";
 import { cities } from "../weather-report/phrases";
 import { giphySearchWords, randomGoodMorning } from "./phrases";
+import { formatMorningGreeting, morningCallToAction } from "./messages";
 import { formatClockTime, getRandom } from "../../shared/utils";
 import { moduleLogger } from "../../shared/logger";
 
@@ -22,11 +23,11 @@ export interface MorningGreetingDependencies {
 export async function sendMorningGreeting(deps: MorningGreetingDependencies, chatId: number): Promise<void> {
   const { messenger } = deps;
   const greeting = randomGoodMorning[getRandom(randomGoodMorning.length)];
-  const message = `${greeting}Kello on <b>${formatClockTime(new Date())}</b> & tämmöstä keliä ois sit tänää taas luvassa.`;
+  const message = formatMorningGreeting(greeting, formatClockTime(new Date()));
 
   try { await messenger.sendHtml(chatId, message); } catch (e: any) { log.error({ err: e }, "morning greeting text failed"); }
   try { await sendCityWeather(deps, chatId, cities[getRandom(cities.length)]); } catch (e: any) { log.error({ err: e }, "morning greeting weather failed"); }
-  try { await messenger.sendText(chatId, "Ja tästä päivä käyntiin!"); } catch (e: any) { log.error({ err: e }, "morning greeting call to action failed"); }
+  try { await messenger.sendText(chatId, morningCallToAction); } catch (e: any) { log.error({ err: e }, "morning greeting call to action failed"); }
   try {
     const gifUrl = await deps.giphy.searchGif(giphySearchWords[getRandom(giphySearchWords.length)]);
     if (gifUrl) await messenger.sendVideo(chatId, gifUrl);

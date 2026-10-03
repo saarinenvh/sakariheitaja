@@ -11,7 +11,7 @@ shows how the pieces call each other.
 sequenceDiagram
     actor User
     participant Cmd as /follow handler
-    participant Comp as competitions
+    participant Comp as chats, competitions
     participant Tracker as ScoreTracker
     participant Metrix as MetrixClient
     participant Players as playerRepository
@@ -20,7 +20,7 @@ sequenceDiagram
     participant Messenger as ChatMessenger
 
     User->>Cmd: /follow 3809486
-    Cmd->>Comp: start(chatId, chatName, metrixId)
+    Cmd->>Comp: addIfAbsent(chat), create(chatId, metrixId)
     Cmd->>Tracker: new ScoreTracker(...).init()
     Tracker->>Metrix: getRound(metrixId)
     Metrix-->>Tracker: MetrixRound (normalized)
@@ -29,7 +29,7 @@ sequenceDiagram
     Tracker->>Messenger: player announcement
     Cmd->>Cmd: trackerRegistry.add
 
-    loop Poller: 30 s active, 60 s idle, 120 s dormant
+    loop Poller: slower while scores stay unchanged (live-scoring/policy.ts)
         Tracker->>Metrix: getRound
         Tracker->>Players: findByChatId
         Tracker->>Commentary: observe(round, tracked)

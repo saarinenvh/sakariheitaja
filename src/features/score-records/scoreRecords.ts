@@ -3,22 +3,37 @@ import { ScoreRow } from "./db/scoreRepository";
 import * as scoreRepo from "./db/scoreRepository";
 import * as courseRepo from "./db/courseRepository";
 import { ScoreChange } from "../commentary/detect/scorecardChanges";
+import { Course } from "./db/Course.entity";
+import { NotableScoreKind, notableScoreKind } from "./policy";
+
+type NotableScoreWriter = (date: string, playerId: number, chatId: number, courseId: number, competitionId: number) => Promise<void>;
+
+const NOTABLE_SCORE_WRITERS: Record<NotableScoreKind, NotableScoreWriter> = {
+  ace: (...row) => scoreRepo.addAce(...row),
+  eagle: (...row) => scoreRepo.addEagle(...row),
+  albatross: (...row) => scoreRepo.addAlbatross(...row),
+};
 
 export async function saveRecordedScores(
   playerId: number, changes: readonly ScoreChange[], chatId: number, competitionId: number, courseName: string,
 ): Promise<void> {
-  const notable = changes.filter(change => change.kind === "recorded"
-    && (change.score.strokes === 1 || change.score.relativeToPar === -2 || change.score.relativeToPar === -3));
+  const notable = changes.flatMap(change => {
+    const kind = change.kind === "recorded" ? notableScoreKind(change.score) : null;
+    return kind ? [kind] : [];
+  });
   if (notable.length === 0) return;
   const course = await courseRepo.findByName(courseName);
   if (!course) return;
   const date = new Date().toISOString().slice(0, 10);
-  for (const change of notable) {
-    if (change.kind !== "recorded") continue;
-    if (change.score.strokes === 1) await scoreRepo.addAce(date, playerId, chatId, course.id, competitionId);
-    else if (change.score.relativeToPar === -3) await scoreRepo.addAlbatross(date, playerId, chatId, course.id, competitionId);
-    else await scoreRepo.addEagle(date, playerId, chatId, course.id, competitionId);
+  for (const kind of notable) {
+    await NOTABLE_SCORE_WRITERS[kind](date, playerId, chatId, course.id, competitionId);
   }
+}
+
+/** The course by name, added first when it is new; null if it still can't be read back. */
+export async function getOrCreateCourse(name: string): Promise<Course | null> {
+  await courseRepo.upsert(name);
+  return courseRepo.findByName(name);
 }
 
 /** Saves each player's result once per competition, so a retried round end doesn't save twice. */

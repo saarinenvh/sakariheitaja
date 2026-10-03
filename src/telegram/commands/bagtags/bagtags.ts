@@ -1,9 +1,10 @@
 import { CommandContext, Context } from "grammy";
 import {
-  formatBagtagList,
+  getAllBagtags,
   setBagtag,
   removeBagtag,
 } from "../../../features/bagtags/bagtags";
+import { formatBagtagList } from "../../../features/bagtags/messages";
 import { HTML_NO_PREVIEW } from "../../sendOptions";
 
 /** /bagtag lists the tags; "set [nimi] [numero]" and "remove [nimi]" change them. */
@@ -12,7 +13,7 @@ export async function manageBagtags(ctx: CommandContext<Context>): Promise<unkno
 
   // /bagtag  — list current standings
   if (!args) {
-    return ctx.reply(formatBagtagList(ctx.chat.id), HTML_NO_PREVIEW);
+    return ctx.reply(formatBagtagList(getAllBagtags(ctx.chat.id)), HTML_NO_PREVIEW);
   }
 
   // /bagtag set <nimi> <numero>

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { isMatchPlayQuestion, isOpponentQuestion, resolveTargetPlayer } from "../matchPlayAsker";
+import { isMatchPlayQuestion, isOpponentQuestion } from "../policy";
+import { resolveTargetPlayer } from "../bracket";
 import type { BracketData } from "../../../integrations/challonge/client";
 
 // The actual messages from the live conversation that exposed this bug -

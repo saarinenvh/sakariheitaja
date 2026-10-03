@@ -1,4 +1,4 @@
-import { ScoreTracker } from "./scoreTracker";
+import { ScoreTracker } from "./liveScoring";
 
 /** The rounds each chat follows right now; in memory, rebuilt on startup from unfinished competitions. */
 const registry = new Map<number, ScoreTracker[]>();

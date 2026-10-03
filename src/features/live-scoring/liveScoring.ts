@@ -1,18 +1,18 @@
 import Poller from "./poller";
 import { RoundCourseData } from "./courseData";
-import { formatPlayerAnnouncement } from "./playerAnnouncement";
 import { finishRound } from "./roundFinalizer";
-import { formatRoundTopList } from "./topList";
 import { ChatMessenger } from "../chatMessenger";
-import { liveScoringMessages as MSG } from "./messages";
+import { formatPlayerAnnouncement, formatRoundTopList, liveScoringMessages as MSG } from "./messages";
 import * as playerRepo from "../players/db/playerRepository";
+import * as chatRepo from "../chats/db/chatRepository";
+import * as competitionRepo from "./db/competitionRepository";
 import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client";
 import { OpenWeatherClient } from "../../integrations/openweather/client";
 import { OllamaClient } from "../../integrations/ollama/client";
 import { UnsupportedRoundError } from "../../integrations/metrix/round/normalize";
 import { hasTrackedRoundEnded, trackRoundPlayers } from "../../integrations/metrix/round/results";
 import { MetrixRound, RoundPlayer, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
-import { RoundCommentary } from "../commentary/roundCommentary";
+import { RoundCommentary } from "../commentary/commentary";
 import { createCommentaryWriter } from "../commentary/write/commentaryRuntime";
 import { getMissingTagPlayers } from "../bagtags/bagtags";
 import * as scoreService from "../score-records/scoreRecords";
@@ -21,6 +21,12 @@ import { moduleLogger } from "../../shared/logger";
 const log = moduleLogger("live-scoring");
 
 /** What a tracker talks to: the chat, Metrix, the weather service and the commentary model. */
+/** Stores the chat, if it's new, and the competition it starts following. */
+export async function registerCompetition(chatId: number, chatName: string, metrixId: string): Promise<{ insertId: number }> {
+  await chatRepo.addIfAbsent(chatId, chatName);
+  return competitionRepo.create(chatId, metrixId);
+}
+
 export interface TrackerDependencies {
   messenger: ChatMessenger;
   metrix: MetrixClient;

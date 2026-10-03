@@ -16,8 +16,8 @@ import { createChallongeClient } from "./integrations/challonge/client";
 import { createGiphyClient } from "./integrations/giphy/client";
 import { createRecipesClient } from "./integrations/recipes/client";
 import * as registry from "./features/live-scoring/trackerRegistry";
-import { ScoreTracker } from "./features/live-scoring/scoreTracker";
-import * as competitionService from "./features/live-scoring/competitions";
+import { ScoreTracker } from "./features/live-scoring/liveScoring";
+import * as competitionRepo from "./features/live-scoring/db/competitionRepository";
 import { startMorningGreeter } from "./features/morning-greeting/morningGreeting";
 
 // The composition root: everything the bot talks to is created here, once, and passed down.
@@ -44,7 +44,7 @@ bot.catch(botError => {
 
 /** Rounds left unfinished by the last run resume without a new player announcement. */
 async function resumeUnfinishedRounds(): Promise<void> {
-  for (const competition of await competitionService.getUnfinished()) {
+  for (const competition of await competitionRepo.findUnfinished()) {
     const tracker = await new ScoreTracker(competition.id, competition.metrixId, competition.chatId, dependencies, true).init();
     registry.add(competition.chatId, tracker);
   }
