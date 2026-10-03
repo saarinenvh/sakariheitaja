@@ -2,10 +2,10 @@ import { ChatMessenger } from "../chatMessenger";
 import { liveScoringMessages as MSG } from "./messages";
 import { selectFinalScores, selectRankedResults, selectTrackedRankedResults } from "../../integrations/metrix/round/results";
 import { MetrixRound, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
-import { computeAndApplySwaps, formatBagtagAnnouncement, selectBagtagParticipants } from "../bagtags/bagtags";
+import { computeAndApplySwaps, selectBagtagParticipants } from "../bagtags/bagtags";
+import { formatBagtagAnnouncement } from "../bagtags/messages";
 import { updateProfiles } from "../player-profiles/playerProfiles";
-import * as competitionService from "./competitions";
-import * as courseService from "../score-records/courses";
+import * as competitionRepo from "./db/competitionRepository";
 import * as scoreService from "../score-records/scoreRecords";
 
 export interface RoundEnd {
@@ -27,12 +27,12 @@ export interface RoundEnd {
 export async function finishRound(end: RoundEnd, round: MetrixRound, tracked: readonly TrackedRoundPlayer[]): Promise<void> {
   const { chatId, competitionId, messenger } = end;
   await messenger.sendText(chatId, MSG.endSoon);
-  const course = await courseService.getOrCreate(round.courseName);
+  const course = await scoreService.getOrCreateCourse(round.courseName);
   if (!course) throw new Error(`Course ${round.courseName} could not be saved`);
   await scoreService.saveResults(selectFinalScores(tracked), chatId, course.id, competitionId);
   updateProfiles(chatId, competitionId, selectTrackedRankedResults(tracked), selectRankedResults(round.players));
   const bagtags = computeAndApplySwaps(chatId, selectBagtagParticipants(tracked));
-  await competitionService.markDone(competitionId);
+  await competitionRepo.markFinished(competitionId);
   await end.sendTopList();
   await messenger.sendHtml(chatId, formatBagtagAnnouncement(bagtags));
 }

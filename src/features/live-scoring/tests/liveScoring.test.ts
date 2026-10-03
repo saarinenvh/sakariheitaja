@@ -11,16 +11,16 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../../../prompts/prompts", () => ({ loadPrompt: () => "Sakke", loadContext: () => "" }));
 vi.mock("../../players/db/playerRepository", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
-vi.mock("../competitions", () => ({ markDone: mocks.markDone }));
-vi.mock("../../score-records/courses", () => ({ getOrCreate: async () => ({ id: 2 }) }));
+vi.mock("../db/competitionRepository", () => ({ markFinished: mocks.markDone }));
 vi.mock("../../score-records/scoreRecords", () => ({
-  saveRecordedScores: mocks.saveScores, saveResults: mocks.saveResults,
+  saveRecordedScores: mocks.saveScores, saveResults: mocks.saveResults, getOrCreateCourse: async () => ({ id: 2 }),
 }));
-vi.mock("../../player-profiles/playerProfiles", () => ({ updateProfiles: vi.fn(), buildProfileSnippet: () => undefined }));
+vi.mock("../../player-profiles/playerProfiles", () => ({ updateProfiles: vi.fn() }));
 vi.mock("../../bagtags/bagtags", () => ({
-  getMissingTagPlayers: () => [], computeAndApplySwaps: () => ({}), formatBagtagAnnouncement: () => "Tags",
+  getMissingTagPlayers: () => [], computeAndApplySwaps: () => ({}),
   selectBagtagParticipants: () => [],
 }));
+vi.mock("../../bagtags/messages", () => ({ formatBagtagAnnouncement: () => "Tags" }));
 vi.mock("../poller", () => ({ default: class {
   constructor(private id: string) {}
   on(event: string, handler: (result: RoundFetchResult) => Promise<void>): void {
@@ -31,7 +31,7 @@ vi.mock("../poller", () => ({ default: class {
   reportChanges(): void {}
 } }));
 
-import { ScoreTracker } from "../scoreTracker";
+import { ScoreTracker } from "../liveScoring";
 import { ChatMessenger } from "../../chatMessenger";
 import { MetrixClient, readRoundPayload, RoundFetchResult } from "../../../integrations/metrix/client";
 import { OpenWeatherClient } from "../../../integrations/openweather/client";

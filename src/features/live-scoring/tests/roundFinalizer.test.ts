@@ -6,15 +6,14 @@ const mocks = vi.hoisted(() => ({
   getOrCreate: vi.fn<() => Promise<{ id: number } | null>>(),
 }));
 
-vi.mock("../competitions", () => ({ markDone: async () => { steps.push("done"); } }));
-vi.mock("../../score-records/courses", () => ({ getOrCreate: mocks.getOrCreate }));
-vi.mock("../../score-records/scoreRecords", () => ({ saveResults: mocks.saveResults }));
+vi.mock("../db/competitionRepository", () => ({ markFinished: async () => { steps.push("done"); } }));
+vi.mock("../../score-records/scoreRecords", () => ({ saveResults: mocks.saveResults, getOrCreateCourse: mocks.getOrCreate }));
 vi.mock("../../player-profiles/playerProfiles", () => ({ updateProfiles: () => { steps.push("profiles"); } }));
 vi.mock("../../bagtags/bagtags", () => ({
   computeAndApplySwaps: () => { steps.push("bagtags"); return { swaps: [], unchanged: [], noTag: [] }; },
   selectBagtagParticipants: () => [],
-  formatBagtagAnnouncement: () => "Tags",
 }));
+vi.mock("../../bagtags/messages", () => ({ formatBagtagAnnouncement: () => "Tags" }));
 
 import { finishRound, RoundEnd } from "../roundFinalizer";
 import { MetrixRound } from "../../../integrations/metrix/round/types";

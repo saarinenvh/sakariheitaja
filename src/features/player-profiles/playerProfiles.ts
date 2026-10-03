@@ -3,6 +3,7 @@ import { createJsonStore } from "../../shared/jsonStore";
 import { readConfig } from "../../config";
 import { RankedResult } from "../../integrations/metrix/round/results";
 import { moduleLogger } from "../../shared/logger";
+import { profileAfterRound } from "./policy";
 
 const log = moduleLogger("player-profiles");
 
@@ -38,29 +39,6 @@ export function getProfile(chatId: number, name: string): PlayerProfile | undefi
   return load()[String(chatId)]?.[name];
 }
 
-export function buildProfileSnippet(chatId: number, name: string): string | undefined {
-  const profile = getProfile(chatId, name);
-  if (!profile) return undefined;
-
-  const parts: string[] = [];
-
-  if (profile.nickname) parts.push(`lempinimeltään ${profile.nickname}`);
-  if (profile.knownFor) parts.push(profile.knownFor);
-
-  if (profile.gamesPlayed >= 3) {
-    const pct = profile.avgPositionPct;
-    if (pct < 0.25)      parts.push("tyypillisesti kärjessä");
-    else if (pct < 0.60) parts.push("tavallisesti keskikastissa");
-    else                 parts.push("usein häntäpäässä");
-  }
-
-  if (profile.recentForm === "hot")  parts.push("viime aikoina hyvässä vireessä");
-  if (profile.recentForm === "cold") parts.push("viime aikoina surkea vire");
-
-  if (parts.length === 0) return undefined;
-  return parts.join(", ");
-}
-
 // A position is within a division, so it is scored against that division's field, not the whole event's.
 export function updateProfiles(
   chatId: number, competitionId: number, trackedPlayers: readonly RankedResult[], allResults: readonly RankedResult[],
@@ -85,23 +63,7 @@ export function updateProfiles(
     if (fieldSize === 0) continue;
     const positionPct = player.position / fieldSize;
 
-    const prevGames = existing?.gamesPlayed ?? 0;
-    const prevAvgPct = existing?.avgPositionPct ?? positionPct;
-    const newAvgPct = (prevAvgPct * prevGames + positionPct) / (prevGames + 1);
-
-    const recentForm: PlayerProfile["recentForm"] =
-      positionPct < prevAvgPct - 0.15 ? "hot" :
-      positionPct > prevAvgPct + 0.15 ? "cold" :
-      "steady";
-
-    store[chatKey][player.playerName] = {
-      ...(existing ?? {}),
-      recentForm,
-      gamesPlayed: prevGames + 1,
-      avgPositionPct: Math.round(newAvgPct * 1000) / 1000,
-      lastUpdated: today,
-      lastCompetitionId: competitionId,
-    };
+    store[chatKey][player.playerName] = profileAfterRound(existing, { positionPct, competitionId, date: today });
   }
 
   save(store);

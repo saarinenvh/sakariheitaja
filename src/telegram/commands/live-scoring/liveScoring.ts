@@ -1,6 +1,6 @@
 import { CommandContext, Context } from "grammy";
-import { ScoreTracker, TrackerDependencies } from "../../../features/live-scoring/scoreTracker";
-import * as competitionService from "../../../features/live-scoring/competitions";
+import { registerCompetition, ScoreTracker, TrackerDependencies } from "../../../features/live-scoring/liveScoring";
+import * as competitionRepo from "../../../features/live-scoring/db/competitionRepository";
 import * as registry from "../../../features/live-scoring/trackerRegistry";
 import { liveScoringMessages } from "../../../features/live-scoring/messages";
 import { liveScoringCommandMessages as MSG } from "./messages";
@@ -16,13 +16,13 @@ export async function follow(ctx: Command, trackerDependencies: TrackerDependenc
   if (!metrixId) return ctx.reply(MSG.followNoNumber);
 
   const chatId = ctx.chat.id;
-  const result = await competitionService.start(chatId, ctx.chat.title ?? "", metrixId);
+  const result = await registerCompetition(chatId, ctx.chat.title ?? "", metrixId);
 
   const tracker = await new ScoreTracker(result.insertId, metrixId, chatId, trackerDependencies).init();
 
   if (!tracker.following) {
     await ctx.reply(tracker.initializationError ?? liveScoringMessages.followInvalid);
-    await competitionService.remove(String(result.insertId));
+    await competitionRepo.deleteById(result.insertId);
     return;
   }
 
@@ -37,7 +37,7 @@ export async function stopFollowing(ctx: Command): Promise<unknown> {
   const removed = registry.remove(chatId, ctx.match.trim());
 
   await ctx.reply(removed ? MSG.lopetaOk : MSG.lopetaNotFound);
-  if (removed) await competitionService.remove(String(removed.id));
+  if (removed) await competitionRepo.deleteById(removed.id);
 }
 
 export async function listFollowedRounds(ctx: Command): Promise<unknown> {

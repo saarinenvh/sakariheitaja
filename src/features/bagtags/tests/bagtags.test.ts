@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { formatBagtagAnnouncement } from "../bagtags";
+import { formatBagtagAnnouncement, formatBagtagList } from "../messages";
 
 describe("formatBagtagAnnouncement", () => {
   it("keeps a DNF tag holder in allocation when their ranking and score are unknown", async () => {
@@ -27,9 +27,6 @@ describe("formatBagtagAnnouncement", () => {
     }
   });
   it("does not announce a swap when nothing swapped", () => {
-    // The early return only covers "no swaps AND nobody untagged", so this
-    // combination used to print the "Bag Tag vaihdettu!" header over a list of
-    // tags that had not moved.
     const msg = formatBagtagAnnouncement({
       swaps: [],
       unchanged: [{ playerName: "Matti", tag: 3 }],
@@ -97,7 +94,7 @@ describe("formatBagtagList", () => {
     try {
       const tags = await import("../bagtags");
       tags.setBagtag(-100, "Teppo <3", 1);
-      expect(tags.formatBagtagList(-100)).toContain("#1 — Teppo &lt;3");
+      expect(formatBagtagList(tags.getAllBagtags(-100))).toContain("#1 — Teppo &lt;3");
     } finally {
       vi.unstubAllEnvs();
       rmSync(directory, { recursive: true });

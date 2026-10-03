@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { RankedResult } from "../../../integrations/metrix/round/results";
-import { formatTopList } from "../topList";
+import { formatTopList } from "../messages";
 
 // A competition's Results contain every division at once, and Metrix numbers positions
 // within a division, so there is one OrderNumber === 1 per division.

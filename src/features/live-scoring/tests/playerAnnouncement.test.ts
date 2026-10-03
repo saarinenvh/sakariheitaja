@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPlayerAnnouncement } from "../playerAnnouncement";
+import { formatPlayerAnnouncement } from "../messages";
 
 describe("player announcement", () => {
   it("links the course and lists the escaped player names", () => {
