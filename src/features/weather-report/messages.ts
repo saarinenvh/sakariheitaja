@@ -1,4 +1,4 @@
-import { CityWeather } from "../../integrations/openweather/client";
+import type { CityWeather } from "../../integrations/openweather/schema";
 import { formatClockTime } from "../../shared/utils";
 
 const MS_PER_SECOND = 1000;

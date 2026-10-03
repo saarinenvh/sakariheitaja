@@ -96,7 +96,7 @@ export function resolveTargetPlayer(data: BracketData, question: string, senderN
   let sawAmbiguous = false;
 
   for (const word of words) {
-    const cleaned = word.replace(/[.,!?:;]+$/, "");
+    const cleaned = trimTrailingPunctuation(word);
     if (cleaned.length < 3) continue;
     const matches = findParticipantsByName(data, cleaned);
     if (matches.length === 1) return matches[0];
@@ -113,4 +113,12 @@ export function resolveTargetPlayer(data: BracketData, question: string, senderN
     log.warn({ question, senderName }, "bracket name lookup ambiguous; using the full bracket rather than guessing");
   }
   return null;
+}
+
+const TRAILING_PUNCTUATION = new Set([".", ",", "!", "?", ":", ";"]);
+
+function trimTrailingPunctuation(word: string): string {
+  let end = word.length;
+  while (end > 0 && TRAILING_PUNCTUATION.has(word[end - 1])) end--;
+  return word.slice(0, end);
 }
