@@ -41,6 +41,9 @@ flowchart LR
 | write | `write/` | `commentaryWriter`: serializes the facts and calls the model with a JSON response schema (player names are an enum), validates the reply, falls back to factual lines (`factualFallback`). `commentaryRuntime`: the prompt and model options. |
 | format | `format/` | `commentaryMessage`: the Telegram HTML; it escapes text and splits a message at block boundaries to fit Telegram's message limit. |
 
+`legacy/phrases.ts` keeps the phrase pools of the original procedural commentary (2019 to 2026),
+with a note on how they were combined. Nothing uses them.
+
 ## Facts
 
 | File | Fact |
