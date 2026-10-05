@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { errorBackoffMs, quietPollIntervalMs, withJitter } from "../policy";
+import { errorBackoffMs, msUntilStart, quietPollIntervalMs, withJitter } from "../policy";
 
 const intervals = { activeIntervalMs: 1_000, idleIntervalMs: 2_000, dormantIntervalMs: 4_000 };
 
@@ -24,5 +24,19 @@ describe("polling policy", () => {
     expect(withJitter(10_000, 0)).toBe(8_500);
     expect(withJitter(10_000, 0.5)).toBe(10_000);
     expect(withJitter(10_000, 0.999)).toBeLessThanOrEqual(11_500);
+  });
+});
+
+describe("msUntilStart", () => {
+  const now = new Date("2026-06-15T09:00:00Z");
+
+  it("waits until the round starts", () => {
+    // 18:00 Helsinki summer time is 15:00 UTC: six hours away, not three.
+    expect(msUntilStart(new Date("2026-06-15T15:00:00Z"), now)).toBe(6 * 60 * 60 * 1000);
+  });
+
+  it("starts right away once the round has started, or without a start", () => {
+    expect(msUntilStart(new Date("2026-06-15T08:00:00Z"), now)).toBe(0);
+    expect(msUntilStart(null, now)).toBe(0);
   });
 });

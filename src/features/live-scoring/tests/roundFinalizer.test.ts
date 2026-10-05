@@ -18,7 +18,7 @@ import { finishRound, RoundEnd } from "../roundFinalizer";
 import { MetrixRound } from "../../../integrations/metrix/round/types";
 
 const round: MetrixRound = {
-  id: "123", name: "Viikkokisa", date: "2026-10-02", courseName: "Testirata", courseId: null,
+  id: "123", name: "Viikkokisa", day: "2026-10-02", startsAt: null, courseName: "Testirata", courseId: null,
   layoutKey: "layout", holeLabels: ["1"], players: [],
 };
 

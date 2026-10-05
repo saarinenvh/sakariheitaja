@@ -7,6 +7,8 @@ import { errorBackoffMs, quietPollIntervalMs, withJitter } from "./policy";
 const log = moduleLogger("poller");
 
 const POLL_INTERVALS = readConfig().polling;
+// Node's setTimeout limit (about 24.8 days); a longer delay would fire almost at once.
+const MAX_TIMER_DELAY_MS = 2_147_483_647;
 
 export default class Poller extends EventEmitter {
   private metrixId: string;
@@ -46,8 +48,12 @@ export default class Poller extends EventEmitter {
     }
   }
 
+  /** A wait longer than one timer allows is chained, so a round weeks away isn't polled at once. */
   private _schedule(delay: number): void {
-    this._timeoutId = setTimeout(() => this._poll(), delay);
+    const wait = Math.min(delay, MAX_TIMER_DELAY_MS);
+    const remaining = delay - wait;
+
+    this._timeoutId = setTimeout(() => (remaining > 0 ? this._schedule(remaining) : this._poll()), wait);
   }
 
   private async _poll(): Promise<void> {

@@ -59,7 +59,13 @@ export interface RoundPlayer {
 export interface MetrixRound {
   id: string;
   name: string;
-  date: string;
+  /** The round's day (`2026-10-03`); null when Metrix sent no real calendar date. */
+  day: string | null;
+  /**
+   * When the round starts: Metrix's `Date` and `Time` as local time in `METRIX_TIME_ZONE`, the
+   * day's 00:00 without a `Time`, and null without a `day`.
+   */
+  startsAt: Date | null;
   courseName: string;
   /** The layout's Metrix id, for the course API and statistics; null when Metrix sent none. */
   courseId: string | null;

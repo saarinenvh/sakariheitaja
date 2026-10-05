@@ -42,6 +42,8 @@ event or series throws `UnsupportedRoundError`.
 | --- | --- | --- |
 | numbers as numbers or numeric strings (`"3"`, `"-1"`, `"+2"`) | integers | `schema.ts` `integerSchema` |
 | `""`, `null` or a missing field for an unknown number | `null` | `schema.ts` `optionalIntegerSchema` |
+| `Date` (`"2026-05-01"`) | `day`; `null` unless it is a real calendar date (`z.iso.date()`), and the round is still followed | `schema.ts` |
+| `Time` (`"06:00:00"`), with `Date` | `startsAt`: local time in `METRIX_TIME_ZONE` (`Europe/Helsinki`), DST from the round's day; the day's 00:00 when `Time` is missing or not a clock time; `null` without a `day` | `schema.ts`, `normalize.ts` `roundStart` |
 | `SubCompetitions` or `HasSubcompetitions` (an event or series), or no `Tracks` | `UnsupportedRoundError`; only single rounds are followed | `normalize.ts` |
 | `Tracks[].NumberAlt` (e.g. `"10A"`) | the hole label, else the hole `Number`; duplicate labels are rejected | `normalize.ts` |
 | `PlayerResults` entry `[]` | `null`: hole not recorded yet | `schema.ts` `scorecardSchema` |
@@ -61,7 +63,8 @@ event or series throws `UnsupportedRoundError`.
 
 ### The normalized model (`round/types.ts`)
 
-- **`MetrixRound`**: id, name, date, course name and id, `holeLabels` in layout order, `players`.
+- **`MetrixRound`**: id, name, `day` and `startsAt` (see above), course name and id, `holeLabels` in
+  layout order, `players`.
   `layoutKey` changes when the course name or holes change, so stored progress can be reset.
 - **`RoundPlayer`**: name, division, group, `scorecard`, `round`, `standing`, Metrix's own totals.
 - **`Scorecard`**: `unavailable`, or `available` with one `HoleScore | null` per layout hole.

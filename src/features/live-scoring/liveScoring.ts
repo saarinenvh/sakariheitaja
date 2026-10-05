@@ -1,6 +1,7 @@
 import Poller from "./poller";
 import { RoundCourseData } from "./courseData";
 import { finishRound } from "./roundFinalizer";
+import { msUntilStart } from "./policy";
 import { ChatMessenger } from "../chatMessenger";
 import { formatPlayerAnnouncement, formatRoundTopList, liveScoringMessages as MSG } from "./messages";
 import { findByChatId } from "../players";
@@ -116,7 +117,7 @@ export class ScoreTracker {
     this.poller = new Poller(this.metrixId, () => this.metrix.getRound(this.metrixId));
     this.poller.on("data", (result: RoundFetchResult) => this.enqueuePoll(result));
     this.poller.on("fetchError", (error: Error) => log.error({ metrixId: this.metrixId, err: error }, "poll failed"));
-    this.poller.start(msUntilStart(round.date));
+    this.poller.start(msUntilStart(round.startsAt, new Date()));
   }
 
   private enqueuePoll(result: RoundFetchResult): Promise<void> {
@@ -167,10 +168,4 @@ export class ScoreTracker {
     await this.messenger.sendHtml(this.chatId, formatPlayerAnnouncement(this.metrixId, this.snapshot.courseName, names, missingTags));
     this.playersAnnounced = true;
   }
-}
-
-function msUntilStart(date: string): number {
-  const offsetMs = new Date().getTimezoneOffset() * 60 * 1000;
-  const difference = new Date(date).getTime() + offsetMs - Date.now();
-  return difference > 0 ? difference : 0;
 }

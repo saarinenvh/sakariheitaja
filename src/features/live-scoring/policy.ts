@@ -25,3 +25,10 @@ export function errorBackoffMs(consecutiveErrors: number): number {
 export function withJitter(intervalMs: number, random: number): number {
   return Math.floor(intervalMs * (1 + (random * 2 * JITTER_FRACTION - JITTER_FRACTION)));
 }
+
+/** How long to wait before the first poll: until the round starts, or none once it has (or without a start). */
+export function msUntilStart(startsAt: Date | null, now: Date): number {
+  if (startsAt === null) return 0;
+
+  return Math.max(0, startsAt.getTime() - now.getTime());
+}

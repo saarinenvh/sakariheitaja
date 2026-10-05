@@ -60,7 +60,7 @@ sequenceDiagram
 
 | File | Does |
 | --- | --- |
-| `liveScoring.ts` | `ScoreTracker`: one followed round. Starts it, polls, hands changes to commentary, starts the round end. Its state (`following`, `snapshot`, `trackedPlayers`) answers `/pelit`, `/top5` and `/score`. |
+| `liveScoring.ts` | `ScoreTracker`: one followed round. Starts it (the first poll waits until the round's `startsAt`, `policy.ts` `msUntilStart`), polls, hands changes to commentary, starts the round end. Its state (`following`, `snapshot`, `trackedPlayers`) answers `/pelit`, `/top5` and `/score`. |
 | `poller.ts` | The poll timer: fetches, emits each answered fetch, schedules the next poll. |
 | `policy.ts` | The polling rules: the interval by quiet polls, the error backoff, the jitter. |
 | `courseData.ts` | The round's course: layout details and statistics (once), and the weather at the layout's coordinates or the parent course's. |
