@@ -11,7 +11,7 @@ vi.mock("../db/scoreRepository", () => ({
   findResultPlayerIds: vi.fn(async () => [] as number[]),
 }));
 vi.mock("../db/courseRepository", () => ({
-  upsert: vi.fn(async () => undefined),
+  addIfAbsent: vi.fn(async () => undefined),
   findByName: vi.fn(async () => ({ id: 7, name: "Talin frisbeegolfrata" })),
 }));
 
@@ -43,7 +43,7 @@ describe("updateSpecialScores", () => {
   it("writes nothing and touches no course when no new hole is special", async () => {
     await update("add", [hole(1, 3, 0)]);
     expect(specialScoreRepo.addSpecialScores).not.toHaveBeenCalled();
-    expect(courseRepo.upsert).not.toHaveBeenCalled();
+    expect(courseRepo.addIfAbsent).not.toHaveBeenCalled();
   });
 
   it("rebuilds the player's special scores from a whole card", async () => {
@@ -54,17 +54,17 @@ describe("updateSpecialScores", () => {
   it("rebuilds to nothing when the card has no special scores left", async () => {
     await update("rebuild", [hole(1, 2, -1), { holeNumber: 2, score: null }]);
     expect(specialScoreRepo.rebuildSpecialScores).toHaveBeenCalledWith(round, null);
-    expect(courseRepo.upsert).not.toHaveBeenCalled();
+    expect(courseRepo.addIfAbsent).not.toHaveBeenCalled();
   });
 
   it("adds a course the bot hasn't seen before instead of dropping the score", async () => {
     let courseExists = false;
-    vi.mocked(courseRepo.upsert).mockImplementationOnce(async () => {
+    vi.mocked(courseRepo.addIfAbsent).mockImplementationOnce(async () => {
       courseExists = true;
     });
     vi.mocked(courseRepo.findByName).mockImplementationOnce(async name => (courseExists ? { id: 8, name } : null));
     await update("add", [hole(1, 1, -2)]);
-    expect(courseRepo.upsert).toHaveBeenCalledWith("Talin frisbeegolfrata");
+    expect(courseRepo.addIfAbsent).toHaveBeenCalledWith("Talin frisbeegolfrata");
     expect(specialScoreRepo.addSpecialScores).toHaveBeenCalledWith(round, expect.objectContaining({ courseId: 8 }));
   });
 });

@@ -21,14 +21,11 @@ export async function searchByName(text: string): Promise<Course[]> {
   return repo().createQueryBuilder("course").where("course.name LIKE :pattern", { pattern: `%${text}%` }).orderBy("course.name").getMany();
 }
 
-export async function upsert(name: string): Promise<void> {
-  const result = await dataSource.query(
-    "INSERT INTO courses (name) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM courses WHERE name = ?)",
-    [name, name]
-  );
-  if (result.affectedRows > 0) {
-    log.info({ course: name }, "course added");
-  } else {
-    log.debug({ course: name }, "course already exists");
-  }
+/** Adds the course when no course has that name yet (names are unique, ignoring case). */
+export async function addIfAbsent(name: string): Promise<void> {
+  if (await repo().existsBy({ name })) return;
+
+  await repo().createQueryBuilder().insert().into(Course).values({ name }).orIgnore().execute();
+
+  log.info({ course: name }, "course added");
 }

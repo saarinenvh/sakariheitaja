@@ -19,4 +19,4 @@ Owns the `players` and `player_to_chat` tables (`db/`).
 | File | Does |
 | --- | --- |
 | `players.ts` | Adds a player to a chat (creating the player when new) and removes them. |
-| `db/` | The `Player` entity and `playerRepository`. |
+| `db/` | The `Player` and `PlayerChat` (`player_to_chat`) entities and `playerRepository`. A name is unique ignoring case, and a player is linked to a chat once, so `/lisaa Ville` with a stored `ville` adds nothing new. |

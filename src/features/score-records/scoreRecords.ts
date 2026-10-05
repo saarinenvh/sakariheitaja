@@ -35,7 +35,7 @@ async function findOrAddCourseId(courseName: string): Promise<number> {
 
 /** The course by name, added first when it is new; null if it still can't be read back. */
 export async function getOrCreateCourse(name: string): Promise<Course | null> {
-  await courseRepo.upsert(name);
+  await courseRepo.addIfAbsent(name);
   return courseRepo.findByName(name);
 }
 

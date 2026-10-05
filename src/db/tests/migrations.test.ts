@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AddSpecialScoreHoles1791188409491, SqlRunner } from "../migrations/1791188409491-AddSpecialScoreHoles";
+import { AddNameAndLinkUniqueKeys1791201684139 } from "../migrations/1791201684139-AddNameAndLinkUniqueKeys";
 
 function recordingRunner(): { runner: SqlRunner; queries: string[] } {
   const queries: string[] = [];
@@ -20,5 +21,27 @@ describe("AddSpecialScoreHoles", () => {
     await new AddSpecialScoreHoles1791188409491().down(runner);
     expect(queries).toEqual(["aces", "eagles", "albatrosses"].map(table =>
       `ALTER TABLE ${table} DROP INDEX IF EXISTS uq_${table}_player_hole, DROP COLUMN IF EXISTS hole_number`));
+  });
+});
+
+describe("AddNameAndLinkUniqueKeys", () => {
+  it("adds a re-runnable unique key per player link, player name and course name", async () => {
+    const { runner, queries } = recordingRunner();
+    await new AddNameAndLinkUniqueKeys1791201684139().up(runner);
+    expect(queries).toEqual([
+      "ALTER TABLE player_to_chat ADD UNIQUE KEY IF NOT EXISTS uq_player_to_chat_player_chat (player_id, chat_id)",
+      "ALTER TABLE players ADD UNIQUE KEY IF NOT EXISTS uq_players_name (name)",
+      "ALTER TABLE courses ADD UNIQUE KEY IF NOT EXISTS uq_courses_name (name)",
+    ]);
+  });
+
+  it("removes them again on down", async () => {
+    const { runner, queries } = recordingRunner();
+    await new AddNameAndLinkUniqueKeys1791201684139().down(runner);
+    expect(queries).toEqual([
+      "ALTER TABLE player_to_chat DROP INDEX IF EXISTS uq_player_to_chat_player_chat",
+      "ALTER TABLE players DROP INDEX IF EXISTS uq_players_name",
+      "ALTER TABLE courses DROP INDEX IF EXISTS uq_courses_name",
+    ]);
   });
 });

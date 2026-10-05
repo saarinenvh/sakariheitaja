@@ -11,10 +11,7 @@ describe("dataSource", () => {
   });
 
   it("declares every chat id column as BIGINT, as the tables have it", async () => {
-    // The bot's own entities and options; the database name is only needed to validate the metadata.
-    const metadataOnly = new DataSource({ ...dataSource.options, database: "metadata-only" } as DataSourceOptions);
-    await metadataOnly["buildMetadatas"]();
-    const chatIdColumns = metadataOnly.entityMetadatas.flatMap(metadata =>
+    const chatIdColumns = (await buildMetadata()).entityMetadatas.flatMap(metadata =>
       metadata.columns.filter(column => column.databaseName === "chat_id" || (metadata.tableName === "chats" && column.databaseName === "id"))
         .map(column => [metadata.tableName, column.databaseName, column.type]));
     expect(chatIdColumns).toEqual(expect.arrayContaining([
@@ -22,4 +19,32 @@ describe("dataSource", () => {
     ]));
     expect(chatIdColumns.every(([, , type]) => type === "bigint")).toBe(true);
   });
+
+  it("declares the unique keys the migrations add", async () => {
+    const uniqueKeys = (await buildMetadata()).entityMetadatas.flatMap(metadata => metadata.indices
+      .filter(index => index.isUnique)
+      .map(index => [metadata.tableName, index.name, index.columns.map(column => column.databaseName).join(", ")]));
+
+    expect(uniqueKeys).toEqual(expect.arrayContaining([
+      ["player_to_chat", "uq_player_to_chat_player_chat", "player_id, chat_id"],
+      ["players", "uq_players_name", "name"],
+      ["courses", "uq_courses_name", "name"],
+      ["aces", "uq_aces_player_hole", "competition_id, player_id, hole_number"],
+    ]));
+  });
+
+  it("relates each player link to its player and chat", async () => {
+    const link = (await buildMetadata()).entityMetadatas.find(metadata => metadata.tableName === "player_to_chat");
+
+    expect(link?.relations.map(relation => [relation.propertyName, relation.inverseEntityMetadata.tableName]))
+      .toEqual([["player", "players"], ["chat", "chats"]]);
+  });
 });
+
+/** The bot's own entities and options; the database name is only needed to validate the metadata. */
+async function buildMetadata(): Promise<DataSource> {
+  const metadataOnly = new DataSource({ ...dataSource.options, database: "metadata-only" } as DataSourceOptions);
+  await metadataOnly["buildMetadatas"]();
+
+  return metadataOnly;
+}

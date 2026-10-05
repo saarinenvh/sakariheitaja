@@ -10,17 +10,19 @@ Tables without an entity are reached with SQL in the repository.
 
 | Table | Owner | Holds |
 | --- | --- | --- |
-| `players` | `features/players/` | player names, matched to Metrix names |
-| `player_to_chat` | `features/players/` | which chat tracks which player (`/lisaa`, `/poista`) |
+| `players` | `features/players/` | player names, matched to Metrix names; unique, ignoring case (`latin1_swedish_ci`) |
+| `player_to_chat` | `features/players/` | which chat tracks which player (`/lisaa`, `/poista`); one row per player and chat |
 | `chats` | `features/chats/` | the groups the bot is in |
 | `competitions` | `features/live-scoring/` | followed rounds: chat, Metrix id, done |
-| `courses` | `features/score-records/` | course names from finished rounds |
+| `courses` | `features/score-records/` | course names, from rounds and special scores; unique, ignoring case |
 | `scores` | `features/score-records/` | final results per player and round (`/tulokset`) |
 | `aces`, `eagles`, `albatrosses` | `features/score-records/` | special scores, one row per competition, player and hole (`hole_number`; NULL on rows saved before 2026-10). A corrected hole moves or removes its row. |
 
-`db/dataSource.ts` lists the entities: `Player`, `Chat`, `Competition`, `Course`, and `Ace`,
-`Eagle`, `Albatross` (one table each, sharing `SpecialScoreRecord`). `scores` and
-`player_to_chat` have no entity yet and use SQL. The schema isn't synchronized from the entities. Changes to it are TypeORM migrations in `db/migrations/`, which
+`db/dataSource.ts` lists the entities: `Player`, `PlayerChat` (`player_to_chat`), `Chat`,
+`Competition`, `Course`, and `Ace`, `Eagle`, `Albatross` (one table each, sharing
+`SpecialScoreRecord`). `scores` has no entity yet and uses SQL. BIGINT columns (the chat ids)
+read as numbers: the data source sets `supportBigNumbers` and turns `bigNumberStrings` off. The
+schema isn't synchronized from the entities. Changes to it are TypeORM migrations in `db/migrations/`, which
 run when the bot starts (`migrationsRun`), before anything else uses the database. The bot's DB
 user therefore needs `ALTER`, `INDEX` and `CREATE`, the last for TypeORM's `migrations` table.
 A failed migration stops the start, and the log says why.
