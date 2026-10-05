@@ -198,7 +198,7 @@ lists every command above except `/isit`, `/heckle`, `/aamuu` and itself.
 - **TypeORM + mysql2** — type-safe DB access, parameterized queries
 - **MariaDB** — database
 - **Ollama** — local LLM for commentary and replies
-- **vitest** — unit tests in each module's `tests/` folder
+- **vitest** — unit tests in each module's `tests/` folder; integration tests against a real MariaDB (Testcontainers) in `src/tests/integration/`
 - **Docker** — deployed as part of the [sakke-workspace](https://github.com/saarinenvh/sakke-workspace) compose stack
 
 ## Layout
@@ -307,7 +307,17 @@ npm start
 ```bash
 npm test                 # vitest run
 npm run test:watch
+npm run test:integration # needs Docker and Node 24 (.nvmrc)
 ```
+
+The integration tests start a throwaway MariaDB 11 in Docker with Testcontainers. They create the
+tables as prod had them before the bot had migrations (`src/tests/integration/fixtures/prodSchema.sql`),
+initialise the bot's own data source, which runs every migration, then call the real repositories
+and features. Each test file gets a fresh database. CI runs them as their own job.
+
+**Write one when a change depends on how MariaDB behaves:** a migration, a unique key, a
+collation, a transaction, or how a column type comes back. The unit tests mock the database, so
+they can't catch those.
 
 ### Deployment
 

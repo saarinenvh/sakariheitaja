@@ -36,6 +36,24 @@ jobs:
         # markdown that tsc doesn't emit, and that copy has broken before.
         run: npm run build
 
+  integration:
+    # Against a throwaway MariaDB that Testcontainers starts in the runner's Docker: the
+    # migrations on the prod schema, and the repositories' real queries.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Integration tests
+        run: npm run test:integration
+
   image:
     # The artifact that actually gets deployed. Type-checking and tests both
     # pass against source that the image could still fail to produce.

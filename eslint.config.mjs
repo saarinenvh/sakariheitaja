@@ -8,7 +8,8 @@ import tseslint from "typescript-eslint";
 // and docs/architecture/README.md.
 const LAYER_RULE = "error";
 const SOURCE_FILES = ["src/**/*.ts"];
-const TEST_FILES = ["**/*.test.ts"];
+// src/tests/ is test code throughout, including the integration tests' setup and helpers.
+const TEST_FILES = ["**/*.test.ts", "src/tests/**"];
 
 const noHttpOutsideIntegrations = {
   group: ["**/shared/http", "./http"],
