@@ -22,8 +22,8 @@ export async function saveRecordedScores(
     return kind ? [kind] : [];
   });
   if (notable.length === 0) return;
-  const course = await courseRepo.findByName(courseName);
-  if (!course) return;
+  const course = await getOrCreateCourse(courseName);
+  if (!course) throw new Error(`Course "${courseName}" could not be created`);
   const date = new Date().toISOString().slice(0, 10);
   for (const kind of notable) {
     await NOTABLE_SCORE_WRITERS[kind](date, playerId, chatId, course.id, competitionId);

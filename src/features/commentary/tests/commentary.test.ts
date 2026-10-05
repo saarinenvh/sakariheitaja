@@ -215,7 +215,29 @@ describe("round publication", () => {
     expect(firstPlayer(test.contexts[2]).movementSincePublication).toMatchObject({ kind: "up", previousPosition: 11 });
     expect(test.contexts[2].recentMessages).toEqual(["Avaus 1\nMatti: kommentti 1\nLoppu 1"]);
     expect(test.onError).toHaveBeenCalledTimes(1);
-    expect(test.saveScores).toHaveBeenCalledTimes(2);
+    expect(test.saveScores).toHaveBeenCalledTimes(3);
+  });
+
+  it("saves a special score before sending, so a failed send doesn't lose it", async () => {
+    const test = harness();
+    test.send.mockRejectedValueOnce(new Error("Telegram timeout"));
+    test.observe(input());
+    test.observe(input([score(1, -2), [], [], []]));
+    await test.session.idle();
+    expect(test.onError).toHaveBeenCalledTimes(1);
+    expect(test.saveScores).toHaveBeenCalledTimes(1);
+    expect(test.saveScores.mock.calls[0][2]).toEqual([expect.objectContaining({ kind: "recorded", holeNumber: 1 })]);
+  });
+
+  it("saves special scores even when writing the commentary fails", async () => {
+    const test = harness(-100, "123", async () => {
+      throw new Error("writer down");
+    });
+    test.observe(input());
+    test.observe(input([score(1, -2), [], [], []]));
+    await test.session.idle();
+    expect(test.send).not.toHaveBeenCalled();
+    expect(test.saveScores).toHaveBeenCalledTimes(1);
   });
 
   it("detects offsetting corrections, metadata corrections, removals and catch-up batches", async () => {

@@ -10,10 +10,12 @@ vi.mock("../db/scoreRepository", () => ({
   findResultPlayerIds: vi.fn(async () => [] as number[]),
 }));
 vi.mock("../db/courseRepository", () => ({
+  upsert: vi.fn(async () => undefined),
   findByName: vi.fn(async () => ({ id: 7, name: "Talin frisbeegolfrata" })),
 }));
 
 import * as scoreRepo from "../db/scoreRepository";
+import * as courseRepo from "../db/courseRepository";
 import { saveRecordedScores, saveResults } from "../scoreRecords";
 
 const recorded = (holeNumber: number, strokes: number, relativeToPar: number): ScoreChange =>
@@ -48,6 +50,22 @@ describe("saveRecordedScores", () => {
     expect(scoreRepo.addAce).not.toHaveBeenCalled();
     expect(scoreRepo.addEagle).not.toHaveBeenCalled();
     expect(scoreRepo.addAlbatross).not.toHaveBeenCalled();
+  });
+
+  it("adds a course the bot hasn't seen before instead of dropping the score", async () => {
+    let courseExists = false;
+    vi.mocked(courseRepo.upsert).mockImplementationOnce(async () => {
+      courseExists = true;
+    });
+    vi.mocked(courseRepo.findByName).mockImplementationOnce(async name => (courseExists ? { id: 8, name } : null));
+    await save([recorded(1, 1, -2)]);
+    expect(courseRepo.upsert).toHaveBeenCalledWith("Talin frisbeegolfrata");
+    expect(scoreRepo.addAce).toHaveBeenCalledWith(expect.any(String), 42, -100, 8, 55);
+  });
+
+  it("touches no course for ordinary holes", async () => {
+    await save([recorded(1, 3, 0)]);
+    expect(courseRepo.upsert).not.toHaveBeenCalled();
   });
 });
 
