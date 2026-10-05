@@ -47,7 +47,7 @@ function weatherAt(temperatureC: number): WeatherObservation {
 function harness(chatId = -100, roundId = "123", writer?: CommentaryDelivery["write"]) {
   const contexts: BatchCommentaryContext[] = [];
   const send = vi.fn<(html: string) => Promise<unknown>>().mockResolvedValue(undefined);
-  const saveScores = vi.fn<CommentaryDelivery["saveScores"]>().mockResolvedValue(undefined);
+  const updateSpecialScores = vi.fn<CommentaryDelivery["updateSpecialScores"]>().mockResolvedValue(undefined);
   const onError = vi.fn<CommentaryDelivery["onError"]>();
   const fetchWeather = vi.fn<CommentaryDelivery["fetchWeather"]>().mockResolvedValue(null);
   const fetchCourse = vi.fn<CommentaryDelivery["fetchCourse"]>().mockResolvedValue({ details: null, statistics: null });
@@ -57,16 +57,20 @@ function harness(chatId = -100, roundId = "123", writer?: CommentaryDelivery["wr
       if (writer) return writer(context);
       return generatedCommentary(context, contexts.length);
     },
-    fetchWeather, fetchCourse, send, saveScores, onError,
+    fetchWeather, fetchCourse, send, updateSpecialScores, onError,
   });
   const observe = (raw: unknown) => {
     const round = parseMetrixRound(raw, roundId);
     return session.observe(round, trackRoundPlayers(round, tracked));
   };
-  return { session, contexts, send, saveScores, onError, fetchWeather, fetchCourse, observe };
+  return { session, contexts, send, updateSpecialScores, onError, fetchWeather, fetchCourse, observe };
 }
 
 const firstPlayer = (context: BatchCommentaryContext): FactualCommentaryBrief => context.players[0];
+/** Each special score update as [kind, holes as [hole number, strokes or null]]. */
+const savedHoles = (test: ReturnType<typeof harness>) =>
+  test.updateSpecialScores.mock.calls.map(([, , update]) => [update.kind, update.holes.map(hole => [hole.holeNumber, hole.score?.strokes ?? null])]);
+const emptyCard = [[1, null], [2, null], [3, null], [4, null]];
 
 describe("Metrix round boundary", () => {
   it("accepts training payloads without SubCompetitions and rejects explicit parent flags", () => {
@@ -176,7 +180,10 @@ describe("round publication", () => {
     const html = test.send.mock.calls[0][0];
     const order = ["Avaus 1", "Matti: kommentti 1", "Jori: kommentti 1", "Loppu 1"].map(part => html.indexOf(part));
     expect(order.every((position, index) => position >= 0 && (index === 0 || position > order[index - 1]))).toBe(true);
-    expect(test.saveScores).toHaveBeenCalledTimes(2);
+    expect(savedHoles(test)).toEqual([
+      ["rebuild", emptyCard], ["rebuild", emptyCard],
+      ["add", [[1, 3]]], ["add", [[1, 2]]],
+    ]);
   });
 
   it("passes only the latest delivered messages of the division as recent context", async () => {
@@ -215,7 +222,7 @@ describe("round publication", () => {
     expect(firstPlayer(test.contexts[2]).movementSincePublication).toMatchObject({ kind: "up", previousPosition: 11 });
     expect(test.contexts[2].recentMessages).toEqual(["Avaus 1\nMatti: kommentti 1\nLoppu 1"]);
     expect(test.onError).toHaveBeenCalledTimes(1);
-    expect(test.saveScores).toHaveBeenCalledTimes(3);
+    expect(savedHoles(test).slice(1)).toEqual([["add", [[1, 3]]], ["add", [[2, 4]]], ["add", [[3, 3]]]]);
   });
 
   it("saves a special score before sending, so a failed send doesn't lose it", async () => {
@@ -225,8 +232,7 @@ describe("round publication", () => {
     test.observe(input([score(1, -2), [], [], []]));
     await test.session.idle();
     expect(test.onError).toHaveBeenCalledTimes(1);
-    expect(test.saveScores).toHaveBeenCalledTimes(1);
-    expect(test.saveScores.mock.calls[0][2]).toEqual([expect.objectContaining({ kind: "recorded", holeNumber: 1 })]);
+    expect(savedHoles(test).at(-1)).toEqual(["add", [[1, 1]]]);
   });
 
   it("saves special scores even when writing the commentary fails", async () => {
@@ -237,7 +243,33 @@ describe("round publication", () => {
     test.observe(input([score(1, -2), [], [], []]));
     await test.session.idle();
     expect(test.send).not.toHaveBeenCalled();
-    expect(test.saveScores).toHaveBeenCalledTimes(1);
+    expect(savedHoles(test).at(-1)).toEqual(["add", [[1, 1]]]);
+  });
+
+  it("saves corrections into and out of an ace", async () => {
+    const test = harness();
+    test.observe(input([score(2), [], [], []]));
+    test.observe(input([score(1, -2), [], [], []]));
+    test.observe(input([score(3), [], [], []]));
+    test.observe(input([[], [], [], []]));
+    await test.session.idle();
+    expect(savedHoles(test).slice(1)).toEqual([
+      ["rebuild", [[1, 1], [2, null], [3, null], [4, null]]],
+      ["rebuild", [[1, 3], [2, null], [3, null], [4, null]]],
+      ["rebuild", emptyCard],
+    ]);
+  });
+
+  it("saves the whole card again after a restart, and when a missing card returns", async () => {
+    const restarted = harness();
+    restarted.observe(input([score(3), score(1, -2), [], []]));
+    await restarted.session.idle();
+    expect(savedHoles(restarted)).toEqual([["rebuild", [[1, 3], [2, 1], [3, null], [4, null]]]]);
+
+    restarted.observe(input(null));
+    restarted.observe(input([score(3), score(1, -2), score(2, -1), []]));
+    await restarted.session.idle();
+    expect(savedHoles(restarted).at(-1)).toEqual(["rebuild", [[1, 3], [2, 1], [3, 2], [4, null]]]);
   });
 
   it("detects offsetting corrections, metadata corrections, removals and catch-up batches", async () => {
@@ -248,12 +280,12 @@ describe("round publication", () => {
     const first = firstPlayer(test.contexts[0]);
     expect(first.event).toBe("mixed-update");
     expect(first.changes.map(change => change.kind)).toEqual(["corrected", "corrected", "recorded", "recorded"]);
-    expect(test.saveScores.mock.calls[0][2].map(change => change.holeNumber)).toEqual([3, 4]);
+    expect(savedHoles(test)[1]).toEqual(["rebuild", [[1, 4], [2, 3], [3, 1], [4, 2]]]);
     test.observe(input([{ ...score(4), PEN: "1" }, [], score(1, -2), score(2, -1)]));
     await test.session.idle();
     expect(firstPlayer(test.contexts[1]).changes.map(change => change.kind)).toEqual(["corrected", "removed"]);
     expect(test.send.mock.calls[1][0]).toContain("poistettu");
-    expect(test.saveScores.mock.calls[1][2]).toEqual([]);
+    expect(savedHoles(test)[2]).toEqual(["rebuild", [[1, 4], [2, null], [3, 1], [4, 2]]]);
   });
 
   it("isolates chat, round and division sessions", async () => {
@@ -298,7 +330,7 @@ describe("round publication", () => {
 
   it("saves published state even if the later score database write fails", async () => {
     const test = harness();
-    test.saveScores.mockRejectedValueOnce(new Error("database offline"));
+    test.updateSpecialScores.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error("database offline"));
     test.observe(input());
     test.observe(input([score(1, -2), [], [], []]));
     test.observe(input([score(1, -2), score(3), [], []], "10"));

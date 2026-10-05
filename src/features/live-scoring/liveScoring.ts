@@ -68,7 +68,8 @@ export class ScoreTracker {
         await messenger.sendHtml(chatId, html);
         log.info({ metrixId, chars: html.length }, "commentary message sent");
       },
-      saveScores: (playerId, courseName, changes) => scoreService.saveRecordedScores(playerId, changes, chatId, id, courseName),
+      updateSpecialScores: (playerId, courseName, update) =>
+        scoreService.updateSpecialScores({ playerId, chatId, competitionId: id }, courseName, update),
       onError: error => log.error({ metrixId, err: error }, "commentary delivery failed"),
     });
   }

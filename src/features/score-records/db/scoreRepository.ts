@@ -1,5 +1,6 @@
 import { moduleLogger } from "../../../shared/logger";
 import { dataSource } from "../../../db/dataSource";
+import { NotableScoreKind } from "../policy";
 
 const log = moduleLogger("scores");
 
@@ -63,26 +64,59 @@ export async function findByCourseId(id: string | number, chatId: number): Promi
   );
 }
 
-export async function addAce(date: string, playerId: number, chatId: number, courseId: number, competitionId: number): Promise<void> {
-  await dataSource.query(
-    "INSERT INTO aces (date, player_id, chat_id, course_id, competition_id) VALUES (?, ?, ?, ?, ?)",
-    [date, playerId, chatId, courseId, competitionId]
-  );
-  log.info({ playerId }, "ace added");
+/** A player's round, which their special scores are saved under. */
+export interface PlayerRound {
+  playerId: number;
+  chatId: number;
+  competitionId: number;
 }
 
-export async function addEagle(date: string, playerId: number, chatId: number, courseId: number, competitionId: number): Promise<void> {
-  await dataSource.query(
-    "INSERT INTO eagles (date, player_id, chat_id, course_id, competition_id) VALUES (?, ?, ?, ?, ?)",
-    [date, playerId, chatId, courseId, competitionId]
-  );
-  log.info({ playerId }, "eagle added");
+/** A special score on one hole of the card. */
+export interface SpecialScore {
+  holeNumber: number;
+  kind: NotableScoreKind;
 }
 
-export async function addAlbatross(date: string, playerId: number, chatId: number, courseId: number, competitionId: number): Promise<void> {
-  await dataSource.query(
-    "INSERT INTO albatrosses (date, player_id, chat_id, course_id, competition_id) VALUES (?, ?, ?, ?, ?)",
-    [date, playerId, chatId, courseId, competitionId]
-  );
-  log.info({ playerId }, "albatross added");
+/** Special scores to save, with the course and date their rows get. */
+export interface SpecialScoreRows {
+  courseId: number;
+  date: string;
+  scores: readonly SpecialScore[];
+}
+
+interface SqlRunner {
+  query(sql: string, parameters: unknown[]): Promise<{ affectedRows: number }>;
+}
+
+const SPECIAL_SCORE_TABLES: Record<NotableScoreKind, string> = { ace: "aces", eagle: "eagles", albatross: "albatrosses" };
+
+/** Adds these special scores; one that is already saved for its hole is left as it is. */
+export async function addSpecialScores(round: PlayerRound, rows: SpecialScoreRows): Promise<void> {
+  await insertSpecialScores(dataSource, round, rows);
+}
+
+/**
+ * Replaces the player's special scores in the round with these (none when null), in one
+ * transaction. This also removes the round's rows saved before holes were recorded.
+ */
+export async function rebuildSpecialScores(round: PlayerRound, rows: SpecialScoreRows | null): Promise<void> {
+  await dataSource.transaction(async manager => {
+    for (const table of Object.values(SPECIAL_SCORE_TABLES)) {
+      await manager.query(`DELETE FROM ${table} WHERE competition_id = ? AND player_id = ?`, [round.competitionId, round.playerId]);
+    }
+
+    if (rows) await insertSpecialScores(manager, round, rows);
+  });
+
+  log.info({ playerId: round.playerId, competitionId: round.competitionId, saved: rows?.scores.length ?? 0 }, "special scores rebuilt");
+}
+
+async function insertSpecialScores(runner: SqlRunner, round: PlayerRound, rows: SpecialScoreRows): Promise<void> {
+  for (const score of rows.scores) {
+    const result = await runner.query(
+      `INSERT IGNORE INTO ${SPECIAL_SCORE_TABLES[score.kind]} (date, player_id, chat_id, course_id, competition_id, hole_number) VALUES (?, ?, ?, ?, ?, ?)`,
+      [rows.date, round.playerId, round.chatId, rows.courseId, round.competitionId, score.holeNumber],
+    );
+    if (result.affectedRows > 0) log.info({ playerId: round.playerId, kind: score.kind, holeNumber: score.holeNumber }, "special score added");
+  }
 }

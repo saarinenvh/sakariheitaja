@@ -9,7 +9,7 @@ A Telegram bot that follows and commentates disc golf competitions live from [Di
 - **Smart polling** — adaptive intervals (30s active → 60s idle → 120s dormant) with exponential backoff on errors
 - **Player tracking** — follow specific players per chat group
 - **Score history** — query best scores by course name or ID
-- **Special scores** — aces, eagles and albatrosses are persisted, including the ones on earlier holes when a player's card is caught up several holes at once
+- **Special scores** — aces, eagles and albatrosses are persisted, including the ones on earlier holes when a player's card is caught up several holes at once; a corrected hole moves or removes its score, and a restart mid-round misses none
 - **Bag tags** — per-chat tag standings
 - **Morning greeter** — daily good morning message to `MORNING_CHAT_ID`
 - **Weather, GIFs, recipes** — assorted nonsense, see the command list
