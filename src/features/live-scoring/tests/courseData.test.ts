@@ -12,7 +12,7 @@ const observation: WeatherObservation = {
   observedAt: new Date(0), temperatureC: 12, windSpeedMs: 3, windFromDeg: 180, description: "pilvistä", precipitationMmPerHour: null,
 };
 const round: MetrixRound = {
-  id: "123", name: "Viikkokisa", date: "2026-10-02", courseName: "Veikkola &rarr; Main", courseId: "456",
+  id: "123", name: "Viikkokisa", day: "2026-10-02", startsAt: null, courseName: "Veikkola &rarr; Main", courseId: "456",
   layoutKey: "layout", holeLabels: [], players: [],
 };
 const details: CourseDetails = { courseId: "456", location: { latitude: 60.2, longitude: 24.5 }, rating: null, holes: [] };

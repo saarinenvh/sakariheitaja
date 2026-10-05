@@ -17,7 +17,7 @@ export const roundExample = {
     TourDateStart: null, // ignored
     TourDateEnd: null, // ignored
     Date: "2026-10-03",
-    Time: "18:00:00", // ignored
+    Time: "18:00:00",
     Comment: "", // ignored
     CourseName: "Example Park &rarr; Main Layout",
     CourseID: "12345",
@@ -130,7 +130,9 @@ export const roundSchema = z.object({
   Competition: z.object({
     ID: identifier,
     Name: z.string(),
-    Date: z.string(),
+    // A real calendar date and a clock time, or null: an odd value must not reject the whole round.
+    Date: z.iso.date().nullable().catch(null),
+    Time: z.iso.time().nullish().catch(null),
     CourseName: z.string(),
     CourseID: optionalIdentifier,
     Tracks: z.array(trackSchema),

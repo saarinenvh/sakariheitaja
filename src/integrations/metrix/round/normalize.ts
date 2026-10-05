@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { parseOrThrow } from "../../../shared/validation";
+import { zonedTimeToInstant } from "../../../shared/time";
 import { optionalIntegerSchema, RawCompetition, RawPlayer, roundSchema, scorecardSchema } from "./schema";
 import { MetrixRound, RoundPlayer, RoundState, Scorecard, Standing } from "./types";
+
+/** Metrix's `Date` and `Time` are the competition's local time; the bot follows Finnish rounds. */
+export const METRIX_TIME_ZONE = "Europe/Helsinki";
+const START_OF_DAY = "00:00:00";
 
 // Metrix reports tied players, and many players early in a round, with place 0 or no place at all.
 const METRIX_UNRANKED = 0;
@@ -48,9 +53,14 @@ export function parseMetrixRound(input: unknown, expectedId: string): MetrixRoun
   const tiedPositions = rankByRecordedTotals(parsed);
   const players = parsed.map((player, index) => normalizePlayer(player, source, tiedPositions[index]));
   return {
-    id: source.ID, name: source.Name, date: source.Date, courseName: source.CourseName,
+    id: source.ID, name: source.Name, day: source.Date, startsAt: roundStart(source.Date, source.Time), courseName: source.CourseName,
     courseId: source.CourseID, layoutKey: JSON.stringify([source.CourseName, source.Tracks]), holeLabels, players,
   };
+}
+
+function roundStart(day: string | null, time: string | null | undefined): Date | null {
+  if (day === null) return null;
+  return zonedTimeToInstant(day, time ?? START_OF_DAY, METRIX_TIME_ZONE);
 }
 
 /** A player's `PlayerResults`; throws `ValidationError` ("Metrix PlayerResults") for a malformed card. */

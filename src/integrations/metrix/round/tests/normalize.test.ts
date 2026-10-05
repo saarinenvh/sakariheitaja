@@ -116,3 +116,34 @@ describe("parseMetrixRound places", () => {
     expect(players.map(player => player.standing.position)).toEqual([null, 1]);
   });
 });
+
+describe("parseMetrixRound start", () => {
+  const roundOn = (dateFields: Record<string, unknown>) => ({
+    Competition: {
+      ID: "123", Name: "Kierros", CourseName: "Testirata", ...dateFields,
+      Tracks: [{ Number: "1", Par: "3" }],
+      Results: [{ Name: "Pelaaja", ClassName: "MA3", OrderNumber: 0, PlayerResults: [[]] }],
+    },
+  });
+  const start = (dateFields: Record<string, unknown>) => {
+    const { day, startsAt } = parseMetrixRound(roundOn(dateFields), "123");
+    return { day, startsAt: startsAt?.toISOString() ?? null };
+  };
+
+  it("reads Metrix's separate Date and Time as Finnish local time", () => {
+    expect(start({ Date: "2026-05-01", Time: "06:00:00" })).toEqual({ day: "2026-05-01", startsAt: "2026-05-01T03:00:00.000Z" });
+    expect(start({ Date: "2026-12-15", Time: "18:00:00" })).toEqual({ day: "2026-12-15", startsAt: "2026-12-15T16:00:00.000Z" });
+  });
+
+  it("starts at the day's midnight without a Time", () => {
+    expect(start({ Date: "2026-05-01", Time: null })).toEqual({ day: "2026-05-01", startsAt: "2026-04-30T21:00:00.000Z" });
+    expect(start({ Date: "2026-05-01" })).toEqual({ day: "2026-05-01", startsAt: "2026-04-30T21:00:00.000Z" });
+    expect(start({ Date: "2026-05-01", Time: "6 am" })).toEqual({ day: "2026-05-01", startsAt: "2026-04-30T21:00:00.000Z" });
+  });
+
+  it.each([["an impossible date", "2026-02-30"], ["another format", "1.5.2026"], ["an empty one", ""], ["none", undefined]])(
+    "keeps a round with %s, without a day or start", (_, date) => {
+      expect(start({ Date: date, Time: "06:00:00" })).toEqual({ day: null, startsAt: null });
+    },
+  );
+});
