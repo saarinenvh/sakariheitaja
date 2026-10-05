@@ -2,32 +2,35 @@ import { FinalScore } from "../../integrations/metrix/round/results";
 import { ScoreRow } from "./db/scoreRepository";
 import * as scoreRepo from "./db/scoreRepository";
 import * as courseRepo from "./db/courseRepository";
-import { ScoreChange } from "../commentary";
+import * as specialScoreRepo from "./db/specialScoreRepository";
+import { PlayedRound, SpecialScoreUpdate } from "../commentary";
 import { Course } from "./db/Course.entity";
-import { NotableScoreKind, notableScoreKind } from "./policy";
+import { specialScoreDate, specialScores } from "./policy";
 
-type NotableScoreWriter = (date: string, playerId: number, chatId: number, courseId: number, competitionId: number) => Promise<void>;
-
-const NOTABLE_SCORE_WRITERS: Record<NotableScoreKind, NotableScoreWriter> = {
-  ace: (...row) => scoreRepo.addAce(...row),
-  eagle: (...row) => scoreRepo.addEagle(...row),
-  albatross: (...row) => scoreRepo.addAlbatross(...row),
-};
-
-export async function saveRecordedScores(
-  playerId: number, changes: readonly ScoreChange[], chatId: number, competitionId: number, courseName: string,
+/**
+ * Updates a player's saved special scores: `add` adds the new holes' ones; `rebuild` replaces what
+ * the round has saved for the player with the card's, so a corrected or removed score goes away.
+ * Every row is dated with the round's date, so a rebuild on a later day keeps the scores' dates.
+ */
+export async function updateSpecialScores(
+  round: specialScoreRepo.PlayerRound, played: PlayedRound, update: SpecialScoreUpdate,
 ): Promise<void> {
-  const notable = changes.flatMap(change => {
-    const kind = change.kind === "recorded" ? notableScoreKind(change.score) : null;
-    return kind ? [kind] : [];
-  });
-  if (notable.length === 0) return;
+  const scores = specialScores(update.holes);
+  const rows = scores.length > 0
+    ? { courseId: await findOrAddCourseId(played.courseName), date: specialScoreDate(played.day, new Date()), scores }
+    : null;
+
+  if (update.kind === "rebuild") {
+    await specialScoreRepo.rebuildSpecialScores(round, rows);
+  } else if (rows) {
+    await specialScoreRepo.addSpecialScores(round, rows);
+  }
+}
+
+async function findOrAddCourseId(courseName: string): Promise<number> {
   const course = await getOrCreateCourse(courseName);
   if (!course) throw new Error(`Course "${courseName}" could not be created`);
-  const date = new Date().toISOString().slice(0, 10);
-  for (const kind of notable) {
-    await NOTABLE_SCORE_WRITERS[kind](date, playerId, chatId, course.id, competitionId);
-  }
+  return course.id;
 }
 
 /** The course by name, added first when it is new; null if it still can't be read back. */

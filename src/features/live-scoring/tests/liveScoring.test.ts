@@ -6,14 +6,14 @@ const mocks = vi.hoisted(() => ({
   send: vi.fn<(chatId: number, text: string) => Promise<void>>(),
   generate: vi.fn<(messages: OllamaMessage[], jsonSchema: unknown, options: unknown) => Promise<string>>(),
   handlers: new Map<string, (result: RoundFetchResult) => Promise<void>>(),
-  markDone: vi.fn(), saveScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
+  markDone: vi.fn(), updateSpecialScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
 }));
 
 vi.mock("../../../prompts/prompts", () => ({ loadPrompt: () => "Sakke", loadContext: () => "" }));
-vi.mock("../../players", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }] }));
+vi.mock("../../players", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }], Player: class Player {} }));
 vi.mock("../db/competitionRepository", () => ({ markFinished: mocks.markDone }));
 vi.mock("../../score-records", () => ({
-  saveRecordedScores: mocks.saveScores, saveResults: mocks.saveResults, getOrCreateCourse: async () => ({ id: 2 }),
+  updateSpecialScores: mocks.updateSpecialScores, saveResults: mocks.saveResults, getOrCreateCourse: async () => ({ id: 2 }),
 }));
 vi.mock("../../player-profiles", () => ({ updateProfiles: vi.fn() }));
 vi.mock("../../bagtags", () => ({

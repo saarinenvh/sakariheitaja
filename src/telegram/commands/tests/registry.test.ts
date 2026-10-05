@@ -49,6 +49,7 @@ describe("command registry", () => {
       for (const line of command.help ?? []) expect(help).toContain(`${line.usage} - ${line.description}`);
     }
     expect(help).toContain("/tulokset [kentän nimi tai id]");
+    for (const command of ["assat", "eaglet", "albatrossit"]) expect(help).toContain(`/${command} [alltime] [kenttä, id tai pelaaja]`);
     expect(help).not.toMatch(/\/(isit|heckle|aamuu|apua)\b/);
   });
 

@@ -13,14 +13,17 @@ fact; the model only writes the words.** The ScoreTracker (`../live-scoring/`) c
 | `createCommentaryWriter` (`write/commentaryRuntime.ts`) | `ScoreTracker`, which passes it to `RoundCommentary` |
 | the stage modules | `scripts/eval-commentary/`, which replays rounds through them |
 
-Commentary owns no tables. The notable scores in each update are saved through the
-`saveScores` callback (`../score-records/`) before anything is written or sent, so a failed
-model call or Telegram send can't lose them. Its state is in memory (see State).
+Commentary owns no tables. Each update's special scores are saved through the
+`updateSpecialScores` callback (`../score-records/`) before anything is written or sent, so a
+failed model call or Telegram send can't lose them (`planSpecialScoreUpdate`). Newly recorded
+holes are added. A correction or removal, a player's first observation, and a card that returns
+after being missing rebuild the player's special scores from the whole card instead, so a
+restart misses nothing. Only special scores are saved, never the card. Its state is in memory (see State).
 
 ```mermaid
 flowchart LR
     Poll[MetrixRound<br/>+ tracked players] --> Detect
-    Detect --> Save[delivery.saveScores:<br/>new notable scores]
+    Detect --> Save[delivery.updateSpecialScores:<br/>add the new holes, or rebuild from the card]
     subgraph RoundCommentary
       Detect["detect/<br/>snapshot, scorecard changes,<br/>movement since last message"] --> Facts
       Facts["facts/<br/>brief per player, standings,<br/>scorecard table, lead history,<br/>course, hole, rating, weather"] --> Write
@@ -37,7 +40,7 @@ flowchart LR
 
 | Stage | Files | Does |
 | --- | --- | --- |
-| coordinate | `commentary.ts` | Queues observations in order. Saves each update's new notable scores first. Groups updates by division. Loads weather and course data with timeouts (they never hold back a message). Sends, then acknowledges only what was delivered. |
+| coordinate | `commentary.ts` | Queues observations in order. Saves the special scores first. Groups updates by division. Loads weather and course data with timeouts (they never hold back a message). Sends, then acknowledges only what was delivered. |
 | detect | `detect/` | `commentarySnapshot`: what is remembered of a player. `scorecardChanges`: recorded / corrected / removed holes. `standingMovement`: place now against the last delivered message. |
 | facts | `facts/` | Pure builders of everything the model may say. `commentaryContext.ts` assembles them into the model's input (`BatchCommentaryContext`). |
 | write | `write/` | `commentaryWriter`: serializes the facts and calls the model with a JSON response schema (player names are an enum), validates the reply, falls back to factual lines (`factualFallback`). `commentaryRuntime`: the prompt and model options. |

@@ -16,10 +16,14 @@ Tables without an entity are reached with SQL in the repository.
 | `competitions` | `features/live-scoring/` | followed rounds: chat, Metrix id, done |
 | `courses` | `features/score-records/` | course names from finished rounds |
 | `scores` | `features/score-records/` | final results per player and round (`/tulokset`) |
-| `aces`, `eagles`, `albatrosses` | `features/score-records/` | special scores, saved with the commentary message that reports them |
+| `aces`, `eagles`, `albatrosses` | `features/score-records/` | special scores, one row per competition, player and hole (`hole_number`; NULL on rows saved before 2026-10). A corrected hole moves or removes its row. |
 
-`db/dataSource.ts` lists the entities: `Player`, `Chat`, `Competition`, `Course`. The schema
-isn't synchronized from them; the tables already exist.
+`db/dataSource.ts` lists the entities: `Player`, `Chat`, `Competition`, `Course`, and `Ace`,
+`Eagle`, `Albatross` (one table each, sharing `SpecialScoreRecord`). `scores` and
+`player_to_chat` have no entity yet and use SQL. The schema isn't synchronized from the entities. Changes to it are TypeORM migrations in `db/migrations/`, which
+run when the bot starts (`migrationsRun`), before anything else uses the database. The bot's DB
+user therefore needs `ALTER`, `INDEX` and `CREATE`, the last for TypeORM's `migrations` table.
+A failed migration stops the start, and the log says why.
 
 ## JSON stores
 

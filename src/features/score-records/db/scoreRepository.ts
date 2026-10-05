@@ -62,27 +62,3 @@ export async function findByCourseId(id: string | number, chatId: number): Promi
     [chatId, id]
   );
 }
-
-export async function addAce(date: string, playerId: number, chatId: number, courseId: number, competitionId: number): Promise<void> {
-  await dataSource.query(
-    "INSERT INTO aces (date, player_id, chat_id, course_id, competition_id) VALUES (?, ?, ?, ?, ?)",
-    [date, playerId, chatId, courseId, competitionId]
-  );
-  log.info({ playerId }, "ace added");
-}
-
-export async function addEagle(date: string, playerId: number, chatId: number, courseId: number, competitionId: number): Promise<void> {
-  await dataSource.query(
-    "INSERT INTO eagles (date, player_id, chat_id, course_id, competition_id) VALUES (?, ?, ?, ?, ?)",
-    [date, playerId, chatId, courseId, competitionId]
-  );
-  log.info({ playerId }, "eagle added");
-}
-
-export async function addAlbatross(date: string, playerId: number, chatId: number, courseId: number, competitionId: number): Promise<void> {
-  await dataSource.query(
-    "INSERT INTO albatrosses (date, player_id, chat_id, course_id, competition_id) VALUES (?, ?, ?, ?, ?)",
-    [date, playerId, chatId, courseId, competitionId]
-  );
-  log.info({ playerId }, "albatross added");
-}

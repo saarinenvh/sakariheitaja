@@ -9,7 +9,7 @@ A Telegram bot that follows and commentates disc golf competitions live from [Di
 - **Smart polling** — adaptive intervals (30s active → 60s idle → 120s dormant) with exponential backoff on errors
 - **Player tracking** — follow specific players per chat group
 - **Score history** — query best scores by course name or ID
-- **Special scores** — aces, eagles and albatrosses are persisted, including the ones on earlier holes when a player's card is caught up several holes at once
+- **Special scores** — aces, eagles and albatrosses are persisted, including the ones on earlier holes when a player's card is caught up several holes at once; a corrected hole moves or removes its score, and a restart mid-round misses none
 - **Bag tags** — per-chat tag standings
 - **Morning greeter** — daily good morning message to `MORNING_CHAT_ID`
 - **Weather, GIFs, recipes** — assorted nonsense, see the command list
@@ -70,9 +70,9 @@ Monitoring ends once every tracked player has all layout slots recorded and
 known final totals, or has DNF status. This does not certify tournament results
 as final. Missing API totals can be derived from complete validated cards;
 otherwise monitoring continues. DNF players remain eligible for the existing
-bag-tag allocation rules. Historical score tables are unchanged. Existing ace,
-eagle and albatross rows cannot be reconciled to later corrections because those
-tables do not identify the hole; corrections do not insert duplicate awards.
+bag-tag allocation rules. Historical score tables are unchanged. Corrections
+rebuild a player's special-score rows for that competition from the current card;
+they do not insert duplicate awards.
 
 See [implementation findings and the owner test checklist](docs/commentary-findings.md),
 and the commentary eval harness below for prompt and model work.
@@ -153,6 +153,7 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
 | Command | Description |
 |---|---|
 | `/tulokset <course>` | Show top 10 scores for a course (name or ID) |
+| `/assat`, `/eaglet`, `/albatrossit` `[alltime] [course id, course or player]` | This year's aces, eagles or albatrosses in the chat: count per player and the 5 latest. `alltime` covers every year. A course name matching several courses lists them with their ids. |
 
 ### Bag tags
 | Command | Description |

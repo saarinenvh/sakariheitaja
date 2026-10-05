@@ -1,4 +1,5 @@
 import { HoleScore } from "../../integrations/metrix/round/types";
+import { HoleResult } from "../commentary";
 
 /** A hole score the records keep: an ace wins over the eagle or albatross it may also be. */
 export type NotableScoreKind = "ace" | "eagle" | "albatross";
@@ -12,4 +13,45 @@ export function notableScoreKind(score: HoleScore): NotableScoreKind | null {
   if (score.relativeToPar === ALBATROSS_RELATIVE_TO_PAR) return "albatross";
   if (score.relativeToPar === EAGLE_RELATIVE_TO_PAR) return "eagle";
   return null;
+}
+
+/** The holes that are special scores, with their kind. */
+export function specialScores(holes: readonly HoleResult[]): { holeNumber: number; kind: NotableScoreKind }[] {
+  return holes.flatMap(({ holeNumber, score }) => {
+    const kind = score ? notableScoreKind(score) : null;
+    return kind ? [{ holeNumber, kind }] : [];
+  });
+}
+
+const LATEST_SPECIAL_SCORE_COUNT = 5;
+
+/** How many special scores a player has. */
+export interface SpecialScoreCount {
+  player: string;
+  count: number;
+}
+
+/** Count per player, most first (ties by name), and the latest few, from rows newest first. */
+export function summarizeSpecialScores<Row extends { player: string }>(
+  rowsNewestFirst: readonly Row[],
+): { leaderboard: SpecialScoreCount[]; latest: Row[] } {
+  const counts = new Map<string, number>();
+  for (const row of rowsNewestFirst) counts.set(row.player, (counts.get(row.player) ?? 0) + 1);
+
+  const leaderboard = [...counts].map(([player, count]) => ({ player, count }))
+    .sort((a, b) => b.count - a.count || a.player.localeCompare(b.player, "fi"));
+
+  return { leaderboard, latest: rowsNewestFirst.slice(0, LATEST_SPECIAL_SCORE_COUNT) };
+}
+
+/**
+ * The date a special score is saved with: the round's day (Metrix's `Date`, validated as a real
+ * calendar date at the Metrix boundary), or today's local date when the round has none.
+ */
+export function specialScoreDate(roundDay: string | null, now: Date): string {
+  if (roundDay !== null) return roundDay;
+
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
 }

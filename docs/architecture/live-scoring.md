@@ -34,12 +34,12 @@ sequenceDiagram
         Tracker->>Players: findByChatId
         Tracker->>Commentary: observe(round, tracked)
         Note over Commentary: detect → facts
+        Commentary->>Commentary: special scores: add the new holes, or rebuild from the card after a correction or on a first look
         Commentary->>Ollama: generateStructured(facts)
         Ollama-->>Commentary: opening, lines, closing (or fallback)
         Commentary->>Messenger: sendHtml (one message per division)
         Messenger-->>Commentary: sent
         Note over Commentary: acknowledge: places, recent messages
-        Commentary->>Commentary: save recorded scores, aces, eagles, albatrosses
     end
 ```
 
