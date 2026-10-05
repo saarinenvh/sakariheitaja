@@ -17,6 +17,10 @@ export const dataSource = new DataSource({
   username: database.username,
   password: database.password,
   database: database.name,
+  // BIGINT (Telegram chat ids) as numbers on every path, entity or raw query; only a value beyond
+  // 2^53, which no chat id is, would stay a string instead of being rounded.
+  supportBigNumbers: true,
+  bigNumberStrings: false,
   synchronize: false,
   // Pending migrations run inside initialize(), so the bot doesn't start against an older schema.
   migrationsRun: true,

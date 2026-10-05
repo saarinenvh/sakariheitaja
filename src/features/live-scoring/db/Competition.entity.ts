@@ -5,7 +5,7 @@ export class Competition {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ name: "chat_id" })
+  @Column({ name: "chat_id", type: "bigint" })
   chatId!: number;
 
   @Column({ name: "metrix_id" })
