@@ -6,7 +6,7 @@ function recorder(inTransaction: boolean) {
   return {
     query: async (sql: string, parameters: unknown[]) => {
       queries.push({ sql: sql.replace(/\s+/g, " ").trim(), parameters, inTransaction });
-      return { affectedRows: 0 };
+      return sql.trim().startsWith("SELECT") ? [{ player: "Matti", course: "Kaatis", holeNumber: "7", date: "2026-09-12" }] : { affectedRows: 0 };
     },
   };
 }
@@ -19,7 +19,7 @@ vi.mock("../../../../db/dataSource", () => ({
   },
 }));
 
-import { addSpecialScores, rebuildSpecialScores } from "../scoreRepository";
+import { addSpecialScores, findSpecialScores, rebuildSpecialScores } from "../scoreRepository";
 
 const round = { playerId: 42, chatId: -100, competitionId: 55 };
 const insertAce = "INSERT IGNORE INTO aces (date, player_id, chat_id, course_id, competition_id, hole_number) VALUES (?, ?, ?, ?, ?, ?)";
@@ -49,5 +49,15 @@ describe("rebuildSpecialScores", () => {
   it("only deletes when the card has no special scores left", async () => {
     await rebuildSpecialScores(round, null);
     expect(queries.map(query => query.sql.split(" WHERE")[0])).toEqual(["DELETE FROM aces", "DELETE FROM eagles", "DELETE FROM albatrosses"]);
+  });
+});
+
+describe("findSpecialScores", () => {
+  it("reads only the chat's rows of that kind, with each filter that is set", async () => {
+    const rows = await findSpecialScores("eagle", -100, { sinceDate: "2026-01-01", courseId: 3, playerId: null });
+    expect(queries[0].sql).toContain("FROM eagles S");
+    expect(queries[0].sql).toContain("WHERE S.chat_id = ? AND S.date >= ? AND S.course_id = ? ORDER BY S.date DESC, S.id DESC");
+    expect(queries[0].parameters).toEqual([-100, "2026-01-01", 3]);
+    expect(rows).toEqual([{ player: "Matti", course: "Kaatis", holeNumber: 7, date: "2026-09-12" }]);
   });
 });

@@ -153,6 +153,7 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
 | Command | Description |
 |---|---|
 | `/tulokset <course>` | Show top 10 scores for a course (name or ID) |
+| `/assat`, `/eaglet`, `/albatrossit` `[alltime] [course id, course or player]` | This year's aces, eagles or albatrosses in the chat: count per player and the 5 latest. `alltime` covers every year. A course name matching several courses lists them with their ids. |
 
 ### Bag tags
 | Command | Description |

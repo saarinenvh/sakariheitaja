@@ -84,6 +84,21 @@ export interface SpecialScoreRows {
   scores: readonly SpecialScore[];
 }
 
+/** A saved special score as the commands show it; `holeNumber` is null on rows saved before holes were. */
+export interface SpecialScoreRow {
+  player: string;
+  course: string | null;
+  holeNumber: number | null;
+  date: string;
+}
+
+/** Which of a chat's special scores to read. */
+export interface SpecialScoreFilter {
+  sinceDate: string | null;
+  courseId: number | null;
+  playerId: number | null;
+}
+
 interface SqlRunner {
   query(sql: string, parameters: unknown[]): Promise<{ affectedRows: number }>;
 }
@@ -119,4 +134,36 @@ async function insertSpecialScores(runner: SqlRunner, round: PlayerRound, rows: 
     );
     if (result.affectedRows > 0) log.info({ playerId: round.playerId, kind: score.kind, holeNumber: score.holeNumber }, "special score added");
   }
+}
+
+/** The chat's special scores of this kind that match the filter, newest first (by date, then by when they were saved). */
+export async function findSpecialScores(
+  kind: NotableScoreKind, chatId: number, filter: SpecialScoreFilter,
+): Promise<SpecialScoreRow[]> {
+  const conditions = ["S.chat_id = ?"];
+  const parameters: unknown[] = [chatId];
+  if (filter.sinceDate !== null) {
+    conditions.push("S.date >= ?");
+    parameters.push(filter.sinceDate);
+  }
+  if (filter.courseId !== null) {
+    conditions.push("S.course_id = ?");
+    parameters.push(filter.courseId);
+  }
+  if (filter.playerId !== null) {
+    conditions.push("S.player_id = ?");
+    parameters.push(filter.playerId);
+  }
+
+  const rows: { player: string; course: string | null; holeNumber: number | string | null; date: string }[] = await dataSource.query(
+    `SELECT P.name AS player, C.name AS course, S.hole_number AS holeNumber, DATE_FORMAT(S.date, '%Y-%m-%d') AS date
+     FROM ${SPECIAL_SCORE_TABLES[kind]} S
+     JOIN players P ON S.player_id = P.id
+     LEFT JOIN courses C ON S.course_id = C.id
+     WHERE ${conditions.join(" AND ")}
+     ORDER BY S.date DESC, S.id DESC`,
+    parameters,
+  );
+
+  return rows.map(row => ({ ...row, holeNumber: row.holeNumber === null ? null : Number(row.holeNumber) }));
 }
