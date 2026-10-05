@@ -246,6 +246,13 @@ describe("round publication", () => {
     expect(savedHoles(test).at(-1)).toEqual(["add", [[1, 1]]]);
   });
 
+  it("passes the round's course and date with each update, so a later rebuild keeps the scores' date", async () => {
+    const test = harness();
+    test.observe(input([score(1, -2), [], [], []]));
+    await test.session.idle();
+    expect(test.updateSpecialScores.mock.calls[0][1]).toEqual({ courseName: "Testirata", date: "2026-09-27" });
+  });
+
   it("saves corrections into and out of an ace", async () => {
     const test = harness();
     test.observe(input([score(2), [], [], []]));

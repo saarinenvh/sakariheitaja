@@ -24,8 +24,14 @@ export interface CommentaryDelivery {
   fetchCourse(): Promise<CourseInfo>;
   send(html: string): Promise<unknown>;
   /** Updates the player's saved special scores; the same update again must change nothing. */
-  updateSpecialScores(playerId: number, courseName: string, update: SpecialScoreUpdate): Promise<void>;
+  updateSpecialScores(playerId: number, played: PlayedRound, update: SpecialScoreUpdate): Promise<void>;
   onError(error: unknown): void;
+}
+
+/** Where and when the round is played; `date` is Metrix's, as it sent it. */
+export interface PlayedRound {
+  courseName: string;
+  date: string;
 }
 
 interface ObservedPlayer {
@@ -142,7 +148,7 @@ export class RoundCommentary {
     if (!this.active) return;
 
     // Saved before any writing or sending, so neither can lose a score.
-    for (const pending of batch.specialScoreUpdates) await this.updateSpecialScores(pending);
+    for (const pending of batch.specialScoreUpdates) await this.updateSpecialScores(pending, batch.round.date);
 
     this.resetPublishedState(batch);
     for (const [division, pending] of this.buildBriefsByDivision(batch.updates)) {
@@ -255,10 +261,10 @@ export class RoundCommentary {
     }
   }
 
-  private async updateSpecialScores(pending: PendingSpecialScoreUpdate): Promise<void> {
+  private async updateSpecialScores(pending: PendingSpecialScoreUpdate, roundDate: string): Promise<void> {
     const { current, update } = pending;
     try {
-      await this.delivery.updateSpecialScores(current.scope.playerId, current.courseName, update);
+      await this.delivery.updateSpecialScores(current.scope.playerId, { courseName: current.courseName, date: roundDate }, update);
     } catch (error) {
       this.delivery.onError(error);
     }

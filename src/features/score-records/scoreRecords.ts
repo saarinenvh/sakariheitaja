@@ -3,20 +3,21 @@ import { ScoreRow } from "./db/scoreRepository";
 import * as scoreRepo from "./db/scoreRepository";
 import * as courseRepo from "./db/courseRepository";
 import * as specialScoreRepo from "./db/specialScoreRepository";
-import { SpecialScoreUpdate } from "../commentary";
+import { PlayedRound, SpecialScoreUpdate } from "../commentary";
 import { Course } from "./db/Course.entity";
-import { specialScores } from "./policy";
+import { specialScoreDate, specialScores } from "./policy";
 
 /**
  * Updates a player's saved special scores: `add` adds the new holes' ones; `rebuild` replaces what
  * the round has saved for the player with the card's, so a corrected or removed score goes away.
+ * Every row is dated with the round's date, so a rebuild on a later day keeps the scores' dates.
  */
 export async function updateSpecialScores(
-  round: specialScoreRepo.PlayerRound, courseName: string, update: SpecialScoreUpdate,
+  round: specialScoreRepo.PlayerRound, played: PlayedRound, update: SpecialScoreUpdate,
 ): Promise<void> {
   const scores = specialScores(update.holes);
   const rows = scores.length > 0
-    ? { courseId: await findOrAddCourseId(courseName), date: new Date().toISOString().slice(0, 10), scores }
+    ? { courseId: await findOrAddCourseId(played.courseName), date: specialScoreDate(played.date, new Date()), scores }
     : null;
 
   if (update.kind === "rebuild") {

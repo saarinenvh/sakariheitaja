@@ -70,9 +70,9 @@ Monitoring ends once every tracked player has all layout slots recorded and
 known final totals, or has DNF status. This does not certify tournament results
 as final. Missing API totals can be derived from complete validated cards;
 otherwise monitoring continues. DNF players remain eligible for the existing
-bag-tag allocation rules. Historical score tables are unchanged. Existing ace,
-eagle and albatross rows cannot be reconciled to later corrections because those
-tables do not identify the hole; corrections do not insert duplicate awards.
+bag-tag allocation rules. Historical score tables are unchanged. Corrections
+rebuild a player's special-score rows for that competition from the current card;
+they do not insert duplicate awards.
 
 See [implementation findings and the owner test checklist](docs/commentary-findings.md),
 and the commentary eval harness below for prompt and model work.

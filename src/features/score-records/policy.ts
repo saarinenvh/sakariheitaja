@@ -43,3 +43,18 @@ export function summarizeSpecialScores<Row extends { player: string }>(
 
   return { leaderboard, latest: rowsNewestFirst.slice(0, LATEST_SPECIAL_SCORE_COUNT) };
 }
+
+const ISO_DATE_PREFIX = /^(\d{4}-\d{2}-\d{2})/;
+
+/**
+ * The date a special score is saved with: the round's, from Metrix's `Date` (`2026-10-03`). An
+ * unexpected format falls back to today's local date rather than failing the save.
+ */
+export function specialScoreDate(roundDate: string, now: Date): string {
+  const roundDay = ISO_DATE_PREFIX.exec(roundDate.trim())?.[1];
+  if (roundDay) return roundDay;
+
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}

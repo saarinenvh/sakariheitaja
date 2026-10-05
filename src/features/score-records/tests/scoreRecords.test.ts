@@ -19,12 +19,13 @@ import * as scoreRepo from "../db/scoreRepository";
 import * as specialScoreRepo from "../db/specialScoreRepository";
 import * as courseRepo from "../db/courseRepository";
 import { saveResults, updateSpecialScores } from "../scoreRecords";
+import { specialScoreDate } from "../policy";
 
 const hole = (holeNumber: number, strokes: number, relativeToPar: number): HoleResult =>
   ({ holeNumber, score: { strokes, relativeToPar, obCount: 0 } });
 const round = { playerId: 42, chatId: -100, competitionId: 55 };
-const update = (kind: SpecialScoreUpdate["kind"], holes: HoleResult[]) => updateSpecialScores(round, "Talin frisbeegolfrata", { kind, holes });
-const today = expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/);
+const played = { courseName: "Talin frisbeegolfrata", date: "2026-10-03" };
+const update = (kind: SpecialScoreUpdate["kind"], holes: HoleResult[]) => updateSpecialScores(round, played, { kind, holes });
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -33,7 +34,7 @@ describe("updateSpecialScores", () => {
     // A scorekeeper enters holes 1-4 in one go; the ace on hole 2 still happened.
     await update("add", [hole(1, 2, -1), hole(2, 1, -2), hole(3, 2, -2), hole(4, 2, -3)]);
     expect(specialScoreRepo.addSpecialScores).toHaveBeenCalledWith(round, {
-      courseId: 7, date: today,
+      courseId: 7, date: "2026-10-03",
       scores: [{ holeNumber: 2, kind: "ace" }, { holeNumber: 3, kind: "eagle" }, { holeNumber: 4, kind: "albatross" }],
     });
     expect(specialScoreRepo.rebuildSpecialScores).not.toHaveBeenCalled();
@@ -47,7 +48,7 @@ describe("updateSpecialScores", () => {
 
   it("rebuilds the player's special scores from a whole card", async () => {
     await update("rebuild", [hole(1, 3, 0), hole(2, 1, -2), { holeNumber: 3, score: null }]);
-    expect(specialScoreRepo.rebuildSpecialScores).toHaveBeenCalledWith(round, { courseId: 7, date: today, scores: [{ holeNumber: 2, kind: "ace" }] });
+    expect(specialScoreRepo.rebuildSpecialScores).toHaveBeenCalledWith(round, { courseId: 7, date: "2026-10-03", scores: [{ holeNumber: 2, kind: "ace" }] });
   });
 
   it("rebuilds to nothing when the card has no special scores left", async () => {
@@ -65,6 +66,20 @@ describe("updateSpecialScores", () => {
     await update("add", [hole(1, 1, -2)]);
     expect(courseRepo.upsert).toHaveBeenCalledWith("Talin frisbeegolfrata");
     expect(specialScoreRepo.addSpecialScores).toHaveBeenCalledWith(round, expect.objectContaining({ courseId: 8 }));
+  });
+});
+
+describe("specialScoreDate", () => {
+  const lateEvening = new Date(2026, 9, 5, 23, 30);
+
+  it("dates a special score with the round's date, not the day it is saved on", () => {
+    expect(specialScoreDate("2026-10-03", lateEvening)).toBe("2026-10-03");
+    expect(specialScoreDate("2026-10-03 18:00:00", lateEvening)).toBe("2026-10-03");
+  });
+
+  it("falls back to today's local date for a date Metrix sent in another format", () => {
+    expect(specialScoreDate("3.10.2026", lateEvening)).toBe("2026-10-05");
+    expect(specialScoreDate("", lateEvening)).toBe("2026-10-05");
   });
 });
 
