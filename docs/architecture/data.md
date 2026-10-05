@@ -19,8 +19,8 @@ Tables without an entity are reached with SQL in the repository.
 | `aces`, `eagles`, `albatrosses` | `features/score-records/` | special scores, one row per competition, player and hole (`hole_number`; NULL on rows saved before 2026-10). A corrected hole moves or removes its row. |
 
 `db/dataSource.ts` lists the entities: `Player`, `PlayerChat` (`player_to_chat`), `Chat`,
-`Competition`, `Course`, and `Ace`, `Eagle`, `Albatross` (one table each, sharing
-`SpecialScoreRecord`). `scores` has no entity yet and uses SQL. BIGINT columns (the chat ids)
+`Competition`, `Course`, `Score`, and `Ace`, `Eagle`, `Albatross` (one table each, sharing
+`SpecialScoreRecord`). BIGINT columns (the chat ids)
 read as numbers: the data source sets `supportBigNumbers` and turns `bigNumberStrings` off. The
 schema isn't synchronized from the entities. Changes to it are TypeORM migrations in `db/migrations/`, which
 run when the bot starts (`migrationsRun`), before anything else uses the database. The bot's DB

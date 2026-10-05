@@ -9,16 +9,19 @@ vi.mock("../db/specialScoreRepository", () => ({
 vi.mock("../db/scoreRepository", () => ({
   addResult: vi.fn(),
   findResultPlayerIds: vi.fn(async () => [] as number[]),
+  findCoursesWithResults: vi.fn(async () => []),
+  findCourseResults: vi.fn(async () => []),
 }));
 vi.mock("../db/courseRepository", () => ({
   addIfAbsent: vi.fn(async () => undefined),
   findByName: vi.fn(async () => ({ id: 7, name: "Talin frisbeegolfrata" })),
+  findById: vi.fn(async () => null),
 }));
 
 import * as scoreRepo from "../db/scoreRepository";
 import * as specialScoreRepo from "../db/specialScoreRepository";
 import * as courseRepo from "../db/courseRepository";
-import { saveResults, updateSpecialScores } from "../scoreRecords";
+import { findCourseResults, saveResults, updateSpecialScores } from "../scoreRecords";
 import { specialScoreDate } from "../policy";
 
 const hole = (holeNumber: number, strokes: number, relativeToPar: number): HoleResult =>
@@ -90,7 +93,7 @@ describe("saveResults", () => {
     ], -100, 7, 55);
     expect(scoreRepo.findResultPlayerIds).toHaveBeenCalledWith(55);
     expect(scoreRepo.addResult).toHaveBeenCalledTimes(1);
-    expect(scoreRepo.addResult).toHaveBeenCalledWith(2, -100, 7, 55, 3, 57);
+    expect(scoreRepo.addResult).toHaveBeenCalledWith({ playerId: 2, chatId: -100, courseId: 7, competitionId: 55, relativeToPar: 3, strokes: 57 });
   });
 
   it("saves a player at most once even if the batch repeats them", async () => {
@@ -99,5 +102,35 @@ describe("saveResults", () => {
       { playerId: 3, strokes: 54, relativeToPar: 0 },
     ], -100, 7, 55);
     expect(scoreRepo.addResult).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("findCourseResults", () => {
+  const kaatis = { id: 7, name: "Kaatis" };
+
+  it("takes a number as a course id", async () => {
+    vi.mocked(courseRepo.findById).mockResolvedValueOnce(kaatis);
+
+    await expect(findCourseResults(-100, "7")).resolves.toEqual({ kind: "results", course: "Kaatis", results: [] });
+    expect(scoreRepo.findCourseResults).toHaveBeenCalledWith(-100, 7);
+    expect(scoreRepo.findCoursesWithResults).not.toHaveBeenCalled();
+  });
+
+  it("reports an unknown course id as not found", async () => {
+    await expect(findCourseResults(-100, "99")).resolves.toEqual({ kind: "not-found" });
+  });
+
+  it("uses the one course of the chat whose name matches", async () => {
+    vi.mocked(scoreRepo.findCoursesWithResults).mockResolvedValueOnce([kaatis]);
+
+    await expect(findCourseResults(-100, "kaat")).resolves.toMatchObject({ kind: "results", course: "Kaatis" });
+    expect(scoreRepo.findCoursesWithResults).toHaveBeenCalledWith(-100, "kaat");
+  });
+
+  it("lists the courses with their ids when several match, and reports none matching", async () => {
+    vi.mocked(scoreRepo.findCoursesWithResults).mockResolvedValueOnce([kaatis, { id: 8, name: "Kaatis B" }]);
+
+    await expect(findCourseResults(-100, "kaatis")).resolves.toEqual({ kind: "ambiguous-course", courses: [kaatis, { id: 8, name: "Kaatis B" }] });
+    await expect(findCourseResults(-100, "jokin")).resolves.toEqual({ kind: "not-found" });
   });
 });

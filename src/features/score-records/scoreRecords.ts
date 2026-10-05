@@ -1,5 +1,4 @@
 import { FinalScore } from "../../integrations/metrix/round/results";
-import { ScoreRow } from "./db/scoreRepository";
 import * as scoreRepo from "./db/scoreRepository";
 import * as courseRepo from "./db/courseRepository";
 import * as specialScoreRepo from "./db/specialScoreRepository";
@@ -47,17 +46,46 @@ export async function saveResults(
   competitionId: number
 ): Promise<void> {
   const saved = new Set(await scoreRepo.findResultPlayerIds(competitionId));
+
   for (const score of scores) {
     if (saved.has(score.playerId)) continue;
-    await scoreRepo.addResult(score.playerId, chatId, courseId, competitionId, score.relativeToPar, score.strokes);
+
+    await scoreRepo.addResult({
+      playerId: score.playerId, chatId, courseId, competitionId, relativeToPar: score.relativeToPar, strokes: score.strokes,
+    });
     saved.add(score.playerId);
   }
 }
 
-export async function getByCourseName(name: string, chatId: number): Promise<ScoreRow[]> {
-  return scoreRepo.findByCourseName(name, chatId);
+/**
+ * - `results`: the course's results in the chat, best first (none when it has no results here).
+ * - `ambiguous-course`: several of the chat's courses match the name; the caller asks which, by id.
+ * - `not-found`: no course with that id, or none of the chat's courses matches the name.
+ */
+export type CourseResultsReport =
+  | { kind: "results"; course: string; results: scoreRepo.CourseResult[] }
+  | { kind: "ambiguous-course"; courses: { id: number; name: string }[] }
+  | { kind: "not-found" };
+
+/** `/tulokset`: a number is a course id; text is searched from the names of the chat's courses with results. */
+export async function findCourseResults(chatId: number, query: string): Promise<CourseResultsReport> {
+  const course = await resolveResultCourse(chatId, query);
+  if (course.kind !== "course") return course;
+
+  return { kind: "results", course: course.name, results: await scoreRepo.findCourseResults(chatId, course.id) };
 }
 
-export async function getByCourseId(id: string | number, chatId: number): Promise<ScoreRow[]> {
-  return scoreRepo.findByCourseId(id, chatId);
+async function resolveResultCourse(
+  chatId: number, query: string,
+): Promise<{ kind: "course"; id: number; name: string } | Exclude<CourseResultsReport, { kind: "results" }>> {
+  if (/^\d+$/.test(query)) {
+    const course = await courseRepo.findById(Number(query));
+    return course ? { kind: "course", id: course.id, name: course.name } : { kind: "not-found" };
+  }
+
+  const courses = await scoreRepo.findCoursesWithResults(chatId, query);
+  if (courses.length === 0) return { kind: "not-found" };
+  if (courses.length > 1) return { kind: "ambiguous-course", courses: courses.map(({ id, name }) => ({ id, name })) };
+
+  return { kind: "course", id: courses[0].id, name: courses[0].name };
 }

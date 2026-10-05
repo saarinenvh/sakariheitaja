@@ -6,6 +6,7 @@ import { Chat } from "../features/chats/db/Chat.entity";
 import { Competition } from "../features/live-scoring/db/Competition.entity";
 import { Course } from "../features/score-records/db/Course.entity";
 import { Ace, Albatross, Eagle } from "../features/score-records/db/SpecialScore.entity";
+import { Score } from "../features/score-records/db/Score.entity";
 import { readConfig } from "../config";
 import { AddSpecialScoreHoles1791188409491 } from "./migrations/1791188409491-AddSpecialScoreHoles";
 import { AddNameAndLinkUniqueKeys1791201684139 } from "./migrations/1791201684139-AddNameAndLinkUniqueKeys";
@@ -27,7 +28,6 @@ export const dataSource = new DataSource({
   // Pending migrations run inside initialize(), so the bot doesn't start against an older schema.
   migrationsRun: true,
   logging: database.logQueries,
-  // The table without an entity yet (scores) is reached with SQL in its repository.
-  entities: [Player, PlayerChat, Chat, Competition, Course, Ace, Eagle, Albatross],
+  entities: [Player, PlayerChat, Chat, Competition, Course, Score, Ace, Eagle, Albatross],
   migrations: [AddSpecialScoreHoles1791188409491, AddNameAndLinkUniqueKeys1791201684139],
 });
