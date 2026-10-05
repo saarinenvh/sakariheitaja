@@ -28,10 +28,10 @@ export interface CommentaryDelivery {
   onError(error: unknown): void;
 }
 
-/** Where and when the round is played; `date` is Metrix's, as it sent it. */
+/** Where and on which day the round is played; `day` is null when Metrix sent no real date. */
 export interface PlayedRound {
   courseName: string;
-  date: string;
+  day: string | null;
 }
 
 interface ObservedPlayer {
@@ -148,7 +148,7 @@ export class RoundCommentary {
     if (!this.active) return;
 
     // Saved before any writing or sending, so neither can lose a score.
-    for (const pending of batch.specialScoreUpdates) await this.updateSpecialScores(pending, batch.round.date);
+    for (const pending of batch.specialScoreUpdates) await this.updateSpecialScores(pending, batch.round.day);
 
     this.resetPublishedState(batch);
     for (const [division, pending] of this.buildBriefsByDivision(batch.updates)) {
@@ -261,10 +261,10 @@ export class RoundCommentary {
     }
   }
 
-  private async updateSpecialScores(pending: PendingSpecialScoreUpdate, roundDate: string): Promise<void> {
+  private async updateSpecialScores(pending: PendingSpecialScoreUpdate, roundDay: string | null): Promise<void> {
     const { current, update } = pending;
     try {
-      await this.delivery.updateSpecialScores(current.scope.playerId, { courseName: current.courseName, date: roundDate }, update);
+      await this.delivery.updateSpecialScores(current.scope.playerId, { courseName: current.courseName, day: roundDay }, update);
     } catch (error) {
       this.delivery.onError(error);
     }

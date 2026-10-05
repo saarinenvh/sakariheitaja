@@ -24,7 +24,7 @@ import { specialScoreDate } from "../policy";
 const hole = (holeNumber: number, strokes: number, relativeToPar: number): HoleResult =>
   ({ holeNumber, score: { strokes, relativeToPar, obCount: 0 } });
 const round = { playerId: 42, chatId: -100, competitionId: 55 };
-const played = { courseName: "Talin frisbeegolfrata", date: "2026-10-03" };
+const played = { courseName: "Talin frisbeegolfrata", day: "2026-10-03" };
 const update = (kind: SpecialScoreUpdate["kind"], holes: HoleResult[]) => updateSpecialScores(round, played, { kind, holes });
 
 beforeEach(() => vi.clearAllMocks());
@@ -72,14 +72,12 @@ describe("updateSpecialScores", () => {
 describe("specialScoreDate", () => {
   const lateEvening = new Date(2026, 9, 5, 23, 30);
 
-  it("dates a special score with the round's date, not the day it is saved on", () => {
+  it("dates a special score with the round's day, not the day it is saved on", () => {
     expect(specialScoreDate("2026-10-03", lateEvening)).toBe("2026-10-03");
-    expect(specialScoreDate("2026-10-03 18:00:00", lateEvening)).toBe("2026-10-03");
   });
 
-  it("falls back to today's local date for a date Metrix sent in another format", () => {
-    expect(specialScoreDate("3.10.2026", lateEvening)).toBe("2026-10-05");
-    expect(specialScoreDate("", lateEvening)).toBe("2026-10-05");
+  it("falls back to today's local date for a round without a real date", () => {
+    expect(specialScoreDate(null, lateEvening)).toBe("2026-10-05");
   });
 });
 

@@ -17,7 +17,7 @@ export async function updateSpecialScores(
 ): Promise<void> {
   const scores = specialScores(update.holes);
   const rows = scores.length > 0
-    ? { courseId: await findOrAddCourseId(played.courseName), date: specialScoreDate(played.date, new Date()), scores }
+    ? { courseId: await findOrAddCourseId(played.courseName), date: specialScoreDate(played.day, new Date()), scores }
     : null;
 
   if (update.kind === "rebuild") {
