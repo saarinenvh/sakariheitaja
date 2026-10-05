@@ -7,7 +7,7 @@ albatrosses.
 
 | Entry point | Called by |
 | --- | --- |
-| `saveRecordedScores` | commentary, with the message that reports the scores (`../live-scoring/liveScoring.ts` wires it) |
+| `saveRecordedScores` | commentary, before it writes the message that reports the scores (`../live-scoring/liveScoring.ts` wires it). Adds the course first when it is new. |
 | `getOrCreateCourse`, `saveResults` | `finishRound` (`../live-scoring/roundFinalizer.ts`) |
 | `getByCourseName`, `getByCourseId` | `/tulokset <course>` (`telegram/commands/score-records/`) |
 

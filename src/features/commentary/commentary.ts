@@ -48,7 +48,6 @@ interface ObservationBatch {
 interface PendingBrief {
   current: CommentarySnapshot;
   brief: FactualCommentaryBrief;
-  newScores: readonly ScoreChange[];
 }
 
 interface PendingPost extends PendingBrief {
@@ -133,6 +132,8 @@ export class RoundCommentary {
 
   private async publishBatch(batch: ObservationBatch): Promise<void> {
     if (!this.active) return;
+    // Saved before any writing or sending, so neither can lose a score.
+    for (const update of batch.updates) await this.saveScores(update);
     this.resetPublishedState(batch);
     for (const [division, pending] of this.buildBriefsByDivision(batch.updates)) {
       if (!this.active) return;
@@ -159,13 +160,12 @@ export class RoundCommentary {
 
   private buildBriefsByDivision(updates: readonly PendingUpdate[]): Map<string, PendingBrief[]> {
     const byDivision = new Map<string, PendingBrief[]>();
-    for (const { current, changes, firstRecorded } of updates) {
+    for (const { current, changes } of updates) {
       const brief = buildFactualCommentaryBrief({
         current, changes, lastPublished: this.published.get(current.scope.playerId) ?? null,
       });
-      const newScores = brief.changes.filter(change => change.kind === "recorded" && firstRecorded.includes(change.holeNumber));
       const division = byDivision.get(brief.division) ?? [];
-      division.push({ current, brief, newScores });
+      division.push({ current, brief });
       byDivision.set(brief.division, division);
     }
     return byDivision;
@@ -181,7 +181,6 @@ export class RoundCommentary {
       await this.delivery.send(message.html);
       if (!this.active) return;
       for (const post of message.posts) this.acknowledge(post);
-      for (const post of message.posts) await this.saveScores(post);
     }
     this.welcomedDivisions.add(division);
     if (result.kind === "generated") this.rememberMessage(division, [opening, ...lines.map(line => line.text), closing]);
@@ -238,9 +237,11 @@ export class RoundCommentary {
     }
   }
 
-  private async saveScores(post: PendingPost): Promise<void> {
+  private async saveScores(update: PendingUpdate): Promise<void> {
+    const { current, changes, firstRecorded } = update;
+    const newScores = changes.filter(change => change.kind === "recorded" && firstRecorded.includes(change.holeNumber));
     try {
-      await this.delivery.saveScores(post.current.scope.playerId, post.current.courseName, post.newScores);
+      await this.delivery.saveScores(current.scope.playerId, current.courseName, newScores);
     } catch (error) {
       this.delivery.onError(error);
     }
