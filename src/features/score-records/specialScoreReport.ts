@@ -1,4 +1,4 @@
-import * as scoreRepo from "./db/scoreRepository";
+import * as specialScoreRepo from "./db/specialScoreRepository";
 import * as courseRepo from "./db/courseRepository";
 import { getGroupPlayers } from "../players";
 import { NotableScoreKind, SpecialScoreCount, summarizeSpecialScores } from "./policy";
@@ -25,7 +25,7 @@ export interface SpecialScoreRequest {
 export type SpecialScoreReport =
   | {
     kind: "report"; subject: SpecialScoreSubject; period: SpecialScorePeriod;
-    leaderboard: SpecialScoreCount[]; latest: scoreRepo.SpecialScoreRow[];
+    leaderboard: SpecialScoreCount[]; latest: specialScoreRepo.SpecialScoreRow[];
   }
   | { kind: "ambiguous-course"; courses: { id: number; name: string }[] }
   | { kind: "ambiguous-player"; players: string[] }
@@ -40,7 +40,7 @@ export async function buildSpecialScoreReport(request: SpecialScoreRequest): Pro
   const resolved = await resolveSubject(request.query, request.chatId);
   if (resolved.kind !== "resolved") return resolved;
 
-  const rows = await scoreRepo.findSpecialScores(request.kind, request.chatId, {
+  const rows = await specialScoreRepo.findSpecialScores(request.kind, request.chatId, {
     sinceDate: request.period.kind === "year" ? `${request.period.year}-01-01` : null,
     courseId: resolved.courseId,
     playerId: resolved.playerId,

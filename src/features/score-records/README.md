@@ -29,4 +29,4 @@ corrected or removed score goes away.
 | `scoreRecords.ts` | Saves special scores per hole and results, finds or adds a course, reads a course's best results. |
 | `specialScoreReport.ts` | A chat's special scores of one kind for a period: resolves a course id, a course name (several matches are listed) or a player of the chat, then counts per player and the latest. |
 | `policy.ts` | Which hole scores are notable, and which kind each is; the count per player and the latest. |
-| `db/` | The `Course` entity, `courseRepository` and `scoreRepository` (raw SQL). |
+| `db/` | The `Course` entity and `courseRepository`; the `Ace`, `Eagle` and `Albatross` entities (`SpecialScore.entity.ts`) and `specialScoreRepository`; `scoreRepository` for `scores` (SQL, no entity yet). |

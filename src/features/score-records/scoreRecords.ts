@@ -2,6 +2,7 @@ import { FinalScore } from "../../integrations/metrix/round/results";
 import { ScoreRow } from "./db/scoreRepository";
 import * as scoreRepo from "./db/scoreRepository";
 import * as courseRepo from "./db/courseRepository";
+import * as specialScoreRepo from "./db/specialScoreRepository";
 import { SpecialScoreUpdate } from "../commentary";
 import { Course } from "./db/Course.entity";
 import { specialScores } from "./policy";
@@ -11,7 +12,7 @@ import { specialScores } from "./policy";
  * the round has saved for the player with the card's, so a corrected or removed score goes away.
  */
 export async function updateSpecialScores(
-  round: scoreRepo.PlayerRound, courseName: string, update: SpecialScoreUpdate,
+  round: specialScoreRepo.PlayerRound, courseName: string, update: SpecialScoreUpdate,
 ): Promise<void> {
   const scores = specialScores(update.holes);
   const rows = scores.length > 0
@@ -19,9 +20,9 @@ export async function updateSpecialScores(
     : null;
 
   if (update.kind === "rebuild") {
-    await scoreRepo.rebuildSpecialScores(round, rows);
+    await specialScoreRepo.rebuildSpecialScores(round, rows);
   } else if (rows) {
-    await scoreRepo.addSpecialScores(round, rows);
+    await specialScoreRepo.addSpecialScores(round, rows);
   }
 }
 

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mocked so this exercises how the report resolves what it was asked, without a database.
-vi.mock("../db/scoreRepository", () => ({ findSpecialScores: vi.fn(async () => []) }));
+vi.mock("../db/specialScoreRepository", () => ({ findSpecialScores: vi.fn(async () => []) }));
 vi.mock("../db/courseRepository", () => ({ findById: vi.fn(async () => null), searchByName: vi.fn(async () => []) }));
-vi.mock("../../players", () => ({ getGroupPlayers: vi.fn(async () => []) }));
+vi.mock("../../players", () => ({ getGroupPlayers: vi.fn(async () => []), Player: class Player {} }));
 
-import * as scoreRepo from "../db/scoreRepository";
+import * as specialScoreRepo from "../db/specialScoreRepository";
 import * as courseRepo from "../db/courseRepository";
 import { getGroupPlayers } from "../../players";
 import { buildSpecialScoreReport } from "../specialScoreReport";
@@ -15,14 +15,14 @@ const thisYear = { kind: "year", year: 2026 } as const;
 const report = (query: string | null, period: { kind: "year"; year: number } | { kind: "alltime" } = thisYear) =>
   buildSpecialScoreReport({ kind: "ace", chatId: -100, period, query });
 const course = (id: number, name: string) => ({ id, name });
-const filter = () => vi.mocked(scoreRepo.findSpecialScores).mock.calls[0][2];
+const filter = () => vi.mocked(specialScoreRepo.findSpecialScores).mock.calls[0][2];
 
 beforeEach(() => vi.clearAllMocks());
 
 describe("buildSpecialScoreReport", () => {
   it("reads the whole chat's scores from the start of the year", async () => {
     await expect(report(null)).resolves.toMatchObject({ kind: "report", subject: { kind: "chat" } });
-    expect(scoreRepo.findSpecialScores).toHaveBeenCalledWith("ace", -100, { sinceDate: "2026-01-01", courseId: null, playerId: null });
+    expect(specialScoreRepo.findSpecialScores).toHaveBeenCalledWith("ace", -100, { sinceDate: "2026-01-01", courseId: null, playerId: null });
   });
 
   it("reads every year with alltime", async () => {
@@ -51,7 +51,7 @@ describe("buildSpecialScoreReport", () => {
   it("lists the courses with their ids when several match", async () => {
     vi.mocked(courseRepo.searchByName).mockResolvedValueOnce([course(3, "Kaatis A"), course(4, "Kaatis B")]);
     await expect(report("kaatis")).resolves.toEqual({ kind: "ambiguous-course", courses: [course(3, "Kaatis A"), course(4, "Kaatis B")] });
-    expect(scoreRepo.findSpecialScores).not.toHaveBeenCalled();
+    expect(specialScoreRepo.findSpecialScores).not.toHaveBeenCalled();
   });
 
   it("looks for a player of the chat when no course matches, an exact name first", async () => {

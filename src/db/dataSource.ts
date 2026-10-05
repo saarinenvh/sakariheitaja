@@ -4,6 +4,7 @@ import { Player } from "../features/players/db/Player.entity";
 import { Chat } from "../features/chats/db/Chat.entity";
 import { Competition } from "../features/live-scoring/db/Competition.entity";
 import { Course } from "../features/score-records/db/Course.entity";
+import { Ace, Albatross, Eagle } from "../features/score-records/db/SpecialScore.entity";
 import { readConfig } from "../config";
 import { AddSpecialScoreHoles1791188409491 } from "./migrations/1791188409491-AddSpecialScoreHoles";
 
@@ -20,7 +21,7 @@ export const dataSource = new DataSource({
   // Pending migrations run inside initialize(), so the bot doesn't start against an older schema.
   migrationsRun: true,
   logging: database.logQueries,
-  // Only the tables read through TypeORM; the rest (player_to_chat, scores, aces, eagles, albatrosses) use SQL.
-  entities: [Player, Chat, Competition, Course],
+  // The tables without an entity yet (player_to_chat, scores) are reached with SQL in their repositories.
+  entities: [Player, Chat, Competition, Course, Ace, Eagle, Albatross],
   migrations: [AddSpecialScoreHoles1791188409491],
 });
