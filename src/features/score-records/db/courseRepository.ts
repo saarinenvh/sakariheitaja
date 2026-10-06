@@ -1,5 +1,6 @@
 import { moduleLogger } from "../../../shared/logger";
 import { dataSource } from "../../../db/dataSource";
+import { insertedRow } from "../../../db/insertResult";
 import { Course } from "./Course.entity";
 
 const log = moduleLogger("courses");
@@ -23,9 +24,7 @@ export async function searchByName(text: string): Promise<Course[]> {
 
 /** Adds the course when no course has that name yet (names are unique, ignoring case). */
 export async function addIfAbsent(name: string): Promise<void> {
-  if (await repo().existsBy({ name })) return;
+  const result = await repo().createQueryBuilder().insert().into(Course).values({ name }).orIgnore().execute();
 
-  await repo().createQueryBuilder().insert().into(Course).values({ name }).orIgnore().execute();
-
-  log.info({ course: name }, "course added");
+  if (insertedRow(result)) log.info({ course: name }, "course added");
 }

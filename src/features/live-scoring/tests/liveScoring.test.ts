@@ -89,6 +89,18 @@ describe("poll to publication", () => {
     tracker.stopFollowing();
   });
 
+  it("finds a /score player ignoring case, and none when the name is ambiguous", async () => {
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
+    expect(tracker.getScoreByPlayerName("matti")?.name).toBe("Matti");
+
+    const twoMattis = response([null, null, null]);
+    twoMattis.Competition.Results[1] = { ...twoMattis.Competition.Results[1], Name: "MATTI" };
+    await poll(twoMattis);
+    expect(tracker.getScoreByPlayerName("matti")).toBeUndefined();
+
+    tracker.stopFollowing();
+  });
+
   it("announces offsetting corrections even when the total does not change", async () => {
     mocks.getData.mockResolvedValue(response([3, 4, null]));
     const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();

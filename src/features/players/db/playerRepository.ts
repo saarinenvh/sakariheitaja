@@ -1,4 +1,5 @@
 import { dataSource } from "../../../db/dataSource";
+import { insertedRow } from "../../../db/insertResult";
 import { Player } from "./Player.entity";
 import { PlayerChat } from "./PlayerChat.entity";
 
@@ -30,11 +31,9 @@ export async function addIfAbsent(name: string): Promise<void> {
 
 /** Links the player to the chat; false when they were linked already. */
 export async function linkToChat(playerId: number, chatId: number): Promise<boolean> {
-  if (await links().existsBy({ playerId, chatId })) return false;
+  const result = await links().createQueryBuilder().insert().into(PlayerChat).values({ playerId, chatId }).orIgnore().execute();
 
-  await links().createQueryBuilder().insert().into(PlayerChat).values({ playerId, chatId }).orIgnore().execute();
-
-  return true;
+  return insertedRow(result);
 }
 
 /** Unlinks the player from the chat; false when they weren't linked. */

@@ -107,7 +107,10 @@ export class ScoreTracker {
   }
 
   getScoreByPlayerName(name: string): RoundPlayer | undefined {
-    return this.snapshot?.players.find(player => isSamePlayerName(player.name, name));
+    const matching = this.snapshot?.players.filter(player => isSamePlayerName(player.name, name)) ?? [];
+
+    // Like tracking: a name that several round players share, case aside, picks none of them.
+    return matching.length === 1 ? matching[0] : undefined;
   }
 
   async sendTopList(): Promise<void> {
