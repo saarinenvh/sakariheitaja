@@ -1,7 +1,7 @@
 # Players
 
-The players a chat follows. Live scoring tracks a round player when the chat has added exactly
-that Metrix name.
+The players a chat follows. Live scoring tracks a round player when the chat has added that Metrix
+name, ignoring case: a player added as `ville` is Metrix's `Ville`.
 
 ## Entry points
 

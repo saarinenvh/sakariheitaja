@@ -28,13 +28,23 @@ export interface FinalScore {
   relativeToPar: number;
 }
 
-/** The round's players matching the chat's followed players by exact, unique name. */
+/**
+ * True when two player names are the same, ignoring case and surrounding space: a player added
+ * as "ville" is Metrix's "Ville", as the database's case-insensitive collation already treats them.
+ */
+export function isSamePlayerName(a: string, b: string): boolean {
+  return a.trim().toLocaleLowerCase("fi") === b.trim().toLocaleLowerCase("fi");
+}
+
+/** The round's players matching the chat's followed players by name (ignoring case); a name matching several is skipped. */
 export function trackRoundPlayers(round: MetrixRound, tracked: readonly { id: number; name: string }[]): TrackedRoundPlayer[] {
   const result: TrackedRoundPlayer[] = [];
+
   for (const identity of tracked) {
-    const matching = round.players.filter(player => player.name === identity.name);
+    const matching = round.players.filter(player => isSamePlayerName(player.name, identity.name));
     if (matching.length === 1) result.push({ id: identity.id, player: matching[0] });
   }
+
   return result;
 }
 

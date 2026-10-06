@@ -11,7 +11,7 @@ import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client
 import { OpenWeatherClient } from "../../integrations/openweather/client";
 import { OllamaClient } from "../../integrations/ollama/client";
 import { UnsupportedRoundError } from "../../integrations/metrix/round/normalize";
-import { hasTrackedRoundEnded, trackRoundPlayers } from "../../integrations/metrix/round/results";
+import { hasTrackedRoundEnded, isSamePlayerName, trackRoundPlayers } from "../../integrations/metrix/round/results";
 import { MetrixRound, RoundPlayer, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
 import { createCommentaryWriter, RoundCommentary } from "../commentary";
 import { getMissingTagPlayers } from "../bagtags";
@@ -107,7 +107,7 @@ export class ScoreTracker {
   }
 
   getScoreByPlayerName(name: string): RoundPlayer | undefined {
-    return this.snapshot?.players.find(player => player.name === name);
+    return this.snapshot?.players.find(player => isSamePlayerName(player.name, name));
   }
 
   async sendTopList(): Promise<void> {

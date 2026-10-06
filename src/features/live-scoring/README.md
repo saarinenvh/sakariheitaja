@@ -46,7 +46,7 @@ sequenceDiagram
 ## Behaviour
 
 - A player is tracked when the chat has added them (`/lisaa`) and exactly one round player has
-  that name.
+  that name, ignoring case. `/score <name>` matches the same way.
 - Polls are handled one at a time, in order; an unusable payload is logged and skipped, keeping
   the last good round.
 - Polling slows down while scores stay unchanged and backs off after failed requests. The rules
