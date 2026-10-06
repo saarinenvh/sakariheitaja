@@ -12,12 +12,11 @@ export async function findById(id: number): Promise<Chat | null> {
   return repo().findOneBy({ id });
 }
 
+/** Stores the chat the first time the bot sees it; a chat already stored is left as it is. */
 export async function addIfAbsent(chatId: number, name: string): Promise<void> {
-  const existing = await findById(chatId);
-  if (existing) return;
-  await dataSource.query(
-    "INSERT INTO chats (id, name) VALUES (?, ?)",
-    [chatId, name]
-  );
+  if (await repo().existsBy({ id: chatId })) return;
+
+  await repo().createQueryBuilder().insert().into(Chat).values({ id: chatId, name }).orIgnore().execute();
+
   log.info({ chatId, name }, "added new chat");
 }

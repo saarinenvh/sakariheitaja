@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AddSpecialScoreHoles1791188409491, SqlRunner } from "../migrations/1791188409491-AddSpecialScoreHoles";
 import { AddNameAndLinkUniqueKeys1791201684139 } from "../migrations/1791201684139-AddNameAndLinkUniqueKeys";
+import { AddCompetitionDay1791269243562 } from "../migrations/1791269243562-AddCompetitionDay";
 
 function recordingRunner(): { runner: SqlRunner; queries: string[] } {
   const queries: string[] = [];
@@ -42,6 +43,19 @@ describe("AddNameAndLinkUniqueKeys", () => {
       "ALTER TABLE player_to_chat DROP INDEX IF EXISTS uq_player_to_chat_player_chat",
       "ALTER TABLE players DROP INDEX IF EXISTS uq_players_name",
       "ALTER TABLE courses DROP INDEX IF EXISTS uq_courses_name",
+    ]);
+  });
+});
+
+describe("AddCompetitionDay", () => {
+  it("adds a nullable, re-runnable day column, and removes it on down", async () => {
+    const { runner, queries } = recordingRunner();
+    await new AddCompetitionDay1791269243562().up(runner);
+    await new AddCompetitionDay1791269243562().down(runner);
+
+    expect(queries).toEqual([
+      "ALTER TABLE competitions ADD COLUMN IF NOT EXISTS day DATE NULL",
+      "ALTER TABLE competitions DROP COLUMN IF EXISTS day",
     ]);
   });
 });

@@ -6,12 +6,12 @@ const mocks = vi.hoisted(() => ({
   send: vi.fn<(chatId: number, text: string) => Promise<void>>(),
   generate: vi.fn<(messages: OllamaMessage[], jsonSchema: unknown, options: unknown) => Promise<string>>(),
   handlers: new Map<string, (result: RoundFetchResult) => Promise<void>>(),
-  markDone: vi.fn(), updateSpecialScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
+  markDone: vi.fn(), saveDay: vi.fn(), updateSpecialScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
 }));
 
 vi.mock("../../../prompts/prompts", () => ({ loadPrompt: () => "Sakke", loadContext: () => "" }));
 vi.mock("../../players", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }], Player: class Player {} }));
-vi.mock("../db/competitionRepository", () => ({ markFinished: mocks.markDone }));
+vi.mock("../db/competitionRepository", () => ({ markFinished: mocks.markDone, saveDay: mocks.saveDay }));
 vi.mock("../../score-records", () => ({
   updateSpecialScores: mocks.updateSpecialScores, saveResults: mocks.saveResults, getOrCreateCourse: async () => ({ id: 2 }),
 }));
@@ -82,6 +82,13 @@ beforeEach(() => {
 });
 
 describe("poll to publication", () => {
+  it("saves the round's day from the first fetch", async () => {
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
+
+    expect(mocks.saveDay).toHaveBeenCalledWith(1, "2026-09-27");
+    tracker.stopFollowing();
+  });
+
   it("announces offsetting corrections even when the total does not change", async () => {
     mocks.getData.mockResolvedValue(response([3, 4, null]));
     const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();

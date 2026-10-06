@@ -85,6 +85,8 @@ export class ScoreTracker {
       return this;
     }
     this.snapshot = initial.round;
+    if (this.snapshot.day !== null) await competitionRepo.saveDay(this.id, this.snapshot.day);
+
     this.trackedPlayers = await this.refreshTrackedPlayers(this.snapshot);
     if (this.trackedPlayers.length === 0 && !this.playersAnnounced) {
       await this.messenger.sendText(this.chatId, MSG.followNoPlayers);

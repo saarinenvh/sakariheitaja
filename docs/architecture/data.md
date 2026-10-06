@@ -13,7 +13,7 @@ Tables without an entity are reached with SQL in the repository.
 | `players` | `features/players/` | player names, matched to Metrix names; unique, ignoring case (`latin1_swedish_ci`) |
 | `player_to_chat` | `features/players/` | which chat tracks which player (`/lisaa`, `/poista`); one row per player and chat |
 | `chats` | `features/chats/` | the groups the bot is in |
-| `competitions` | `features/live-scoring/` | followed rounds: chat, Metrix id, done |
+| `competitions` | `features/live-scoring/` | followed rounds: chat, Metrix id, done, and the round's `day` from Metrix (NULL on rounds followed before 2026-10) |
 | `courses` | `features/score-records/` | course names, from rounds and special scores; unique, ignoring case |
 | `scores` | `features/score-records/` | final results per player and round (`/tulokset`) |
 | `aces`, `eagles`, `albatrosses` | `features/score-records/` | special scores, one row per competition, player and hole (`hole_number`; NULL on rows saved before 2026-10). A corrected hole moves or removes its row. |
