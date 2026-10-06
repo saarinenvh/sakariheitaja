@@ -89,6 +89,15 @@ describe("poll to publication", () => {
     tracker.stopFollowing();
   });
 
+  it("follows the round even when saving its day fails", async () => {
+    mocks.saveDay.mockRejectedValueOnce(new Error("database offline"));
+
+    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
+
+    expect(tracker.following).toBe(true);
+    tracker.stopFollowing();
+  });
+
   it("finds a /score player ignoring case, and none when the name is ambiguous", async () => {
     const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
     expect(tracker.getScoreByPlayerName("matti")?.name).toBe("Matti");

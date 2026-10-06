@@ -85,7 +85,7 @@ export class ScoreTracker {
       return this;
     }
     this.snapshot = initial.round;
-    if (this.snapshot.day !== null) await competitionRepo.saveDay(this.id, this.snapshot.day);
+    await this.saveRoundDay(this.snapshot);
 
     this.trackedPlayers = await this.refreshTrackedPlayers(this.snapshot);
     if (this.trackedPlayers.length === 0 && !this.playersAnnounced) {
@@ -160,6 +160,17 @@ export class ScoreTracker {
         chatId: this.chatId, competitionId: this.id, messenger: this.messenger, sendTopList: () => this.sendTopList(),
       }, round, tracked);
     }).catch(error => log.error({ metrixId: this.metrixId, err: error }, "end handler failed"));
+  }
+
+  /** The day is metadata: failing to save it is logged and never stops the round being followed. */
+  private async saveRoundDay(round: MetrixRound): Promise<void> {
+    if (round.day === null) return;
+
+    try {
+      await competitionRepo.saveDay(this.id, round.day);
+    } catch (error) {
+      log.error({ metrixId: this.metrixId, err: error }, "could not save the round's day");
+    }
   }
 
   private async refreshTrackedPlayers(round: MetrixRound): Promise<TrackedRoundPlayer[]> {
