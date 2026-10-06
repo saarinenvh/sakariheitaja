@@ -6,7 +6,8 @@ games; everything about a followed round is in memory.
 ## MariaDB
 
 Each table belongs to one feature, which holds its entity and repository in its `db/` folder.
-Tables without an entity are reached with SQL in the repository.
+Every table has a TypeORM entity, and the repositories use TypeORM's queries; SQL is written only
+in the migrations.
 
 | Table | Owner | Holds |
 | --- | --- | --- |
