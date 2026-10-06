@@ -26,10 +26,11 @@ describe("AddSpecialScoreHoles", () => {
 });
 
 describe("AddNameAndLinkUniqueKeys", () => {
-  it("adds a re-runnable unique key per player link, player name and course name", async () => {
+  it("removes duplicate links, then adds a re-runnable unique key per player link, player name and course name", async () => {
     const { runner, queries } = recordingRunner();
     await new AddNameAndLinkUniqueKeys1791201684139().up(runner);
     expect(queries).toEqual([
+      "DELETE extra_link FROM player_to_chat AS extra_link INNER JOIN player_to_chat AS kept_link ON kept_link.player_id = extra_link.player_id AND kept_link.chat_id = extra_link.chat_id AND kept_link.id < extra_link.id",
       "ALTER TABLE player_to_chat ADD UNIQUE KEY IF NOT EXISTS uq_player_to_chat_player_chat (player_id, chat_id)",
       "ALTER TABLE players ADD UNIQUE KEY IF NOT EXISTS uq_players_name (name)",
       "ALTER TABLE courses ADD UNIQUE KEY IF NOT EXISTS uq_courses_name (name)",

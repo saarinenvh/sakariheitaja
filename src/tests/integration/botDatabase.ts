@@ -11,9 +11,9 @@ const PROD_SCHEMA = readFileSync(join(__dirname, "fixtures", "prodSchema.sql"), 
  * which runs every migration. Call once per test file, before anything imports the data source:
  * it reads the database settings from the environment when it is first imported.
  */
-export async function startBotDatabase(name: string): Promise<DataSource> {
+export async function startBotDatabase(name: string, rowsBeforeMigrations = ""): Promise<DataSource> {
   const database = inject("database");
-  await recreateDatabase(name);
+  await recreateDatabase(name, rowsBeforeMigrations);
 
   // The bot's config reads these, as it reads them from .env in prod.
   Object.assign(process.env, {
@@ -26,12 +26,14 @@ export async function startBotDatabase(name: string): Promise<DataSource> {
   return dataSource;
 }
 
-async function recreateDatabase(name: string): Promise<void> {
+/** `rowsBeforeMigrations`: SQL that adds rows as prod could have them before the migrations run. */
+async function recreateDatabase(name: string, rowsBeforeMigrations: string): Promise<void> {
   const database = inject("database");
   const connection = await createConnection({ ...database, multipleStatements: true });
 
   await connection.query(`DROP DATABASE IF EXISTS \`${name}\`; CREATE DATABASE \`${name}\`; USE \`${name}\`;`);
   await connection.query(PROD_SCHEMA);
+  if (rowsBeforeMigrations) await connection.query(rowsBeforeMigrations);
 
   await connection.end();
 }

@@ -6,7 +6,9 @@ export interface SqlRunner {
 }
 
 // Checked in prod before this was written (2026-10-05): none of these has duplicates today. A
-// duplicate added in between makes the migration fail, and the bot doesn't start until it's removed.
+// duplicate link added since is removed first: it is only the same player and chat again. A
+// duplicate player or course name isn't, as results point at its id, so it makes the migration fail
+// and the bot doesn't start until it is merged by hand.
 const UNIQUE_KEYS = [
   { table: "player_to_chat", key: "uq_player_to_chat_player_chat", columns: "player_id, chat_id" },
   { table: "players", key: "uq_players_name", columns: "name" },
@@ -21,6 +23,13 @@ export class AddNameAndLinkUniqueKeys1791201684139 implements MigrationInterface
   name = "AddNameAndLinkUniqueKeys1791201684139";
 
   async up(queryRunner: SqlRunner): Promise<void> {
+    // Keeps the oldest row of each player and chat; links are read and deleted by the pair, never the id.
+    await queryRunner.query(`
+      DELETE extra_link FROM player_to_chat AS extra_link
+      INNER JOIN player_to_chat AS kept_link
+        ON kept_link.player_id = extra_link.player_id AND kept_link.chat_id = extra_link.chat_id AND kept_link.id < extra_link.id
+    `);
+
     for (const { table, key, columns } of UNIQUE_KEYS) {
       await queryRunner.query(`ALTER TABLE ${table} ADD UNIQUE KEY IF NOT EXISTS ${key} (${columns})`);
     }
