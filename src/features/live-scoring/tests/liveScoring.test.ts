@@ -30,7 +30,8 @@ vi.mock("../poller", () => ({ default: class {
   reportChanges(): void {}
 } }));
 
-import { ScoreTracker } from "../liveScoring";
+import { ScoreTracker, TrackerDependencies } from "../liveScoring";
+import { UnsupportedRoundError } from "../../../integrations/metrix/round/normalize";
 import { ChatMessenger } from "../../chatMessenger";
 import { MetrixClient, readRoundPayload, RoundFetchResult } from "../../../integrations/metrix/client";
 import { OpenWeatherClient } from "../../../integrations/openweather/client";
@@ -66,6 +67,21 @@ function response(strokes: readonly (number | null)[], position = "11") {
   };
 }
 
+const dependencies: TrackerDependencies = {
+  messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate },
+};
+
+/** A resumed round by default: its players were announced already. */
+function newTracker(playersAnnounced = true): ScoreTracker {
+  return new ScoreTracker(1, "123", -100, dependencies, playersAnnounced);
+}
+
+async function startTracker(): Promise<ScoreTracker> {
+  const tracker = newTracker();
+  await tracker.start();
+  return tracker;
+}
+
 async function poll(input: unknown): Promise<void> {
   const handler = mocks.handlers.get("123");
   if (!handler) throw new Error("Poller was not started");
@@ -83,7 +99,7 @@ beforeEach(() => {
 
 describe("poll to publication", () => {
   it("saves the round's day from the first fetch", async () => {
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
+    const tracker = await startTracker();
 
     expect(mocks.saveDay).toHaveBeenCalledWith(1, "2026-09-27");
     tracker.stopFollowing();
@@ -92,14 +108,14 @@ describe("poll to publication", () => {
   it("follows the round even when saving its day fails", async () => {
     mocks.saveDay.mockRejectedValueOnce(new Error("database offline"));
 
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
+    const tracker = await startTracker();
 
-    expect(tracker.following).toBe(true);
+    expect(tracker.phase).toBe("following");
     tracker.stopFollowing();
   });
 
   it("finds a /score player ignoring case, and none when the name is ambiguous", async () => {
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
+    const tracker = await startTracker();
     expect(tracker.getScoreByPlayerName("matti")?.name).toBe("Matti");
 
     const twoMattis = response([null, null, null]);
@@ -112,7 +128,7 @@ describe("poll to publication", () => {
 
   it("announces offsetting corrections even when the total does not change", async () => {
     mocks.getData.mockResolvedValue(response([3, 4, null]));
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
+    const tracker = await startTracker();
     await poll(response([4, 3, null]));
     await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
     expect(mocks.send.mock.calls[0][1]).toContain("korjaus");
@@ -121,7 +137,7 @@ describe("poll to publication", () => {
   });
 
   it("uses numeric live positions in the footer and passes delivered narrative to the model", async () => {
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
+    const tracker = await startTracker();
     await poll(response([3, null, null], "11"));
     await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
     await poll(response([3, 4, null], "10"));
@@ -136,7 +152,7 @@ describe("poll to publication", () => {
 
   it("reports removals and preserves the last valid snapshot after malformed polling data", async () => {
     mocks.getData.mockResolvedValue(response([3, null, null]));
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
+    const tracker = await startTracker();
     const snapshot = tracker.snapshot;
     await poll({ Competition: { Results: [] } });
     expect(tracker.snapshot).toBe(snapshot);
@@ -150,19 +166,19 @@ describe("poll to publication", () => {
     let release: (text: string) => void = () => { throw new Error("Generation has not started"); };
     mocks.generate.mockImplementationOnce(() => new Promise<string>(resolve => { release = resolve; }));
     mocks.getData.mockResolvedValue(response([3, 3, null]));
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
+    const tracker = await startTracker();
     await poll(response([3, 3, 3]));
     await vi.waitFor(() => expect(mocks.generate).toHaveBeenCalledTimes(1));
     expect(mocks.markDone).not.toHaveBeenCalled();
     release(batchReply("Matti pelasi parin."));
     await vi.waitFor(() => expect(mocks.markDone).toHaveBeenCalledWith(1));
     expect(mocks.send.mock.calls[0][1]).toContain("Matti pelasi parin.");
-    expect(tracker.following).toBe(false);
+    expect(tracker.phase).toBe("stopped");
   });
 
   it("posts the results before the bagtag announcement at round end", async () => {
     mocks.getData.mockResolvedValue(response([3, 3, null]));
-    await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
+    await startTracker();
     await poll(response([3, 3, 3]));
     await vi.waitFor(() => expect(mocks.send.mock.calls.map(call => call[1])).toContain("Tags"));
     const texts = mocks.send.mock.calls.map(call => call[1]);
@@ -172,13 +188,61 @@ describe("poll to publication", () => {
     ]);
   });
 
+});
+
+describe("starting", () => {
   it("rejects parent competitions before starting a poller", async () => {
     const parent = response([null, null, null]);
     parent.Competition.SubCompetitions = [{ ID: "124" }];
     mocks.getData.mockResolvedValue(parent);
-    const tracker = await new ScoreTracker(1, "123", -100, { messenger, metrix, openWeather, ollama: { generate: vi.fn(), generateStructured: mocks.generate } }, true).init();
-    expect(tracker.following).toBe(false);
-    expect(tracker.initializationError).toContain("yksittäisiä kierroksia");
+
+    const result = await newTracker().start();
+
+    expect(result).toEqual({ kind: "invalid", error: expect.any(UnsupportedRoundError) });
     expect(mocks.handlers.size).toBe(0);
+  });
+
+  it("stays startable when Metrix doesn't answer, and starts on the next try", async () => {
+    vi.spyOn(metrix, "getRound").mockResolvedValueOnce({ kind: "unavailable" });
+    const tracker = newTracker();
+
+    await expect(tracker.start()).resolves.toEqual({ kind: "unavailable" });
+    expect(tracker.phase).toBe("starting");
+
+    await expect(tracker.start()).resolves.toEqual({ kind: "following" });
+    expect(tracker.phase).toBe("following");
+    tracker.stopFollowing();
+  });
+
+  it("is scheduled until the round's start time, then following", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-26T12:00:00Z"));
+    const tracker = await startTracker();
+
+    expect(tracker.phase).toBe("scheduled");
+    expect(tracker.started).toBe(true);
+
+    vi.setSystemTime(new Date("2026-09-27T12:00:00Z"));
+    expect(tracker.phase).toBe("following");
+
+    tracker.stopFollowing();
+    vi.useRealTimers();
+  });
+
+  it("doesn't start polling a round stopped while it was starting", async () => {
+    const tracker = newTracker();
+    mocks.saveDay.mockImplementationOnce(async () => tracker.stopFollowing());
+
+    await expect(tracker.start()).resolves.toEqual({ kind: "stopped" });
+    expect(mocks.handlers.size).toBe(0);
+  });
+
+  it("says when a new round has no tracked players, without sending anything itself", async () => {
+    const withoutMatti = response([null, null, null]);
+    withoutMatti.Competition.Results[0] = { ...withoutMatti.Competition.Results[0], Name: "Pekka" };
+    mocks.getData.mockResolvedValue(withoutMatti);
+
+    await expect(newTracker(false).start()).resolves.toEqual({ kind: "no-players" });
+    expect(mocks.send).not.toHaveBeenCalled();
   });
 });

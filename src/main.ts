@@ -15,7 +15,7 @@ import { createOllamaClient } from "./integrations/ollama/client";
 import { createChallongeClient } from "./integrations/challonge/client";
 import { createGiphyClient } from "./integrations/giphy/client";
 import { createRecipesClient } from "./integrations/recipes/client";
-import { competitionRepository as competitionRepo, ScoreTracker, trackerRegistry as registry } from "./features/live-scoring";
+import { resumeFollowedRounds } from "./features/live-scoring";
 import { startMorningGreeter } from "./features/morning-greeting";
 
 // The composition root: everything the bot talks to is created here, once, and passed down.
@@ -40,18 +40,10 @@ bot.catch(botError => {
   log.warn({ err: botError.error, updateId: botError.ctx.update.update_id }, "bot error");
 });
 
-/** Rounds left unfinished by the last run resume without a new player announcement. */
-async function resumeUnfinishedRounds(): Promise<void> {
-  for (const competition of await competitionRepo.findUnfinished()) {
-    const tracker = await new ScoreTracker(competition.id, competition.metrixId, competition.chatId, dependencies, true).init();
-    registry.add(competition.chatId, tracker);
-  }
-}
-
 async function main(): Promise<void> {
   await dataSource.initialize();
   startMorningGreeter(dependencies, config.telegram.morningChatId);
-  await resumeUnfinishedRounds();
+  await resumeFollowedRounds(dependencies);
   bot.start();
 }
 

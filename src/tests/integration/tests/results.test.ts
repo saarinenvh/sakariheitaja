@@ -17,7 +17,7 @@ beforeAll(async () => {
   await dataSource.query("INSERT INTO players (name) VALUES ('Ville'), ('Jori')");
   await dataSource.query("INSERT INTO courses (name) VALUES ('Kaatis A'), ('Kaatis B'), ('Talin frisbeegolfrata')");
   await dataSource.query(
-    "INSERT INTO competitions (finished, chat_id, metrix_id) VALUES (1, ?, '1'), (1, ?, '2'), (1, ?, '3')", [CHAT_ID, OTHER_CHAT_ID, CHAT_ID],
+    "INSERT INTO competitions (status, chat_id, metrix_id) VALUES ('finished', ?, '1'), ('finished', ?, '2'), ('finished', ?, '3')", [CHAT_ID, OTHER_CHAT_ID, CHAT_ID],
   );
 
   // The round end saves through the same function; one round per course here.

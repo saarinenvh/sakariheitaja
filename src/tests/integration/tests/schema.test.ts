@@ -40,7 +40,7 @@ describe("migrations on the prod schema", () => {
 describe("BIGINT chat ids", () => {
   beforeAll(async () => {
     await dataSource.query("INSERT INTO chats (id, name) VALUES (?, 'Testi')", [CHAT_ID]);
-    await dataSource.query("INSERT INTO competitions (finished, chat_id, metrix_id) VALUES (0, ?, '3809486')", [CHAT_ID]);
+    await dataSource.query("INSERT INTO competitions (chat_id, metrix_id) VALUES (?, '3809486')", [CHAT_ID]);
   });
 
   it("read as numbers through an entity and through a raw query", async () => {

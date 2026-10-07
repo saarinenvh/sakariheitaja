@@ -14,7 +14,7 @@ in the migrations.
 | `players` | `features/players/` | player names, matched to Metrix names; unique, ignoring case (`latin1_swedish_ci`) |
 | `player_to_chat` | `features/players/` | which chat tracks which player (`/lisaa`, `/poista`); one row per player and chat |
 | `chats` | `features/chats/` | the groups the bot is in |
-| `competitions` | `features/live-scoring/` | followed rounds: chat, Metrix id, done, and the round's `day` from Metrix (NULL on rounds followed before 2026-10) |
+| `competitions` | `features/live-scoring/` | followed rounds: chat, Metrix id, `status` (`following`, `finished` or `error`), and the round's `day` from Metrix (NULL on rounds followed before 2026-10). A round in `error` keeps `errored_at` and `error_reason` for manual handling. |
 | `courses` | `features/score-records/` | course names, from rounds and special scores; unique, ignoring case |
 | `scores` | `features/score-records/` | final results per player and round (`/tulokset`) |
 | `aces`, `eagles`, `albatrosses` | `features/score-records/` | special scores, one row per competition, player and hole (`hole_number`; NULL on rows saved before 2026-10). A corrected hole moves or removes its row. |
@@ -48,7 +48,7 @@ Lost on restart, by design.
 
 | State | Where | Notes |
 | --- | --- | --- |
-| followed rounds per chat | `live-scoring/trackerRegistry.ts` | rebuilt at startup from unfinished competitions |
+| followed rounds per chat | `live-scoring/trackerRegistry.ts` | rebuilt at startup from the competitions still `following`; also holds the rounds a `/follow` is starting |
 | each round's snapshot, tracked players, poll timing | `ScoreTracker`, `Poller` | |
 | commentary memory: published places, recent messages, welcome flags | `RoundCommentary` | a resumed round starts from the current cards |
 | course details and statistics, course location | `RoundCourseData` | fetched once per round |

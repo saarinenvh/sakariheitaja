@@ -2,6 +2,9 @@ export const liveScoringCommandMessages = {
   followUsage:      "Anna metrixId komennon perään. Esim: /follow 12345",
   followNoNumber:   "Ei löydy numeroa viestistä, urpo.",
   followStarted:    "Okei, aletaan kattoo vähä kiekkogolffii (c) Ian Andersson",
+  followAlready:    "Tätähän tuijotetaan jo, urpo! Kato /pelit.",
+  followNoPlayers:  "Ei löydy seurattavia pelaajia tästä kisasta. Lopetan seuraamisen.",
+  followInvalid:    "Mitä sä säädät?? XD Laita se kisa julkiseks tai kokeile oikeeta osotetta!",
 
   lopetaUsage:      "Anna kisan metrixId. Esim: /lopeta 3809486 (näkyy /pelit-listassa)",
   lopetaOk:         "No olihan se kivaa taas, jatketaan ens kerralla.",
@@ -9,6 +12,7 @@ export const liveScoringCommandMessages = {
 
   pelitHeader:      "Tällä hetkellä tuijotetaan kivikovana seuraavia blejä.\n\n",
   pelitNone:        "Eihän tässä nyt taas mitään ole käynnissä...",
+  pelitUpcoming:    "Tulossa:\n\n",
 
   top5Usage:        "Jaa, vai että minkäs kisan top tulokset haluut? Kokeile vaik /pelit komentoo ja lisää kisan id /top5 komennon perään. Aasi!",
   top5NoneActive:   "Varmaa pitäis jotai kisaa seuratakki.",

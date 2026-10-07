@@ -19,7 +19,7 @@ beforeAll(async () => {
   await dataSource.query("INSERT INTO chats (id, name) VALUES (?, 'Testi')", [CHAT_ID]);
   await dataSource.query("INSERT INTO players (name) VALUES ('Ville')");
   await dataSource.query("INSERT INTO courses (name) VALUES ('Kaatis')");
-  await dataSource.query("INSERT INTO competitions (finished, chat_id, metrix_id) VALUES (0, ?, '3809486')", [CHAT_ID]);
+  await dataSource.query("INSERT INTO competitions (chat_id, metrix_id) VALUES (?, '3809486')", [CHAT_ID]);
   round = { playerId: 1, chatId: CHAT_ID, competitionId: 1 };
 });
 
