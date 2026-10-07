@@ -30,7 +30,7 @@ flowchart TD
 | `main.ts` | Builds the bot, every client and the `CommandDependencies`, registers the commands, starts the bot. | everything |
 | `telegram/` | grammY: the bot, `commands/<feature>/` (a `command.ts` with the names and `/apua` help, a handler), the text listener, chat tracking, the Telegram `ChatMessenger`. | features (their `index.ts`), integrations (types), shared |
 | `features/` | The application: live scoring, commentary, bagtags, players, score records, … Each table's entity and repository live in the owning feature's `db/` folder. A feature's `index.ts` is its public module: what other modules may use. | its own files, other features' `index.ts`, integrations, db, shared |
-| `integrations/` | `createXClient(config)` for Metrix, OpenWeatherMap, Ollama, Challonge, Giphy and the recipe API. Clients own URLs, keys, timeouts, validation and normalization, and return normalized types or a result union. Each boundary's Zod schemas, with an example payload, live in a `schema.ts` next to the code that fetches it: the client, or for Metrix the endpoint folder (`round/`, `course/`, `location/`, `statistics/`). | shared |
+| `integrations/` | `createXClient(config)` for Metrix, OpenWeatherMap, Ollama, Challonge, Giphy and the recipe API. Clients own their URLs (a constant, with a build function for the variable parts), keys, validation and normalization, and return normalized types or a result union. Their requests go through `shared/http.ts`: `httpGet` (a 10 s timeout, a result instead of a throw, logs without the query string, where the keys are) and `getData` on top of it for JSON. Ollama still calls `fetch` itself, with its own timeout. Each boundary's Zod schemas, with an example payload, live in a `schema.ts` next to the code that fetches it: the client, or for Metrix the endpoint folder (`round/`, `course/`, `location/`, `statistics/`). | shared |
 | `db/` | The TypeORM data source and its entity list. | entities (`*.entity.ts`) |
 | `shared/` | Generic helpers only. | shared |
 
@@ -72,7 +72,7 @@ flowchart LR
 
 1. **Commands.** `telegram/commands/registry.ts` registers every group from
    `buildCommandGroups`, in `/apua` order. `/apua` is generated from the same list, so a command
-   with `help` shows up there automatically; `isit`, `heckle`, `aamuu` and `virheet` have none on purpose.
+   with `help` shows up there automatically; `heckle`, `aamuu` and `virheet` have none on purpose.
    The dev group (`/heckle`, `/aamuu`, `/virheet`) exists only with `LLM_ENABLED=true`. Each command runs
    through `runCommand`, which logs it and catches its failure.
 2. **The text listener**, registered last because it reacts to any text. It remembers the

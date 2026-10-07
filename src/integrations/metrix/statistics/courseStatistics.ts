@@ -1,13 +1,9 @@
-import { moduleLogger } from "../../../shared/logger";
+import { httpGet } from "../../../shared/http";
 import { parseOrThrow } from "../../../shared/validation";
 import { courseStatisticsSchema, holeResultCountsSchema } from "./schema";
 
-const log = moduleLogger("course-statistics");
-
 const MAX_CODE_POINT = 0x10ffff;
 const COURSE_PAGE_URL = "https://discgolfmetrix.com/course/";
-const COURSE_PAGE_TIMEOUT_MS = 10_000;
-const REQUEST_HEADERS = { "User-Agent": "SakariHeitajaBot/1.0 (disc golf commentary bot)" };
 const STATISTICS_CONTAINER_ID = 'id="hole-stats-table-container"';
 const TOTAL_COLUMN_LABEL = "Tot";
 
@@ -117,16 +113,12 @@ export function parseStoredCourseStatistics(input: unknown): CourseStatistics {
 type CoursePageResult = { kind: "fetched"; html: string } | { kind: "failed"; reason: string };
 
 async function fetchCoursePage(courseId: string): Promise<CoursePageResult> {
-  const url = `${COURSE_PAGE_URL}${encodeURIComponent(courseId)}`;
-  try {
-    const response = await fetch(url, { headers: REQUEST_HEADERS, signal: AbortSignal.timeout(COURSE_PAGE_TIMEOUT_MS) });
-    if (!response.ok) return { kind: "failed", reason: `Metrix course page returned HTTP ${response.status}` };
-    return { kind: "fetched", html: await response.text() };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    log.error({ url, reason: message }, "fetchCourseStatistics failed");
-    return { kind: "failed", reason: `Metrix course page request failed: ${message}` };
-  }
+  const result = await httpGet(`${COURSE_PAGE_URL}${encodeURIComponent(courseId)}`);
+
+  if (result.kind === "http-error") return { kind: "failed", reason: `Metrix course page returned HTTP ${result.status}` };
+  if (result.kind === "failed") return { kind: "failed", reason: `Metrix course page request failed: ${result.reason}` };
+
+  return { kind: "fetched", html: result.text };
 }
 
 function extractStatisticsTable(html: string): string | null {

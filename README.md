@@ -175,7 +175,6 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
 | `/pelei` | List today's game plans |
 | `/kukakirjaa <names...>` | Randomly pick who keeps score |
 | `/hyva` | You know what this does |
-| `/isit` | Hyvä isit! |
 | `/gifplz <term>` | Send a random matching GIF from Giphy |
 | `/mitatanaansyotaisiin` | A random Finnish recipe from the S-cloud API |
 | `/apua` | Show the in-bot command list |
@@ -190,7 +189,7 @@ Only registered when `LLM_ENABLED=true`:
 | `/virheet` | List the followed rounds that were given up on (`error`), in every chat |
 
 `/apua` is generated from the command definitions (`src/telegram/commands/*/command.ts`), so it
-lists every command above except `/isit`, `/heckle`, `/aamuu`, `/virheet` and itself.
+lists every command above except `/heckle`, `/aamuu`, `/virheet` and itself.
 
 ## Tech Stack
 

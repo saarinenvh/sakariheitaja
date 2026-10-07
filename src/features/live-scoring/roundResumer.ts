@@ -3,6 +3,7 @@ import * as registry from "./trackerRegistry";
 import { errorBackoffMs, hasResumeTimedOut } from "./policy";
 import * as competitionRepo from "./db/competitionRepository";
 import { moduleLogger } from "../../shared/logger";
+import { wait } from "../../shared/time";
 
 const log = moduleLogger("live-scoring");
 
@@ -83,10 +84,6 @@ async function settleStart(tracker: ResumableRound, result: Exclude<StartResult,
     case "no-players":
       return giveUp(tracker, NO_PLAYERS_REASON);
   }
-}
-
-function wait(delayMs: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, delayMs));
 }
 
 /** If marking it fails, the competition stays `following` and the next restart tries again. */
