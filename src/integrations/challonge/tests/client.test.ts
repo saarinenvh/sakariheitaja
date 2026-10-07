@@ -29,4 +29,18 @@ describe("Challonge client", () => {
     reply({ tournament: { name: "Match play", participants: [] } });
     await expect(client.fetchBracket()).rejects.toThrow("Invalid Challonge bracket");
   });
+
+  it("throws with the status on an HTTP error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("Unauthorized", { status: 401 })));
+
+    await expect(client.fetchBracket()).rejects.toThrow("Challonge API 401");
+  });
+
+  it("asks with a timeout, and throws when there's no answer in time", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new DOMException("The operation was aborted due to timeout", "TimeoutError"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(client.fetchBracket()).rejects.toThrow("Challonge API request failed: The operation was aborted due to timeout");
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ headers: { Accept: "application/json" }, signal: expect.any(AbortSignal) });
+  });
 });

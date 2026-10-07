@@ -1,8 +1,11 @@
+import { httpGet } from "../../shared/http";
 import { moduleLogger } from "../../shared/logger";
 import { parseOrThrow } from "../../shared/validation";
 import { bracketSchema } from "./schema";
 
 const log = moduleLogger("challonge");
+
+const TOURNAMENTS_API_URL = "https://api.challonge.com/v1/tournaments/";
 
 export interface BracketMatch {
   round: number;
@@ -37,12 +40,13 @@ export function createChallongeClient(config: ChallongeConfig): ChallongeClient 
 async function fetchBracketData({ tournamentUrl, apiKey }: ChallongeConfig): Promise<BracketData> {
   if (!apiKey) throw new Error("CHALLONGE_API_KEY not set");
 
-  const slug = tournamentSlug(tournamentUrl);
-  const url = `https://api.challonge.com/v1/tournaments/${slug}.json?api_key=${apiKey}&include_participants=1&include_matches=1`;
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!res.ok) throw new Error(`Challonge API ${res.status}`);
+  const url = buildBracketUrl(tournamentSlug(tournamentUrl), apiKey);
 
-  const tournament = parseOrThrow(bracketSchema, await res.json(), "Challonge bracket");
+  const result = await httpGet(url, { headers: { Accept: "application/json" } });
+  if (result.kind === "http-error") throw new Error(`Challonge API ${result.status}`);
+  if (result.kind === "failed") throw new Error(`Challonge API request failed: ${result.reason}`);
+
+  const tournament = parseOrThrow(bracketSchema, JSON.parse(result.text), "Challonge bracket");
   log.debug("Challonge v1 API fetch OK");
 
   const participants = tournament.participants.map(part => ({
@@ -59,6 +63,12 @@ async function fetchBracketData({ tournamentUrl, apiKey }: ChallongeConfig): Pro
 
   log.debug({ matches: matches.length, participants: participants.length }, "Challonge bracket parsed");
   return { tournamentName: tournament.name ?? "Tournament", participants, matches };
+}
+
+/** The tournament with its participants and matches, in one request. */
+function buildBracketUrl(slug: string, apiKey: string): string {
+  return `${TOURNAMENTS_API_URL}${encodeURIComponent(slug)}.json`
+    + `?api_key=${encodeURIComponent(apiKey)}&include_participants=1&include_matches=1`;
 }
 
 /** "yvept9b5" from "https://challonge.com/fi/yvept9b5". */

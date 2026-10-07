@@ -1,3 +1,8 @@
+/** Resolves after `delayMs`. On the global `setTimeout`, so tests' fake timers control it. */
+export function wait(delayMs: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, delayMs));
+}
+
 /**
  * The instant a wall-clock time on a day happens in a time zone, with that day's DST.
  * `day` is `YYYY-MM-DD` and `time` is `HH:MM` or `HH:MM:SS`, both already validated.
