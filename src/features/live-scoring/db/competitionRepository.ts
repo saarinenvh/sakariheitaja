@@ -1,4 +1,4 @@
-import { IsNull, Not } from "typeorm";
+import { IsNull } from "typeorm";
 import { moduleLogger } from "../../../shared/logger";
 import { dataSource } from "../../../db/dataSource";
 import { Competition, COMPETITION_STATUS } from "./Competition.entity";
@@ -8,7 +8,7 @@ const log = moduleLogger("competitions");
 /** The longest error reason the table keeps. */
 const ERROR_REASON_MAX_LENGTH = 255;
 
-/** A followed round that can be resumed: it has a chat and a Metrix id. */
+/** A followed round, as resuming it needs. */
 export interface FollowedRound {
   id: number;
   chatId: number;
@@ -25,22 +25,17 @@ function repo() {
   return dataSource.getRepository(Competition);
 }
 
-/** Rounds still being followed; a row without a chat or Metrix id can't be followed and is left out. */
 export async function findFollowing(): Promise<FollowedRound[]> {
-  const following = await repo().findBy({ status: COMPETITION_STATUS.following, chatId: Not(IsNull()), metrixId: Not(IsNull()) });
+  const following = await repo().findBy({ status: COMPETITION_STATUS.following });
 
-  return following.flatMap(({ id, chatId, metrixId }) => (chatId !== null && metrixId !== null ? [{ id, chatId, metrixId }] : []));
+  return following.map(({ id, chatId, metrixId }) => ({ id, chatId, metrixId }));
 }
 
 /** Rounds given up on, the latest first. */
 export async function findErrored(): Promise<ErroredRound[]> {
-  const errored = await repo().find({
-    where: { status: COMPETITION_STATUS.error, chatId: Not(IsNull()), metrixId: Not(IsNull()) },
-    order: { erroredAt: "DESC" },
-  });
+  const errored = await repo().find({ where: { status: COMPETITION_STATUS.error }, order: { erroredAt: "DESC" } });
 
-  return errored.flatMap(({ id, chatId, metrixId, erroredAt, errorReason }) =>
-    (chatId !== null && metrixId !== null ? [{ id, chatId, metrixId, erroredAt, errorReason }] : []));
+  return errored.map(({ id, chatId, metrixId, erroredAt, errorReason }) => ({ id, chatId, metrixId, erroredAt, errorReason }));
 }
 
 export async function create(chatId: number, metrixId: string): Promise<{ insertId: number }> {

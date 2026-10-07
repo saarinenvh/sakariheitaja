@@ -9,17 +9,17 @@ export const COMPETITION_STATUS = {
 
 export type CompetitionStatus = typeof COMPETITION_STATUS[keyof typeof COMPETITION_STATUS];
 
-/** A followed round. The columns are nullable in the table; the repository only returns usable rows. */
+/** A followed round. */
 @Entity("competitions")
 export class Competition {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ name: "chat_id", type: "bigint", nullable: true })
-  chatId!: number | null;
+  @Column({ name: "chat_id", type: "bigint" })
+  chatId!: number;
 
-  @Column({ name: "metrix_id", type: "varchar", length: 100, nullable: true })
-  metrixId!: string | null;
+  @Column({ name: "metrix_id", type: "varchar", length: 100 })
+  metrixId!: string;
 
   @Column({ type: "enum", enum: Object.values(COMPETITION_STATUS) })
   status!: CompetitionStatus;

@@ -6,11 +6,12 @@ const CHAT_ID = -5238320046;
 
 let dataSource: DataSource;
 
-// Prod has all three: followed rounds, finished ones, and old rows with no value.
+// Prod has followed rounds, finished ones, old rows with no `finished` value, and old rows with no Metrix id.
 beforeAll(async () => {
-  dataSource = await startBotDatabase("competition_status_migration", `
+  dataSource = await startBotDatabase("competition_migrations", `
     INSERT INTO chats (id, name) VALUES (${CHAT_ID}, 'Testi');
-    INSERT INTO competitions (finished, chat_id, metrix_id) VALUES (0, ${CHAT_ID}, '1'), (1, ${CHAT_ID}, '2'), (NULL, ${CHAT_ID}, '3');
+    INSERT INTO competitions (finished, chat_id, metrix_id)
+      VALUES (0, ${CHAT_ID}, '1'), (1, ${CHAT_ID}, '2'), (NULL, ${CHAT_ID}, '3'), (0, ${CHAT_ID}, NULL);
   `);
 });
 
@@ -40,5 +41,19 @@ describe("ReplaceCompetitionFinishedWithStatus", () => {
 
     expect(column.Type).toBe("enum('following','finished','error')");
     await expect(dataSource.query("UPDATE competitions SET status = 'done' WHERE id = 1")).rejects.toThrow();
+  });
+});
+
+describe("MakeCompetitionChatAndMetrixRequired", () => {
+  it("deletes the rows without a Metrix id", async () => {
+    const [{ count }]: { count: number }[] = await dataSource.query("SELECT COUNT(*) AS count FROM competitions WHERE metrix_id IS NULL");
+
+    expect(Number(count)).toBe(0);
+  });
+
+  it("requires a chat and a Metrix id from now on", async () => {
+    const columns: { Field: string; Null: string }[] = await dataSource.query("SHOW COLUMNS FROM competitions WHERE Field IN ('chat_id', 'metrix_id')");
+
+    expect(columns.map(column => [column.Field, column.Null])).toEqual([["chat_id", "NO"], ["metrix_id", "NO"]]);
   });
 });

@@ -12,6 +12,7 @@ import { AddSpecialScoreHoles1791188409491 } from "./migrations/1791188409491-Ad
 import { AddNameAndLinkUniqueKeys1791201684139 } from "./migrations/1791201684139-AddNameAndLinkUniqueKeys";
 import { AddCompetitionDay1791269243562 } from "./migrations/1791269243562-AddCompetitionDay";
 import { ReplaceCompetitionFinishedWithStatus1791362797286 } from "./migrations/1791362797286-ReplaceCompetitionFinishedWithStatus";
+import { MakeCompetitionChatAndMetrixRequired1791378525211 } from "./migrations/1791378525211-MakeCompetitionChatAndMetrixRequired";
 
 const database = readConfig().database;
 
@@ -33,6 +34,6 @@ export const dataSource = new DataSource({
   entities: [Player, PlayerChat, Chat, Competition, Course, Score, Ace, Eagle, Albatross],
   migrations: [
     AddSpecialScoreHoles1791188409491, AddNameAndLinkUniqueKeys1791201684139, AddCompetitionDay1791269243562,
-    ReplaceCompetitionFinishedWithStatus1791362797286,
+    ReplaceCompetitionFinishedWithStatus1791362797286, MakeCompetitionChatAndMetrixRequired1791378525211,
   ],
 });

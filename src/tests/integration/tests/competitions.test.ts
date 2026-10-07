@@ -47,11 +47,9 @@ describe("competitions", () => {
     expect((await competitionRows())[0].day).toBe("2026-10-03");
   });
 
-  it("resumes only followed rounds that have a chat and a Metrix id", async () => {
+  it("resumes only followed rounds", async () => {
     await competitions.create(CHAT_ID, "3809487");
     await competitions.markFinished(2);
-    // A row from before the bot checked its columns: no Metrix id.
-    await dataSource.query("INSERT INTO competitions (chat_id) VALUES (?)", [CHAT_ID]);
 
     await expect(competitions.findFollowing()).resolves.toEqual([{ id: 1, chatId: CHAT_ID, metrixId: "3809486" }]);
   });
