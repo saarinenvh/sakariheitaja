@@ -1,4 +1,5 @@
-import { ScoreTracker, StartResult } from "./liveScoring";
+import { ScoreTracker, StartResult, TrackerDependencies } from "./liveScoring";
+import * as registry from "./trackerRegistry";
 import { errorBackoffMs, hasResumeTimedOut } from "./policy";
 import * as competitionRepo from "./db/competitionRepository";
 import { moduleLogger } from "../../shared/logger";
@@ -10,6 +11,36 @@ const NO_PLAYERS_REASON = "no tracked players in the round";
 
 /** The part of a `ScoreTracker` resuming uses. */
 export type ResumableRound = Pick<ScoreTracker, "id" | "metrixId" | "stopped" | "start" | "stopFollowing">;
+
+/**
+ * Resumes every competition the last run was following, without a new player announcement. Each
+ * starts in the background, in the registry from the start so `/lopeta` can stop it. A second row
+ * for a round the chat already follows is marked as an error instead, so no round is followed twice.
+ */
+export async function resumeFollowedRounds(dependencies: TrackerDependencies): Promise<void> {
+  for (const competition of await competitionRepo.findFollowing()) {
+    const { id, chatId, metrixId } = competition;
+
+    const original = registry.findTracked(chatId, metrixId);
+    if (original) {
+      await markDuplicate(id, original.id);
+      continue;
+    }
+
+    const tracker = new ScoreTracker(id, metrixId, chatId, dependencies, true);
+    registry.add(chatId, tracker);
+    resumeRound(tracker).catch(err => log.error({ metrixId, err }, "could not resume or give up on the round"));
+  }
+}
+
+/** A failure is logged: the duplicate stays `following` and is caught again at the next restart. */
+async function markDuplicate(id: number, originalId: number): Promise<void> {
+  try {
+    await competitionRepo.markError(id, `duplicate of competition ${originalId}`, new Date());
+  } catch (error) {
+    log.error({ competitionId: id, err: error }, "could not mark a duplicate competition");
+  }
+}
 
 /**
  * Starts a round the last run was following. While Metrix doesn't answer it retries, backing off

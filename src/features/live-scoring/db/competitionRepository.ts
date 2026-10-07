@@ -25,8 +25,9 @@ function repo() {
   return dataSource.getRepository(Competition);
 }
 
+/** The oldest first, so of two rows for the same round the first one followed wins. */
 export async function findFollowing(): Promise<FollowedRound[]> {
-  const following = await repo().findBy({ status: COMPETITION_STATUS.following });
+  const following = await repo().find({ where: { status: COMPETITION_STATUS.following }, order: { id: "ASC" } });
 
   return following.map(({ id, chatId, metrixId }) => ({ id, chatId, metrixId }));
 }

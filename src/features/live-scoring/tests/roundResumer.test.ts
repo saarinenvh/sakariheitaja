@@ -1,10 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ markError: vi.fn() }));
-vi.mock("../db/competitionRepository", () => ({ markError: mocks.markError }));
+const mocks = vi.hoisted(() => ({ markError: vi.fn(), findFollowing: vi.fn() }));
+vi.mock("../db/competitionRepository", () => ({ markError: mocks.markError, findFollowing: mocks.findFollowing }));
+vi.mock("../liveScoring", () => ({
+  ScoreTracker: class {
+    stopped = false;
+    constructor(public id: number, public metrixId: string, public chatId: number) {}
+    async start(): Promise<{ kind: "following" }> { return { kind: "following" }; }
+    stopFollowing(): void { this.stopped = true; }
+  },
+}));
 
-import { ResumableRound, resumeRound } from "../roundResumer";
-import { StartResult } from "../liveScoring";
+import { ResumableRound, resumeFollowedRounds, resumeRound } from "../roundResumer";
+import { StartResult, TrackerDependencies } from "../liveScoring";
+import * as registry from "../trackerRegistry";
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -99,5 +108,38 @@ describe("resuming a round", () => {
 
     expect(round.starts).toBe(1);
     expect(mocks.markError).not.toHaveBeenCalled();
+  });
+});
+
+describe("resuming every followed round", () => {
+  // The resumer doesn't touch the dependencies; the fake tracker ignores them.
+  const dependencies = {} as TrackerDependencies;
+
+  it("resumes each round once, and marks a second row for the same round as a duplicate", async () => {
+    mocks.findFollowing.mockResolvedValue([
+      { id: 1, chatId: -100, metrixId: "3809486" },
+      { id: 2, chatId: -200, metrixId: "3809486" },
+      { id: 3, chatId: -100, metrixId: "3809486" },
+    ]);
+
+    await resumeFollowedRounds(dependencies);
+
+    expect(registry.findTracked(-100, "3809486")?.id).toBe(1);
+    expect(registry.findTracked(-200, "3809486")?.id).toBe(2);
+    expect(mocks.markError).toHaveBeenCalledTimes(1);
+    expect(mocks.markError).toHaveBeenCalledWith(3, "duplicate of competition 1", expect.any(Date));
+  });
+
+  it("goes on when marking a duplicate fails", async () => {
+    mocks.findFollowing.mockResolvedValue([
+      { id: 4, chatId: -300, metrixId: "1" },
+      { id: 5, chatId: -300, metrixId: "1" },
+      { id: 6, chatId: -300, metrixId: "2" },
+    ]);
+    mocks.markError.mockRejectedValueOnce(new Error("database offline"));
+
+    await resumeFollowedRounds(dependencies);
+
+    expect(registry.findTracked(-300, "2")?.id).toBe(6);
   });
 });

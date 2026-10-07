@@ -30,11 +30,11 @@ sequenceDiagram
 | Entry point | Called by |
 | --- | --- |
 | `new ScoreTracker(...).start()` (`liveScoring.ts`) | `/follow` (`telegram/commands/live-scoring/`) |
-| `resumeRound` (`roundResumer.ts`) | `main.ts` at startup, for every competition still `following` |
+| `resumeFollowedRounds` (`roundResumer.ts`) | `main.ts` at startup, for every competition still `following` |
 | `registerCompetition` (`liveScoring.ts`) | `/follow`: stores the chat, if new, and the competition |
 | `trackerRegistry` (`trackerRegistry.ts`) | `main.ts`, and the `/follow`, `/lopeta`, `/pelit`, `/top5` and `/score` handlers |
 | `ScoreTracker.phase`, `ScoreTracker.sendTopList`, `ScoreTracker.getScoreByPlayerName` | `/pelit`, `/top5`, `/score` |
-| `competitionRepository` (`db/competitionRepository.ts`) | `/follow` (delete when the round can't start), `/lopeta` (delete), `main.ts` (rounds still followed), `finishRound` (mark finished), `resumeRound` (mark error), `/virheet` (rounds in error) |
+| `competitionRepository` (`db/competitionRepository.ts`) | `/follow` (delete when the round can't start), `/lopeta` (delete), `finishRound` (mark finished), `roundResumer.ts` (rounds still followed; mark error), `/virheet` (rounds in error) |
 
 `registerCompetition` also stores the chat through the `chats` feature, in case the bot missed joining it.
 
@@ -59,7 +59,8 @@ sequenceDiagram
   deletes its competition; a failed delete in `/lopeta` leaves the round running.
 - A resumed round is in the registry from the start, so `/lopeta` can stop it. While Metrix
   doesn't answer it retries with the poll error backoff; after six hours, or at once when
-  Metrix rejects the round, it is marked `error`.
+  Metrix rejects the round, it is marked `error`. A second `following` row for a round the
+  chat already follows is marked `error` as a duplicate instead of being resumed.
 - A player is tracked when the chat has added them (`/lisaa`) and exactly one round player has
   that name, ignoring case. `/score <name>` matches the same way.
 - Polls are handled one at a time, in order; an unusable payload is logged and skipped, keeping
@@ -77,7 +78,7 @@ sequenceDiagram
 | --- | --- |
 | `liveScoring.ts` | `ScoreTracker`: one followed round. Starts it (the first poll waits until the round's `startsAt`, `policy.ts` `msUntilStart`), polls, hands changes to commentary, starts the round end. Its `phase`, `snapshot` and `trackedPlayers` answer `/pelit`, `/top5` and `/score`. |
 | `poller.ts` | The poll timer: fetches, emits each answered fetch, schedules the next poll. |
-| `roundResumer.ts` | `resumeRound`: starts a round left `following` by the last run, retrying while Metrix doesn't answer, and marks it `error` when it gives up. |
+| `roundResumer.ts` | `resumeFollowedRounds`: a tracker for each round left `following` by the last run, a duplicate marked `error`. `resumeRound`: starts one, retrying while Metrix doesn't answer, and marks it `error` when it gives up. |
 | `policy.ts` | The polling rules: the interval by quiet polls, the error backoff, the jitter; and when a resumed round is given up on. |
 | `courseData.ts` | The round's course: layout details and statistics (once), and the weather at the layout's coordinates or the parent course's. |
 | `roundFinalizer.ts` | `finishRound`: the round end's steps and their order. |
