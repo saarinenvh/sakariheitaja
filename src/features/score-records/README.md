@@ -9,7 +9,7 @@ albatrosses.
 | --- | --- |
 | `updateSpecialScores` | commentary, before it writes the message about those holes (`../live-scoring/liveScoring.ts` wires it). Adds the course first when it is new. |
 | `getOrCreateCourse`, `saveResults` | `finishRound` (`../live-scoring/roundFinalizer.ts`) |
-| `getByCourseName`, `getByCourseId` | `/tulokset <course>` (`telegram/commands/score-records/`) |
+| `findCourseResults` | `/tulokset <course>` (`telegram/commands/score-records/`): a course id, or a name searched among the chat's courses with results (several matches are listed with their ids) |
 | `buildSpecialScoreReport` | `/assat`, `/eaglet`, `/albatrossit` (`telegram/commands/score-records/specialScores.ts`) |
 
 ## Data
@@ -29,4 +29,4 @@ corrected or removed score goes away.
 | `scoreRecords.ts` | Saves special scores per hole and results, finds or adds a course, reads a course's best results. |
 | `specialScoreReport.ts` | A chat's special scores of one kind for a period: resolves a course id, a course name (several matches are listed) or a player of the chat, then counts per player and the latest. |
 | `policy.ts` | Which hole scores are notable, and which kind each is; the count per player and the latest. |
-| `db/` | The `Course` entity and `courseRepository`; the `Ace`, `Eagle` and `Albatross` entities (`SpecialScore.entity.ts`) and `specialScoreRepository`; `scoreRepository` for `scores` (SQL, no entity yet). |
+| `db/` | The `Course` entity and `courseRepository` (names unique, ignoring case); the `Score` entity and `scoreRepository`; the `Ace`, `Eagle` and `Albatross` entities (`SpecialScore.entity.ts`) and `specialScoreRepository`. |

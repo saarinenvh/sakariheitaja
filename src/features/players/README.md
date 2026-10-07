@@ -1,7 +1,7 @@
 # Players
 
-The players a chat follows. Live scoring tracks a round player when the chat has added exactly
-that Metrix name.
+The players a chat follows. Live scoring tracks a round player when the chat has added that Metrix
+name, ignoring case: a player added as `ville` is Metrix's `Ville`.
 
 ## Entry points
 
@@ -19,4 +19,4 @@ Owns the `players` and `player_to_chat` tables (`db/`).
 | File | Does |
 | --- | --- |
 | `players.ts` | Adds a player to a chat (creating the player when new) and removes them. |
-| `db/` | The `Player` entity and `playerRepository`. |
+| `db/` | The `Player` and `PlayerChat` (`player_to_chat`) entities and `playerRepository`. A name is unique ignoring case, and a player is linked to a chat once, so `/lisaa Ville` with a stored `ville` adds nothing new. |

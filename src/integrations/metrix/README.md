@@ -74,7 +74,8 @@ event or series throws `UnsupportedRoundError`.
 - **`TrackedRoundPlayer`**: a round player matched to a player the chat follows (`players.id`).
 
 `round/results.ts` answers the questions asked of a round:
-- `trackRoundPlayers`: which players does the chat follow? The match is by exact, unique name.
+- `trackRoundPlayers`: which players does the chat follow? The match is by name, ignoring case and
+  surrounding space (`isSamePlayerName`), and must be unique.
 - `hasTrackedRoundEnded`: has every tracked player finished or DNF'd?
 - `selectRankedResults`: the results list.
 - `selectFinalScores`: the totals to save.

@@ -1,64 +1,61 @@
 import { moduleLogger } from "../../../shared/logger";
 import { dataSource } from "../../../db/dataSource";
+import { Course } from "./Course.entity";
+import { Score } from "./Score.entity";
 
 const log = moduleLogger("scores");
 
-export interface ScoreRow {
+/** A player's final result to save for a round. */
+export interface NewResult {
+  playerId: number;
+  chatId: number;
   courseId: number;
-  player: string;
-  course: string;
-  sum: number;
-  diff: number;
-  count?: number;
+  competitionId: number;
+  relativeToPar: number;
+  strokes: number;
 }
 
-export async function addResult(
-  playerId: number,
-  chatId: number,
-  courseId: number,
-  competitionId: number,
-  diff: number,
-  sum: number
-): Promise<void> {
-  await dataSource.query(
-    "INSERT INTO scores (player_id, chat_id, course_id, competition_id, diff, sum) VALUES (?, ?, ?, ?, ?, ?)",
-    [playerId, chatId, courseId, competitionId, diff, sum]
-  );
+/** A saved result as `/tulokset` lists it. */
+export interface CourseResult {
+  player: string;
+  relativeToPar: number;
+  strokes: number;
+}
+
+function scores() {
+  return dataSource.getRepository(Score);
+}
+
+export async function addResult(result: NewResult): Promise<void> {
+  const { playerId, chatId, courseId, competitionId, relativeToPar, strokes } = result;
+
+  await scores().insert({ playerId, chatId, courseId, competitionId, diff: relativeToPar, sum: strokes });
+
   log.info({ playerId }, "score added");
 }
 
 /** Players whose result for the competition is already saved. */
 export async function findResultPlayerIds(competitionId: number): Promise<number[]> {
-  const rows: { playerId: number }[] = await dataSource.query(
-    "SELECT player_id AS playerId FROM scores WHERE competition_id = ?",
-    [competitionId]
-  );
-  return rows.map(row => row.playerId);
+  const saved = await scores().find({ select: { playerId: true }, where: { competitionId } });
+
+  return saved.map(score => score.playerId);
 }
 
-export async function findByCourseName(name: string, chatId: number): Promise<ScoreRow[]> {
-  const rows = await dataSource.query(
-    `SELECT S.course_id AS courseId, I.name AS player, C.name AS course, S.sum, S.diff,
-      (SELECT COUNT(DISTINCT S2.course_id) FROM scores S2 JOIN courses C2 ON S2.course_id = C2.id
-       WHERE S2.chat_id = ? AND C2.name LIKE ?) AS count
-     FROM scores S
-     JOIN players I ON S.player_id = I.id
-     JOIN courses C ON S.course_id = C.id
-     WHERE S.chat_id = ? AND C.name LIKE ?
-     ORDER BY S.diff`,
-    [chatId, `%${name}%`, chatId, `%${name}%`]
-  );
-  return rows.map((row: any) => ({ ...row, count: Number(row.count) }));
+/** The courses the chat has results on whose name contains the text, by name. */
+export async function findCoursesWithResults(chatId: number, text: string): Promise<Course[]> {
+  return dataSource.getRepository(Course)
+    .createQueryBuilder("course")
+    .innerJoin(Score, "score", "score.courseId = course.id")
+    .where("score.chatId = :chatId", { chatId })
+    .andWhere("course.name LIKE :pattern", { pattern: `%${text}%` })
+    .distinct(true)
+    .orderBy("course.name")
+    .getMany();
 }
 
-export async function findByCourseId(id: string | number, chatId: number): Promise<ScoreRow[]> {
-  return dataSource.query(
-    `SELECT S.course_id AS courseId, I.name AS player, C.name AS course, S.sum, S.diff
-     FROM scores S
-     JOIN courses C ON S.course_id = C.id
-     JOIN players I ON S.player_id = I.id
-     WHERE S.chat_id = ? AND C.id = ?
-     ORDER BY S.diff`,
-    [chatId, id]
-  );
+/** The chat's results on the course, best first. */
+export async function findCourseResults(chatId: number, courseId: number): Promise<CourseResult[]> {
+  const saved = await scores().find({ where: { chatId, courseId }, relations: { player: true }, order: { diff: "ASC" } });
+
+  return saved.map(score => ({ player: score.player.name, relativeToPar: score.diff, strokes: score.sum }));
 }

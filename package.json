@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck:eval": "tsc -p tsconfig.eval.json --noEmit",
     "eval:commentary": "tsc -p tsconfig.eval.json && node .eval-dist/scripts/eval-commentary/run.js",
     "eval:commentary:fixture": "tsc -p tsconfig.eval.json && node .eval-dist/scripts/eval-commentary/createFixture.js"
@@ -29,8 +30,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@testcontainers/mariadb": "^12.2.0",
     "@types/node": "^25.5.0",
     "eslint": "^10.11.0",
+    "testcontainers": "^12.2.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.70.1",

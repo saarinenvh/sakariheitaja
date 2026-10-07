@@ -11,7 +11,7 @@ import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client
 import { OpenWeatherClient } from "../../integrations/openweather/client";
 import { OllamaClient } from "../../integrations/ollama/client";
 import { UnsupportedRoundError } from "../../integrations/metrix/round/normalize";
-import { hasTrackedRoundEnded, trackRoundPlayers } from "../../integrations/metrix/round/results";
+import { hasTrackedRoundEnded, isSamePlayerName, trackRoundPlayers } from "../../integrations/metrix/round/results";
 import { MetrixRound, RoundPlayer, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
 import { createCommentaryWriter, RoundCommentary } from "../commentary";
 import { getMissingTagPlayers } from "../bagtags";
@@ -85,6 +85,8 @@ export class ScoreTracker {
       return this;
     }
     this.snapshot = initial.round;
+    await this.saveRoundDay(this.snapshot);
+
     this.trackedPlayers = await this.refreshTrackedPlayers(this.snapshot);
     if (this.trackedPlayers.length === 0 && !this.playersAnnounced) {
       await this.messenger.sendText(this.chatId, MSG.followNoPlayers);
@@ -105,7 +107,10 @@ export class ScoreTracker {
   }
 
   getScoreByPlayerName(name: string): RoundPlayer | undefined {
-    return this.snapshot?.players.find(player => player.name === name);
+    const matching = this.snapshot?.players.filter(player => isSamePlayerName(player.name, name)) ?? [];
+
+    // Like tracking: a name that several round players share, case aside, picks none of them.
+    return matching.length === 1 ? matching[0] : undefined;
   }
 
   async sendTopList(): Promise<void> {
@@ -155,6 +160,17 @@ export class ScoreTracker {
         chatId: this.chatId, competitionId: this.id, messenger: this.messenger, sendTopList: () => this.sendTopList(),
       }, round, tracked);
     }).catch(error => log.error({ metrixId: this.metrixId, err: error }, "end handler failed"));
+  }
+
+  /** The day is metadata: failing to save it is logged and never stops the round being followed. */
+  private async saveRoundDay(round: MetrixRound): Promise<void> {
+    if (round.day === null) return;
+
+    try {
+      await competitionRepo.saveDay(this.id, round.day);
+    } catch (error) {
+      log.error({ metrixId: this.metrixId, err: error }, "could not save the round's day");
+    }
   }
 
   private async refreshTrackedPlayers(round: MetrixRound): Promise<TrackedRoundPlayer[]> {

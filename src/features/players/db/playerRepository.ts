@@ -1,43 +1,44 @@
 import { dataSource } from "../../../db/dataSource";
+import { insertedRow } from "../../../db/insertResult";
 import { Player } from "./Player.entity";
+import { PlayerChat } from "./PlayerChat.entity";
 
-function repo() {
+function players() {
   return dataSource.getRepository(Player);
 }
 
-export async function findByName(name: string): Promise<Player | null> {
-  return repo().findOneBy({ name });
+function links() {
+  return dataSource.getRepository(PlayerChat);
 }
 
+export async function findByName(name: string): Promise<Player | null> {
+  return players().findOneBy({ name });
+}
+
+/** The players the chat follows. */
 export async function findByChatId(chatId: number): Promise<Player[]> {
-  return dataSource
-    .getRepository(Player)
-    .createQueryBuilder("p")
-    .innerJoin("player_to_chat", "ptc", "p.id = ptc.player_id")
-    .where("ptc.chat_id = :chatId", { chatId })
-    .select(["p.id", "p.name"])
+  return players()
+    .createQueryBuilder("player")
+    .innerJoin(PlayerChat, "link", "link.playerId = player.id")
+    .where("link.chatId = :chatId", { chatId })
     .getMany();
 }
 
-export async function upsertByName(name: string): Promise<void> {
-  await dataSource.query(
-    "INSERT INTO players (name) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM players WHERE name = ?)",
-    [name, name]
-  );
+/** Adds the player when no player has that name yet (names are unique, ignoring case). */
+export async function addIfAbsent(name: string): Promise<void> {
+  await players().createQueryBuilder().insert().into(Player).values({ name }).orIgnore().execute();
 }
 
-export async function linkToChat(playerId: number, chatId: number): Promise<number> {
-  const result = await dataSource.query(
-    "INSERT IGNORE INTO player_to_chat (player_id, chat_id) VALUES (?, ?)",
-    [playerId, chatId]
-  );
-  return result.affectedRows as number;
+/** Links the player to the chat; false when they were linked already. */
+export async function linkToChat(playerId: number, chatId: number): Promise<boolean> {
+  const result = await links().createQueryBuilder().insert().into(PlayerChat).values({ playerId, chatId }).orIgnore().execute();
+
+  return insertedRow(result);
 }
 
-export async function unlinkFromChat(playerId: number, chatId: number): Promise<number> {
-  const result = await dataSource.query(
-    "DELETE FROM player_to_chat WHERE player_id = ? AND chat_id = ?",
-    [playerId, chatId]
-  );
-  return result.affectedRows as number;
+/** Unlinks the player from the chat; false when they weren't linked. */
+export async function unlinkFromChat(playerId: number, chatId: number): Promise<boolean> {
+  const result = await links().delete({ playerId, chatId });
+
+  return (result.affected ?? 0) > 0;
 }
