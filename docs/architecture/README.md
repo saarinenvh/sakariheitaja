@@ -72,14 +72,15 @@ flowchart LR
 
 1. **Commands.** `telegram/commands/registry.ts` registers every group from
    `buildCommandGroups`, in `/apua` order. `/apua` is generated from the same list, so a command
-   with `help` shows up there automatically; `isit`, `heckle` and `aamuu` have none on purpose.
-   The dev group (`/heckle`, `/aamuu`) exists only with `LLM_ENABLED=true`. Each command runs
+   with `help` shows up there automatically; `isit`, `heckle`, `aamuu` and `virheet` have none on purpose.
+   The dev group (`/heckle`, `/aamuu`, `/virheet`) exists only with `LLM_ENABLED=true`. Each command runs
    through `runCommand`, which logs it and catches its failure.
 2. **The text listener**, registered last because it reacts to any text. It remembers the
    message for the heckler, answers when Sakari is named (match-play answer from Challonge
    and the model, else a heckle), and now and then replies to "jallu" or drops a random quote.
-3. **Startup resume.** Every competition not marked done gets a new `ScoreTracker`, without a
-   new player announcement.
+3. **Startup resume.** Every competition still `following` gets a new `ScoreTracker`, without a
+   new player announcement. Each starts in the background and retries while Metrix doesn't
+   answer, so startup doesn't wait for Metrix.
 4. **The morning greeting**, every day at 09:00 to `MORNING_CHAT_ID`, when it is set.
 
 Joining a group (`message:new_chat_members`, `message:group_chat_created`) stores the chat.

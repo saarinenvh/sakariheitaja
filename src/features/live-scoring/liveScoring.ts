@@ -3,14 +3,13 @@ import { RoundCourseData } from "./courseData";
 import { finishRound } from "./roundFinalizer";
 import { msUntilStart } from "./policy";
 import { ChatMessenger } from "../chatMessenger";
-import { formatPlayerAnnouncement, formatRoundTopList, liveScoringMessages as MSG } from "./messages";
+import { formatPlayerAnnouncement, formatRoundTopList } from "./messages";
 import { findByChatId } from "../players";
 import { addIfAbsent } from "../chats";
 import * as competitionRepo from "./db/competitionRepository";
 import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client";
 import { OpenWeatherClient } from "../../integrations/openweather/client";
 import { OllamaClient } from "../../integrations/ollama/client";
-import { UnsupportedRoundError } from "../../integrations/metrix/round/normalize";
 import { hasTrackedRoundEnded, isSamePlayerName, trackRoundPlayers } from "../../integrations/metrix/round/results";
 import { MetrixRound, RoundPlayer, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
 import { createCommentaryWriter, RoundCommentary } from "../commentary";
@@ -20,13 +19,13 @@ import { moduleLogger } from "../../shared/logger";
 
 const log = moduleLogger("live-scoring");
 
-/** What a tracker talks to: the chat, Metrix, the weather service and the commentary model. */
 /** Stores the chat, if it's new, and the competition it starts following. */
 export async function registerCompetition(chatId: number, chatName: string, metrixId: string): Promise<{ insertId: number }> {
   await addIfAbsent(chatId, chatName);
   return competitionRepo.create(chatId, metrixId);
 }
 
+/** What a tracker talks to: the chat, Metrix, the weather service and the commentary model. */
 export interface TrackerDependencies {
   messenger: ChatMessenger;
   metrix: MetrixClient;
@@ -35,18 +34,36 @@ export interface TrackerDependencies {
 }
 
 /**
+ * How starting a tracker went. `unavailable`: Metrix didn't answer, so trying again can help.
+ * `stopped`: the round was stopped (`/lopeta`) before it started.
+ */
+export type StartResult =
+  | { kind: "following" }
+  | { kind: "unavailable" }
+  | { kind: "invalid"; error: unknown }
+  | { kind: "no-players" }
+  | { kind: "stopped" };
+
+/**
+ * `starting` until the first fetch has worked; a resumed round can stay there while it retries.
+ * `finishing`: every tracked player is done and the round end waits for the last commentary.
+ */
+type TrackerState = "starting" | "following" | "finishing" | "stopped";
+
+/** The state as shown: a followed round whose start time is still ahead is `scheduled`. */
+export type TrackerPhase = TrackerState | "scheduled";
+
+/**
  * Follows one Metrix round in one chat: polls it, hands every change to commentary, and finishes the round
- * once every tracked player is done. Created by `/follow`, and on startup for rounds still unfinished.
+ * once every tracked player is done. Created by `/follow`, and on startup for rounds still being followed.
  */
 export class ScoreTracker {
-  following = true;
   snapshot: MetrixRound | null = null;
   trackedPlayers: TrackedRoundPlayer[] = [];
-  initializationError: string | null = null;
 
+  private state: TrackerState = "starting";
   private poller: Poller | null = null;
   private pollQueue: Promise<void> = Promise.resolve();
-  private endQueued = false;
   private readonly commentary: RoundCommentary;
   private readonly course: RoundCourseData;
   private readonly messenger: ChatMessenger;
@@ -74,34 +91,55 @@ export class ScoreTracker {
     });
   }
 
-  /** Loads the round, announces the players and starts polling; `following` is false when it couldn't start. */
-  async init(): Promise<this> {
+  get phase(): TrackerPhase {
+    const startsAt = this.snapshot?.startsAt;
+    if (this.state === "following" && startsAt && startsAt > new Date()) return "scheduled";
+
+    return this.state;
+  }
+
+  /** The first fetch worked and the round hasn't been stopped: it has a snapshot to show. */
+  get started(): boolean {
+    return this.state === "following" || this.state === "finishing";
+  }
+
+  get stopped(): boolean {
+    return this.state === "stopped";
+  }
+
+  /**
+   * Loads the round, announces the players and starts polling. A round that couldn't start stays
+   * `starting`, so it can be started again.
+   */
+  async start(): Promise<StartResult> {
     const initial = await this.metrix.getRound(this.metrixId);
-    if (initial.kind !== "fetched") {
-      const error = initial.kind === "invalid" ? initial.error : new Error("Metrix round request failed");
-      log.error({ metrixId: this.metrixId, err: error }, "invalid initial round");
-      this.initializationError = error instanceof UnsupportedRoundError ? error.message : MSG.followInvalid;
-      this.following = false;
-      return this;
+
+    if (initial.kind === "unavailable") return { kind: "unavailable" };
+    if (initial.kind === "invalid") {
+      log.error({ metrixId: this.metrixId, err: initial.error }, "invalid initial round");
+      return { kind: "invalid", error: initial.error };
     }
+
     this.snapshot = initial.round;
     await this.saveRoundDay(this.snapshot);
 
     this.trackedPlayers = await this.refreshTrackedPlayers(this.snapshot);
-    if (this.trackedPlayers.length === 0 && !this.playersAnnounced) {
-      await this.messenger.sendText(this.chatId, MSG.followNoPlayers);
-      this.following = false;
-      return this;
-    }
+    if (this.trackedPlayers.length === 0 && !this.playersAnnounced) return { kind: "no-players" };
+
     this.commentary.observe(this.snapshot, this.trackedPlayers);
     await this.announceIfNeeded();
+
+    if (this.stopped) return { kind: "stopped" };
+
+    this.state = "following";
     this.startPolling(this.snapshot);
     log.info({ metrixId: this.metrixId, round: this.snapshot.name }, "started following");
-    return this;
+
+    return { kind: "following" };
   }
 
   stopFollowing(): void {
-    this.following = false;
+    this.state = "stopped";
     this.poller?.stop();
     this.commentary.stop();
   }
@@ -135,27 +173,34 @@ export class ScoreTracker {
   }
 
   private async onPollResult(result: RoundFetchResult): Promise<void> {
-    if (!this.following || this.endQueued) return;
+    if (this.state !== "following") return;
     if (result.kind !== "fetched") throw result.kind === "invalid" ? result.error : new Error("Metrix round request failed");
+
     const { round } = result;
     const tracked = await this.refreshTrackedPlayers(round);
-    if (!this.following) return;
+    if (this.state !== "following") return;
+
     const changed = this.commentary.observe(round, tracked);
     if (changed) log.info({ metrixId: this.metrixId }, "score changes detected, commentary queued");
+
     this.snapshot = round;
     this.trackedPlayers = tracked;
     this.poller?.reportChanges(changed);
+
     if (hasTrackedRoundEnded(tracked)) this.queueRoundEnd(round, tracked);
   }
 
   /** The round ends only after the last commentary message has gone out. */
   private queueRoundEnd(round: MetrixRound, tracked: TrackedRoundPlayer[]): void {
-    this.endQueued = true;
+    this.state = "finishing";
     this.poller?.stop();
+
     void this.commentary.idle().then(async () => {
-      if (!this.following) return;
+      if (this.stopped) return;
+
       this.stopFollowing();
       log.info({ metrixId: this.metrixId, round: round.name }, "tracked scorecards are finished");
+
       await finishRound({
         chatId: this.chatId, competitionId: this.id, messenger: this.messenger, sendTopList: () => this.sendTopList(),
       }, round, tracked);

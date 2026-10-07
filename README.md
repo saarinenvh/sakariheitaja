@@ -187,9 +187,10 @@ Only registered when `LLM_ENABLED=true`:
 |---|---|
 | `/heckle [message]` | Force an LLM heckler response from the chat's message buffer |
 | `/aamuu` | Send the morning greeting on demand |
+| `/virheet` | List the followed rounds that were given up on (`error`), in every chat |
 
 `/apua` is generated from the command definitions (`src/telegram/commands/*/command.ts`), so it
-lists every command above except `/isit`, `/heckle`, `/aamuu` and itself.
+lists every command above except `/isit`, `/heckle`, `/aamuu`, `/virheet` and itself.
 
 ## Tech Stack
 

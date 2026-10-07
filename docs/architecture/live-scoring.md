@@ -20,8 +20,9 @@ sequenceDiagram
     participant Messenger as ChatMessenger
 
     User->>Cmd: /follow 3809486
+    Cmd->>Cmd: trackerRegistry.reserve — once per chat and round
     Cmd->>Comp: addIfAbsent(chat), create(chatId, metrixId)
-    Cmd->>Tracker: new ScoreTracker(...).init()
+    Cmd->>Tracker: new ScoreTracker(...).start()
     Tracker->>Metrix: getRound(metrixId)
     Metrix-->>Tracker: MetrixRound (normalized)
     Tracker->>Players: findByChatId
@@ -68,18 +69,22 @@ sequenceDiagram
     End->>Messenger: end message
     End->>Db: course, final results
     End->>Json: profiles, bagtag swaps
-    End->>Db: competition marked done
+    End->>Db: competition marked finished
     End->>Messenger: TOP-5 (with ratings)
     End->>Messenger: bagtag announcement
 ```
 
-The competition is marked done only after everything is saved. If a step before it fails, the
-round stays unfinished and the round end runs again after a restart; those steps are safe to
+The competition is marked `finished` only after everything is saved. If a step before it fails,
+the round stays `following` and the round end runs again after a restart; those steps are safe to
 repeat. The TOP-5 and bagtag messages after it are best effort.
 
 ## `/lopeta`, restarts
 
-- `/lopeta <metrixId>` stops the tracker and deletes the competition.
-- A restart loses the in-memory state. `main.ts` resumes each unfinished competition with a
-  fresh tracker that takes the current scorecards as its baseline: nothing is replayed, and no
-  movement is claimed against the old ranking.
+- `/lopeta <metrixId>` deletes the competition, then stops the tracker, then replies. If the
+  delete fails, the round goes on.
+- A restart loses the in-memory state. `main.ts` resumes each competition still `following`
+  with a fresh tracker that takes the current scorecards as its baseline: nothing is replayed,
+  and no movement is claimed against the old ranking.
+- A resumed round that can't start retries in the background (`roundResumer.ts`) while Metrix
+  doesn't answer. After six hours, or at once when Metrix rejects the round, the competition
+  is marked `error` and stays for manual handling; `/virheet` lists those.

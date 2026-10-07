@@ -19,8 +19,8 @@ afterAll(async () => {
   await dataSource?.destroy();
 });
 
-async function competitionRows(): Promise<{ id: number; day: string | null; finished: number }[]> {
-  return dataSource.query("SELECT id, DATE_FORMAT(day, '%Y-%m-%d') AS day, finished FROM competitions ORDER BY id");
+async function competitionRows(): Promise<{ id: number; day: string | null; status: string }[]> {
+  return dataSource.query("SELECT id, DATE_FORMAT(day, '%Y-%m-%d') AS day, status FROM competitions ORDER BY id");
 }
 
 describe("chats", () => {
@@ -37,7 +37,7 @@ describe("competitions", () => {
     const { insertId } = await competitions.create(CHAT_ID, "3809486");
 
     expect(insertId).toBe(1);
-    expect(await competitionRows()).toEqual([{ id: 1, day: null, finished: 0 }]);
+    expect(await competitionRows()).toEqual([{ id: 1, day: null, status: "following" }]);
   });
 
   it("saves the round's day once, keeping the first", async () => {
@@ -47,18 +47,29 @@ describe("competitions", () => {
     expect((await competitionRows())[0].day).toBe("2026-10-03");
   });
 
-  it("resumes only unfinished rounds that have a chat and a Metrix id", async () => {
+  it("resumes only followed rounds that have a chat and a Metrix id", async () => {
     await competitions.create(CHAT_ID, "3809487");
     await competitions.markFinished(2);
     // A row from before the bot checked its columns: no Metrix id.
-    await dataSource.query("INSERT INTO competitions (finished, chat_id) VALUES (0, ?)", [CHAT_ID]);
+    await dataSource.query("INSERT INTO competitions (chat_id) VALUES (?)", [CHAT_ID]);
 
-    await expect(competitions.findUnfinished()).resolves.toEqual([{ id: 1, chatId: CHAT_ID, metrixId: "3809486" }]);
+    await expect(competitions.findFollowing()).resolves.toEqual([{ id: 1, chatId: CHAT_ID, metrixId: "3809486" }]);
   });
 
   it("keeps old rounds without a day", async () => {
-    await dataSource.query("INSERT INTO competitions (finished, chat_id, metrix_id) VALUES (1, ?, '1000')", [CHAT_ID]);
+    await dataSource.query("INSERT INTO competitions (status, chat_id, metrix_id) VALUES ('finished', ?, '1000')", [CHAT_ID]);
 
     expect((await competitionRows()).at(-1)).toMatchObject({ day: null });
+  });
+
+  it("marks a round as an error: no longer resumed, listed with when and why", async () => {
+    const erroredAt = new Date("2026-10-07T09:30:00Z");
+
+    await competitions.markError(1, "Error: not a round", erroredAt);
+
+    await expect(competitions.findFollowing()).resolves.toEqual([]);
+    await expect(competitions.findErrored()).resolves.toEqual([
+      { id: 1, chatId: CHAT_ID, metrixId: "3809486", erroredAt, errorReason: "Error: not a round" },
+    ]);
   });
 });
