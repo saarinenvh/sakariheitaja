@@ -29,4 +29,14 @@ describe("packing lines into messages", () => {
   it("sends nothing for no lines", () => {
     expect(packLines([])).toEqual([]);
   });
+
+  it("refuses a limit that isn't a positive integer, instead of looping forever", () => {
+    expect(() => packLines(["x"], 0)).toThrow(RangeError);
+    expect(() => packLines(["x"], -5)).toThrow(RangeError);
+    expect(() => packLines(["x"], 2.5)).toThrow(RangeError);
+  });
+
+  it("still works with the smallest limit", () => {
+    expect(packLines(["xyz"], 1)).toEqual(["…"]);
+  });
 });

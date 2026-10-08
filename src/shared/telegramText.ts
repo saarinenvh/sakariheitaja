@@ -8,6 +8,9 @@ const ELLIPSIS = "…";
  * never split across messages; one too long on its own is cut short and ends with "…".
  */
 export function packLines(lines: readonly string[], maxLength: number = TELEGRAM_MESSAGE_LIMIT): string[] {
+  // Below 1 not even the "…" fits, and cutting a line would never end.
+  if (!Number.isInteger(maxLength) || maxLength < 1) throw new RangeError("maxLength must be a positive integer");
+
   const messages: string[] = [];
   let current: string | null = null;
 
