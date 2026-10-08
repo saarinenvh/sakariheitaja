@@ -2,9 +2,9 @@ import { FactualCommentaryBrief } from "../facts/playerBrief";
 import { formatHoleScore, formatSigned } from "../facts/holeResults";
 import { truncateCourseName } from "./courseName";
 import { escapeHtml } from "../../../shared/html";
+import { TELEGRAM_MESSAGE_LIMIT } from "../../../shared/telegramText";
 import { ScoreChange } from "../detect/scorecardChanges";
 
-export const TELEGRAM_MESSAGE_LIMIT = 4096;
 const BLOCK_SEPARATOR = "\n\n";
 const OPENING_PREFIX = "🎙️ ";
 const CLOSING_PREFIX = "📊 ";
