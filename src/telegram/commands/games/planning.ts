@@ -21,14 +21,14 @@ export async function makeGamePlan(ctx: Command): Promise<unknown> {
   return ctx.reply(formatMakePlanResult(result));
 }
 
-/** `/pelei`: the chat's plans from today on. */
+/** `/hepit`: the chat's plans from today on. */
 export async function listGamePlans(ctx: Command): Promise<unknown> {
   const plans = await listPlans(ctx.chat.id);
-  if (plans.length === 0) return ctx.reply(MSG.peleiNone);
+  if (plans.length === 0) return ctx.reply(MSG.hepitNone);
 
   const lines = plans.map(plan => `${plan.id}. ${formatPlanSummary(plan)}`);
 
-  return ctx.reply(MSG.peleiHeader + lines.join("\n") + MSG.peleiFooter);
+  return ctx.reply(MSG.hepitHeader + lines.join("\n") + MSG.hepitFooter);
 }
 
 /** `/mukaan <nr> [name]`: you, by your Telegram id, or any name. */

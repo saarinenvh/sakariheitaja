@@ -6,7 +6,7 @@ export const gameMessages = {
   gifplzUsage:      "Anna hakusana.",
 };
 
-/** Game planning: /hep, /pelei, /mukaan, /pois, /peru. */
+/** Game planning: /hep, /hepit, /mukaan, /pois, /peru. */
 export const planningMessages = {
   hepUsage:         "Kerro milloin ja missä! Esim: /hep la 18 Keljo tai /hep huomenna klo 9.00 Karjaa + Härkälinna",
   hepFreeText:      "En vielä ymmärrä vapaata tekstiä. Kirjoita päivä tai kellonaika ensin, esim: /hep la 18 Keljo",
@@ -16,11 +16,11 @@ export const planningMessages = {
   hepSaved:         (planId: number, summary: string) => `Tallennettu nro ${planId}: ${summary}\nMukaan: /mukaan ${planId}`,
   noSender:         "En tiedä kuka olet, joten en voi tallentaa.",
 
-  peleiNone:        "Ei suunniteltuja pelejä. Heitä /hep ja houkuttele muut mukaan!",
-  peleiHeader:      "Tulevat pelit:\n\n",
-  peleiFooter:      "\n\nMukaan: /mukaan <nro>",
+  hepitNone:        "Ei suunniteltuja pelejä. Heitä /hep ja houkuttele muut mukaan!",
+  hepitHeader:      "Tulevat pelit:\n\n",
+  hepitFooter:      "\n\nMukaan: /mukaan <nro>",
 
-  planNumberUsage:  (command: string) => `Anna pelin numero. Esim: /${command} 12 (näkyy /pelei-listassa)`,
+  planNumberUsage:  (command: string) => `Anna pelin numero. Esim: /${command} 12 (näkyy /hepit-listassa)`,
   noPlan:           "Ei löydy tommosta peliä tästä ryhmästä.",
   joined:           (name: string, planId: number) => `${name} mukana pelissä ${planId}!`,
   alreadyIn:        (name: string) => `${name} on jo mukana.`,

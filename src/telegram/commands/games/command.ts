@@ -10,7 +10,7 @@ export const gameCommands: CommandGroup = {
     { name: "hyva", handle: cheer, help: [{ usage: "/hyva", description: "Kyl te tiiätte! XD" }] },
     { name: "hep", handle: makeGamePlan,
       help: [{ usage: "/hep [päivä] [klo] [rata + rata]", description: "Suunnittele peli, esim. /hep la 18 Keljo. Ilman päivää tänään." }] },
-    { name: "pelei", handle: listGamePlans, help: [{ usage: "/pelei", description: "Listaa tämän ryhmän tulevat pelit." }] },
+    { name: "hepit", handle: listGamePlans, help: [{ usage: "/hepit", description: "Listaa tämän ryhmän tulevat pelit." }] },
     { name: "mukaan", handle: joinGamePlan,
       help: [{ usage: "/mukaan [nro] [nimi]", description: "Lähde mukaan peliin, tai lisää joku nimellä." }] },
     { name: "pois", handle: leaveGamePlan,

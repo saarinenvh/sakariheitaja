@@ -1,6 +1,6 @@
 # Games
 
-Game planning: plans for today or days ahead, made with `/hep`, listed with `/pelei`, joined with
+Game planning: plans for today or days ahead, made with `/hep`, listed with `/hepit`, joined with
 `/mukaan`, left with `/pois` and cancelled with `/peru`. The design is in sakke-workspace,
 `docs/features/game-planning/README.md`. This is its phase 1: the fixed form only (a day and/or
 time first, then the courses). Free text is read by the model in a later phase.
@@ -14,7 +14,7 @@ a failed message is logged and ends it.
 | Entry point | Called by |
 | --- | --- |
 | `makePlan` | `/hep` (`telegram/commands/games/planning.ts`) |
-| `listPlans` | `/pelei` |
+| `listPlans` | `/hepit` |
 | `joinPlan`, `leavePlan` | `/mukaan`, `/pois` |
 | `cancelPlan` | `/peru` |
 
@@ -32,7 +32,7 @@ a collation that ignores case but not accents.
   add the same name twice.
 
 Plans are per chat: commands only see the chat's own plans. A plan's creator isn't necessarily a
-player; a fixed-form plan makes its creator the first one. Past plans leave `/pelei` but stay
+player; a fixed-form plan makes its creator the first one. Past plans leave `/hepit` but stay
 stored, as the history of who planned to play where.
 
 ## Files

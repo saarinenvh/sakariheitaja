@@ -5,7 +5,7 @@ import { checkPlanDay, isPlayerNameTooLong, MAX_PLAYER_NAME_LENGTH, PLAN_TIME_ZO
 import * as plans from "./db/gamePlanRepository";
 import { GamePlan } from "./db/GamePlan.entity";
 
-// Game planning (/hep, /pelei, /mukaan, /pois, /peru): plans for today or days ahead, per chat.
+// Game planning (/hep, /hepit, /mukaan, /pois, /peru): plans for today or days ahead, per chat.
 
 /** A Telegram user: their id, and the name the bot shows for them. */
 export interface Member {

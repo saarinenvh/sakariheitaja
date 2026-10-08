@@ -91,7 +91,7 @@ describe("/hep", () => {
   });
 });
 
-describe("/pelei", () => {
+describe("/hepit", () => {
   it("lists the plans with their numbers", async () => {
     mocks.listPlans.mockResolvedValue([plan({ playerNames: ["Ville"] }), plan({ id: 13, day: "2026-10-11", startTime: null, courses: ["Tali"] })]);
     const { ctx, reply } = command("");
@@ -100,7 +100,7 @@ describe("/pelei", () => {
 
     expect(mocks.listPlans).toHaveBeenCalledWith(CHAT_ID);
     expect(reply).toHaveBeenCalledWith(
-      `${MSG.peleiHeader}12. la 10.10. klo 9.00 Karjaa + Härkälinna — Ville\n13. su 11.10. Tali${MSG.peleiFooter}`,
+      `${MSG.hepitHeader}12. la 10.10. klo 9.00 Karjaa + Härkälinna — Ville\n13. su 11.10. Tali${MSG.hepitFooter}`,
     );
   });
 
@@ -110,7 +110,7 @@ describe("/pelei", () => {
 
     await listGamePlans(ctx);
 
-    expect(reply).toHaveBeenCalledWith(MSG.peleiNone);
+    expect(reply).toHaveBeenCalledWith(MSG.hepitNone);
   });
 });
 
