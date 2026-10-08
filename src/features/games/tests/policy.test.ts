@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkPlanDay } from "../policy";
+import { checkPlanDay, isPlayerNameTooLong } from "../policy";
 
 const TODAY = "2026-10-08";
 
@@ -15,5 +15,16 @@ describe("a plan's day", () => {
 
   it("can't be more than 60 days ahead", () => {
     expect(checkPlanDay("2026-12-08", TODAY)).toEqual({ kind: "too-far", maxDaysAhead: 60 });
+  });
+});
+
+describe("a player's name", () => {
+  it("fits up to 100 characters", () => {
+    expect(isPlayerNameTooLong("a".repeat(100))).toBe(false);
+    expect(isPlayerNameTooLong("a".repeat(101))).toBe(true);
+  });
+
+  it("counts an emoji as one character, as MariaDB does", () => {
+    expect(isPlayerNameTooLong("⛳".repeat(100))).toBe(false);
   });
 });

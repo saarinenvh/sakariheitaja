@@ -44,6 +44,7 @@ export async function joinGamePlan(ctx: Command): Promise<unknown> {
     case "joined": return ctx.reply(MSG.joined(player.name, args.planId));
     case "already": return ctx.reply(MSG.alreadyIn(player.name));
     case "no-plan": return ctx.reply(MSG.noPlan);
+    case "name-too-long": return ctx.reply(MSG.nameTooLong(result.maxLength));
   }
 }
 

@@ -146,6 +146,7 @@ describe("/mukaan", () => {
   it.each([
     [{ kind: "already" }, MSG.alreadyIn("Ville")],
     [{ kind: "no-plan" }, MSG.noPlan],
+    [{ kind: "name-too-long", maxLength: 100 }, MSG.nameTooLong(100)],
   ])("answers %o", async (result, expected) => {
     mocks.joinPlan.mockResolvedValue(result);
     const { ctx, reply } = command("12");

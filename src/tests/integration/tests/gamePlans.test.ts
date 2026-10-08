@@ -102,6 +102,17 @@ describe("joining", () => {
   });
 });
 
+describe("a name's length", () => {
+  it("stores a name of 100 characters whole, and refuses a longer one instead of cutting it", async () => {
+    const planId = await plan("la Keljo");
+
+    await expect(games.joinPlan(PELIT.id, planId, { name: "a".repeat(100), telegramUserId: null })).resolves.toEqual({ kind: "joined" });
+    await expect(games.joinPlan(PELIT.id, planId, { name: "b".repeat(101), telegramUserId: null }))
+      .resolves.toEqual({ kind: "name-too-long", maxLength: 100 });
+    expect(await playerNames(planId)).toEqual(["Ville", "a".repeat(100)]);
+  });
+});
+
 describe("leaving", () => {
   it("removes a member by Telegram id, and a name only from the players without one", async () => {
     const planId = await plan("la Keljo");

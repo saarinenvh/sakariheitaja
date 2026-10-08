@@ -1,7 +1,7 @@
 import { addIfAbsent } from "../chats";
 import { dayInTimeZone } from "../../shared/time";
 import { readFixedForm } from "./fixedForm";
-import { checkPlanDay, PLAN_TIME_ZONE } from "./policy";
+import { checkPlanDay, isPlayerNameTooLong, MAX_PLAYER_NAME_LENGTH, PLAN_TIME_ZONE } from "./policy";
 import * as plans from "./db/gamePlanRepository";
 import { GamePlan } from "./db/GamePlan.entity";
 
@@ -27,7 +27,11 @@ export type MakePlanResult =
   | { kind: "past" }
   | { kind: "too-far"; maxDaysAhead: number };
 
-export type JoinResult = { kind: "joined" } | { kind: "already" } | { kind: "no-plan" };
+export type JoinResult =
+  | { kind: "joined" }
+  | { kind: "already" }
+  | { kind: "no-plan" }
+  | { kind: "name-too-long"; maxLength: number };
 export type LeaveResult = { kind: "left" } | { kind: "not-in-plan" } | { kind: "no-plan" };
 export type CancelResult = { kind: "cancelled" } | { kind: "not-creator" } | { kind: "no-plan" };
 
@@ -60,6 +64,7 @@ export async function listPlans(chatId: number, now = new Date()): Promise<GameP
 
 /** Adds a member (with their Telegram id) or a name (without one) to the chat's plan. */
 export async function joinPlan(chatId: number, planId: number, player: plans.PlanPlayer): Promise<JoinResult> {
+  if (isPlayerNameTooLong(player.name)) return { kind: "name-too-long", maxLength: MAX_PLAYER_NAME_LENGTH };
   if (!(await plans.findInChat(planId, chatId))) return { kind: "no-plan" };
 
   return (await plans.addPlayer(planId, player)) ? { kind: "joined" } : { kind: "already" };

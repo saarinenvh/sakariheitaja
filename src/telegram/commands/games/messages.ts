@@ -24,6 +24,7 @@ export const planningMessages = {
   noPlan:           "Ei löydy tommosta peliä tästä ryhmästä.",
   joined:           (name: string, planId: number) => `${name} mukana pelissä ${planId}!`,
   alreadyIn:        (name: string) => `${name} on jo mukana.`,
+  nameTooLong:      (maxLength: number) => `Nimi voi olla enintään ${maxLength} merkkiä.`,
   left:             (name: string, planId: number) => `${name} pois pelistä ${planId}.`,
   notInPlan:        (name: string) => `${name} ei ole mukana siinä pelissä.`,
   cancelled:        (planId: number) => `Peli ${planId} peruttu.`,
