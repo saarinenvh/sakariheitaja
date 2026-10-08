@@ -4,10 +4,13 @@ import type { GamePlan, MakePlanResult } from "../../../../features/games";
 const mocks = vi.hoisted(() => ({
   makePlan: vi.fn(), listPlans: vi.fn(), joinPlan: vi.fn(), leavePlan: vi.fn(), cancelPlan: vi.fn(),
 }));
-vi.mock("../../../../features/games", () => mocks);
+// The real summary format, so the replies are checked as they're sent.
+vi.mock("../../../../features/games", async () => ({
+  ...mocks, formatPlanSummary: (await import("../../../../features/games/planSummary")).formatPlanSummary,
+}));
 
 import { CommandContext, Context } from "grammy";
-import { cancelGamePlan, formatPlanSummary, joinGamePlan, leaveGamePlan, listGamePlans, makeGamePlan } from "../planning";
+import { cancelGamePlan, joinGamePlan, leaveGamePlan, listGamePlans, makeGamePlan } from "../planning";
 import { planningMessages as MSG } from "../messages";
 
 const CHAT_ID = -100;
@@ -34,17 +37,6 @@ function plan(fields: Partial<GamePlan> & { playerNames?: string[] }): GamePlan 
 
 beforeEach(() => {
   vi.clearAllMocks();
-});
-
-describe("the plan summary", () => {
-  it("shows the day, time, courses and players", () => {
-    expect(formatPlanSummary(plan({ playerNames: ["Ville", "Wiltzu"] })))
-      .toBe("la 10.10. klo 9.00 Karjaa + Härkälinna — Ville, Wiltzu");
-  });
-
-  it("leaves out a time and players it doesn't have", () => {
-    expect(formatPlanSummary(plan({ startTime: null, courses: ["Tali"] }))).toBe("la 10.10. Tali");
-  });
 });
 
 describe("/hep", () => {

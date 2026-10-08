@@ -17,6 +17,8 @@ export interface CommandDependencies {
   giphy: GiphyClient;
   recipes: RecipesClient;
   llmEnabled: boolean;
+  /** The group whose game plans the morning greeting lists (`GAMES_CHAT_ID`). */
+  gamesChatId: number | undefined;
 }
 
 export type CommandHandler = (ctx: CommandContext<Context>) => Promise<unknown>;

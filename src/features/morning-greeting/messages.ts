@@ -4,3 +4,5 @@ export function formatMorningGreeting(greeting: string, clockTime: string): stri
 }
 
 export const morningCallToAction = "Ja tästä päivä käyntiin!";
+
+export const gamesJoinLine = "Liity mukaan SakariPelit kanavalla!";

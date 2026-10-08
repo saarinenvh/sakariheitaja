@@ -32,6 +32,7 @@ const dependencies: CommandDependencies = {
   giphy: createGiphyClient({ apiKey: config.giphyApiKey }),
   recipes: createRecipesClient(),
   llmEnabled: config.llmEnabled,
+  gamesChatId: config.telegram.gamesChatId,
 };
 
 registerCommands(bot, dependencies);

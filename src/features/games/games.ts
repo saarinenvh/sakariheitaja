@@ -1,5 +1,5 @@
 import { addIfAbsent } from "../chats";
-import { dayInTimeZone } from "../../shared/time";
+import { addDays, dayInTimeZone } from "../../shared/time";
 import { readFixedForm } from "./fixedForm";
 import { checkPlanDay, isPlayerNameTooLong, MAX_PLAYER_NAME_LENGTH, PLAN_TIME_ZONE } from "./policy";
 import * as plans from "./db/gamePlanRepository";
@@ -60,6 +60,13 @@ export async function makePlan(chat: PlanChat, creator: Member, text: string, no
 /** The chat's plans from today on. */
 export async function listPlans(chatId: number, now = new Date()): Promise<GamePlan[]> {
   return plans.findFromDay(chatId, dayInTimeZone(now, PLAN_TIME_ZONE));
+}
+
+/** The chat's plans for `days` days, today included: 7 is today and the next six days. */
+export async function listPlansForDays(chatId: number, days: number, now = new Date()): Promise<GamePlan[]> {
+  const today = dayInTimeZone(now, PLAN_TIME_ZONE);
+
+  return plans.findBetween(chatId, today, addDays(today, days - 1));
 }
 
 /** Adds a member (with their Telegram id) or a name (without one) to the chat's plan. */
