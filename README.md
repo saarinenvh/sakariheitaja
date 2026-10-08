@@ -171,8 +171,11 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
 ### Fun
 | Command | Description |
 |---|---|
-| `/hep <text>` | Announce you're playing today |
-| `/pelei` | List today's game plans |
+| `/hep [day] [klo] [time] <course + course>` | Plan a game, today or up to 60 days ahead (e.g. `/hep la 18 Keljo`); you're its first player |
+| `/pelei` | The chat's planned games from today on, with their numbers |
+| `/mukaan <nr> [name]` | Join a game, or add someone by name |
+| `/pois <nr> [name]` | Leave a game, or remove someone added by name |
+| `/peru <nr>` | Cancel a game you planned |
 | `/kukakirjaa <names...>` | Randomly pick who keeps score |
 | `/hyva` | You know what this does |
 | `/gifplz <term>` | Send a random matching GIF from Giphy |

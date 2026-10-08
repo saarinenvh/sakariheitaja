@@ -18,10 +18,12 @@ in the migrations.
 | `courses` | `features/score-records/` | course names, from rounds and special scores; unique, ignoring case |
 | `scores` | `features/score-records/` | final results per player and round (`/tulokset`) |
 | `aces`, `eagles`, `albatrosses` | `features/score-records/` | special scores, one row per competition, player and hole (`hole_number`; NULL on rows saved before 2026-10). A corrected hole moves or removes its row. |
+| `game_plans` | `features/games/` | planned games (`/hep`): chat, creator (Telegram id and name), day, optional start time, courses (JSON list), the text as written. utf8mb4. Past plans stay as history. |
+| `game_plan_players` | `features/games/` | a plan's players: a name, with the Telegram id when known. Unique per plan by Telegram id, or by name ignoring case when there's no id (generated `name_without_id`). utf8mb4. |
 
 `db/dataSource.ts` lists the entities: `Player`, `PlayerChat` (`player_to_chat`), `Chat`,
-`Competition`, `Course`, `Score`, and `Ace`, `Eagle`, `Albatross` (one table each, sharing
-`SpecialScoreRecord`). BIGINT columns (the chat ids)
+`Competition`, `Course`, `Score`, `Ace`, `Eagle`, `Albatross` (one table each, sharing
+`SpecialScoreRecord`), `GamePlan` and `GamePlanPlayer`. BIGINT columns (the chat ids)
 read as numbers: the data source sets `supportBigNumbers` and turns `bigNumberStrings` off. The
 schema isn't synchronized from the entities. Changes to it are TypeORM migrations in `db/migrations/`, which
 run when the bot starts (`migrationsRun`), before anything else uses the database. The bot's DB
@@ -53,5 +55,4 @@ Lost on restart, by design.
 | commentary memory: published places, recent messages, welcome flags | `RoundCommentary` | a resumed round starts from the current cards |
 | course details and statistics, course location | `RoundCourseData` | fetched once per round |
 | the last 10 messages per chat | `heckler/heckler.ts` | heckles and mention answers |
-| today's `/hep` plans | `games/games.ts` | cleared when the date changes |
 | loaded prompts | `commentaryRuntime`, `heckler/prompts.ts`, `match-play-asker/prompts.ts` | read once from `src/prompts/` |

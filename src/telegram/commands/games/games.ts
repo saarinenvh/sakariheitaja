@@ -1,5 +1,4 @@
 import { CommandContext, Context } from "grammy";
-import { announcePlan, todaysPlans } from "../../../features/games";
 import { getRandom } from "../../../shared/utils";
 import { moduleLogger } from "../../../shared/logger";
 import { wait } from "../../../shared/time";
@@ -38,25 +37,4 @@ async function runCountdown(ctx: Command, winner: string): Promise<void> {
     await wait(COUNTDOWN_STEP_MS);
     await ctx.reply(step);
   }
-}
-
-export async function announceTodaysPlan(ctx: Command): Promise<unknown> {
-  if (!ctx.match) return ctx.reply(MSG.hepUsage);
-  const user = ctx.from?.username ?? ctx.from?.first_name ?? "tuntematon";
-  announcePlan(user, ctx.match);
-  return ctx.reply(formatTodaysPlans());
-}
-
-export async function listTodaysPlans(ctx: Command): Promise<unknown> {
-  return ctx.reply(formatTodaysPlans());
-}
-
-function formatTodaysPlans(): string {
-  const plans = Object.entries(todaysPlans());
-  if (plans.length === 0) return MSG.peleiNone;
-  let message = MSG.peleiHeader;
-  for (const [user, plan] of plans) {
-    message += `${user}: ${plan} \n`;
-  }
-  return message + MSG.peleiFooter;
 }
