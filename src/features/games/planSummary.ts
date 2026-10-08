@@ -5,8 +5,11 @@ import { GamePlan } from "./db/GamePlan.entity";
 
 const WEEKDAY_SHORT = ["su", "ma", "ti", "ke", "to", "pe", "la"];
 
+/** What a plan's line shows; a saved plan is one, and so is a plan just read from a message. */
+export type PlanLine = Pick<GamePlan, "day" | "startTime" | "courses"> & { players: readonly { name: string }[] };
+
 /** "la 10.10. klo 9.00 Karjaa + Härkälinna — Ville, Wiltzu". */
-export function formatPlanSummary(plan: GamePlan): string {
+export function formatPlanSummary(plan: PlanLine): string {
   const when = plan.startTime ? `${formatDay(plan.day)} klo ${formatTime(plan.startTime)}` : formatDay(plan.day);
   const where = plan.courses.join(" + ");
   const who = plan.players.map(player => player.name).join(", ");

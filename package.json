@@ -14,7 +14,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck:eval": "tsc -p tsconfig.eval.json --noEmit",
     "eval:commentary": "tsc -p tsconfig.eval.json && node .eval-dist/scripts/eval-commentary/run.js",
-    "eval:commentary:fixture": "tsc -p tsconfig.eval.json && node .eval-dist/scripts/eval-commentary/createFixture.js"
+    "eval:commentary:fixture": "tsc -p tsconfig.eval.json && node .eval-dist/scripts/eval-commentary/createFixture.js",
+    "eval:game-plans": "tsc -p tsconfig.eval.json && node .eval-dist/scripts/eval-game-plans/run.js"
   },
   "author": "",
   "license": "ISC",

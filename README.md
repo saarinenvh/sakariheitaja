@@ -132,6 +132,31 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
   prompt change against a baseline run. Rejected model replies are kept with fallbacks.
 - `npm run typecheck:eval` type-checks the harness, which `npx tsc --noEmit` doesn't cover.
 
+### Game plan reader eval
+
+`npm run eval:game-plans` sends the game plan reader's cases (`scripts/eval-game-plans/cases.ts`)
+through the real reader and Sakke's comment writer, with the bot's model options, against a real
+Ollama. It checks each reading field by field: whether it's a plan, the day, the time, the courses
+(in order), the players (in any order) and whether the writer plays. Like the commentary eval, it's
+not part of `npm test` or CI.
+
+```bash
+# All cases once; each invocation writes .eval-results/game-plans/runN/ (Git-ignored)
+# with report.md, results.json and the reader and comment prompts as used
+npm run eval:game-plans -- --model=gemma3:12b --baseUrl=http://<ollama-host>:11434
+
+# Several runs, a prompt variant for the reader or the comment, only matching cases, no comments
+npm run eval:game-plans -- --model=... --runs=3 --prompt=/tmp/reader.md --comment-prompt=/tmp/comment.md
+npm run eval:game-plans -- --model=... --case=huomenna --no-comments
+```
+
+- The report gives the accuracy per field, then every case with its wrong fields as
+  "expected → read", the time, and Sakke's comment (🤖 the model's, 📦 a canned fallback).
+  The comments have no right answer, so they aren't checked; read them.
+- "Today" is Thursday 8.10.2026 unless a case sets another, and the writer is Ville. The other
+  names are made up.
+- `--comment-prompt` replaces the persona and the comment rules together.
+
 ## Commands
 
 ### Competition
@@ -230,6 +255,7 @@ src/
 ├── prompts/                 # the model prompts and context notes
 └── data/                    # fallback copies of the JSON stores (production uses DATA_DIR)
 scripts/eval-commentary/     # commentary eval harness and its fixtures
+scripts/eval-game-plans/     # game plan reader eval harness and its cases
 docs/architecture/           # layers, entry points, live-scoring flow, data
 ```
 
