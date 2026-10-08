@@ -15,6 +15,8 @@ a failed message is logged and ends it.
 | --- | --- |
 | `makePlan` | `/hep` (`telegram/commands/games/planning.ts`) |
 | `listPlans` | `/hepit` |
+| `listPlansForDays` | the morning greeting (`../morning-greeting/`), for `GAMES_CHAT_ID`'s next seven days |
+| `formatPlanSummary` | `/hepit`, `/hep`'s confirmation and the morning greeting: one plan as a line |
 | `joinPlan`, `leavePlan` | `/mukaan`, `/pois` |
 | `cancelPlan` | `/peru` |
 
@@ -41,5 +43,6 @@ stored, as the history of who planned to play where.
 | --- | --- |
 | `games.ts` | The service: make, list, join, leave and cancel plans. |
 | `fixedForm.ts` | Reads `[day] [klo] [time] courses…` into a day, a time and the courses. |
-| `policy.ts` | When a plan's day is allowed (today to 60 days ahead), and the plans' time zone. |
+| `policy.ts` | When a plan's day is allowed (today to 60 days ahead), a player name's longest length (100 characters), and the plans' time zone. |
+| `planSummary.ts` | One plan as a line: "la 10.10. klo 9.00 Karjaa + Härkälinna — Ville, Wiltzu". |
 | `db/` | The `GamePlan` and `GamePlanPlayer` entities and `gamePlanRepository`. |

@@ -10,7 +10,7 @@ function dependencies(llmEnabled: boolean): CommandDependencies {
   const unused = {} as never;
   return {
     messenger: unused, metrix: unused, openWeather: unused, ollama: unused,
-    challonge: unused, giphy: unused, recipes: unused, llmEnabled,
+    challonge: unused, giphy: unused, recipes: unused, llmEnabled, gamesChatId: undefined,
   };
 }
 

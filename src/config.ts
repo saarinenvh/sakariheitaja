@@ -30,6 +30,7 @@ const DEFAULT_CHALLONGE_TOURNAMENT_URL = "https://challonge.com/yvept9b5";
 const environmentSchema = z.object({
   TOKEN: optionalText,
   MORNING_CHAT_ID: telegramChatId,
+  GAMES_CHAT_ID: telegramChatId,
   LLM_ENABLED: flag,
   NODE_ENV: optionalText,
   DATA_DIR: optionalText,
@@ -56,7 +57,8 @@ const environmentSchema = z.object({
 });
 
 export interface AppConfig {
-  telegram: { token: string | undefined; morningChatId: number | undefined };
+  /** `gamesChatId`: the group whose game plans the morning greeting lists. */
+  telegram: { token: string | undefined; morningChatId: number | undefined; gamesChatId: number | undefined };
   llmEnabled: boolean;
   dataDir: string | undefined;
   database: { host: string; port: number; username?: string; password?: string; name?: string; logQueries: boolean };
@@ -76,7 +78,7 @@ export interface AppConfig {
 export function readConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
   const environment = parseEnvironment(source);
   return {
-    telegram: { token: environment.TOKEN, morningChatId: environment.MORNING_CHAT_ID },
+    telegram: { token: environment.TOKEN, morningChatId: environment.MORNING_CHAT_ID, gamesChatId: environment.GAMES_CHAT_ID },
     llmEnabled: environment.LLM_ENABLED,
     dataDir: environment.DATA_DIR,
     database: {

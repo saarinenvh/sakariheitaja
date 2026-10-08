@@ -11,7 +11,8 @@ A Telegram bot that follows and commentates disc golf competitions live from [Di
 - **Score history** — query best scores by course name or ID
 - **Special scores** — aces, eagles and albatrosses are persisted, including the ones on earlier holes when a player's card is caught up several holes at once; a corrected hole moves or removes its score, and a restart mid-round misses none
 - **Bag tags** — per-chat tag standings
-- **Morning greeter** — daily good morning message to `MORNING_CHAT_ID`
+- **Morning greeter** — daily good morning message to `MORNING_CHAT_ID`, with the coming week's planned games from `GAMES_CHAT_ID`
+- **Game planning** — `/hep` plans a game today or days ahead, others join with `/mukaan`; see the command list
 - **Weather, GIFs, recipes** — assorted nonsense, see the command list
 
 ## Commentary flow
@@ -259,6 +260,7 @@ BOT_OLLAMA_MODEL=gemma3:12b
 BOT_OLLAMA_TIMEOUT_MS=120000
 
 MORNING_CHAT_ID=
+GAMES_CHAT_ID=
 GIPHY_API_KEY=
 OPENWEATHERMAP_APIKEY=
 BOT_METRIX_INTEGRATION_CODE=

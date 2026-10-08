@@ -137,6 +137,26 @@ describe("cancelling", () => {
   });
 });
 
+describe("the coming week's plans", () => {
+  it("are the next seven days' from today on, in their own chat", async () => {
+    const chat = { id: -1003, name: "Viikko" };
+    await plan("tänään Keljo", chat);
+    await plan("ke Tali", chat);
+    await plan("15.10. Härkälinna", chat);
+    await plan("16.10. Karjaa", chat);
+    await plan("14.10. Keljo", chat, VILLE, new Date("2026-10-06T09:00:00Z"));
+
+    // From Friday 9.10.: today and the next six days run to Thursday 15.10.
+    const week = await games.listPlansForDays(chat.id, 7, FRIDAY);
+
+    expect(week.map(found => [found.day, found.courses[0]])).toEqual([
+      ["2026-10-14", "Tali"],
+      ["2026-10-14", "Keljo"],
+      ["2026-10-15", "Härkälinna"],
+    ]);
+  });
+});
+
 describe("past plans", () => {
   it("leave the list the next day, but stay stored", async () => {
     const planId = await plan("tänään Keljo");

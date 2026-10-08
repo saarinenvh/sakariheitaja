@@ -6,19 +6,30 @@ import { giphySearchWords, randomGoodMorning } from "./phrases";
 import { formatMorningGreeting, morningCallToAction } from "./messages";
 import { formatClockTime, getRandom } from "../../shared/utils";
 import { moduleLogger } from "../../shared/logger";
+import { dayInTimeZone } from "../../shared/time";
+import { listPlansForDays, PLAN_TIME_ZONE } from "../games";
+import { formatGamesPart } from "./gamesPart";
 
 const log = moduleLogger("morning-greeter");
 
 const GREETING_HOUR = 9;
 const MS_PER_DAY = 86_400_000;
 
+/** How many days of planned games the greeting lists, today included. */
+const GAMES_DAYS = 7;
+
 export interface MorningGreetingDependencies {
   messenger: ChatMessenger;
   openWeather: OpenWeatherClient;
   giphy: GiphyClient;
+  /** The group whose game plans the greeting lists; without it, there's no games part. */
+  gamesChatId: number | undefined;
 }
 
-/** The greeting, a random town's weather, the call to action and a gif; each part is sent even if another fails. */
+/**
+ * The greeting, a random town's weather, the coming week's planned games, the call to action and a
+ * gif; each part is sent even if another fails.
+ */
 export async function sendMorningGreeting(deps: MorningGreetingDependencies, chatId: number): Promise<void> {
   const { messenger } = deps;
   const greeting = randomGoodMorning[getRandom(randomGoodMorning.length)];
@@ -26,6 +37,7 @@ export async function sendMorningGreeting(deps: MorningGreetingDependencies, cha
 
   try { await messenger.sendHtml(chatId, message); } catch (e: any) { log.error({ err: e }, "morning greeting text failed"); }
   try { await sendCityWeather(deps, chatId, cities[getRandom(cities.length)]); } catch (e: any) { log.error({ err: e }, "morning greeting weather failed"); }
+  try { await sendPlannedGames(deps, chatId); } catch (e: any) { log.error({ err: e }, "morning greeting games failed"); }
   try { await messenger.sendText(chatId, morningCallToAction); } catch (e: any) { log.error({ err: e }, "morning greeting call to action failed"); }
   try {
     const gifUrl = await deps.giphy.searchGif(giphySearchWords[getRandom(giphySearchWords.length)]);
@@ -50,6 +62,17 @@ export function startMorningGreeter(deps: MorningGreetingDependencies, chatId: n
     await sendMorningGreeting(deps, chatId);
     startMorningGreeter(deps, chatId);
   }, millisTill09);
+}
+
+/** The planning group's games for the coming week; nothing when there are none, or no group is set. */
+async function sendPlannedGames(deps: MorningGreetingDependencies, chatId: number): Promise<void> {
+  if (deps.gamesChatId === undefined) return;
+
+  const now = new Date();
+  const plans = await listPlansForDays(deps.gamesChatId, GAMES_DAYS, now);
+  if (plans.length === 0) return;
+
+  await deps.messenger.sendText(chatId, formatGamesPart(plans, dayInTimeZone(now, PLAN_TIME_ZONE)));
 }
 
 async function sendCityWeather(deps: MorningGreetingDependencies, chatId: number, city: string): Promise<void> {

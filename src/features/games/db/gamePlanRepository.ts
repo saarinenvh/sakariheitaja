@@ -1,4 +1,4 @@
-import { IsNull, MoreThanOrEqual } from "typeorm";
+import { Between, IsNull, MoreThanOrEqual } from "typeorm";
 import { dataSource } from "../../../db/dataSource";
 import { insertedRow } from "../../../db/insertResult";
 import { GamePlan } from "./GamePlan.entity";
@@ -55,6 +55,15 @@ export async function findInChat(id: number, chatId: number): Promise<GamePlan |
 export async function findFromDay(chatId: number, day: string): Promise<GamePlan[]> {
   return plans().find({
     where: { chatId, day: MoreThanOrEqual(day) },
+    relations: { players: true },
+    order: { day: "ASC", startTime: "ASC", id: "ASC", players: { id: "ASC" } },
+  });
+}
+
+/** The chat's plans from `fromDay` to `toDay`, both included, in the same order as `findFromDay`. */
+export async function findBetween(chatId: number, fromDay: string, toDay: string): Promise<GamePlan[]> {
+  return plans().find({
+    where: { chatId, day: Between(fromDay, toDay) },
     relations: { players: true },
     order: { day: "ASC", startTime: "ASC", id: "ASC", players: { id: "ASC" } },
   });

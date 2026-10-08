@@ -1,14 +1,11 @@
 import { CommandContext, Context } from "grammy";
 import {
-  cancelPlan, GamePlan, joinPlan, Leaver, leavePlan, listPlans, makePlan, MakePlanResult, Member, PlanPlayer,
+  cancelPlan, formatPlanSummary, joinPlan, Leaver, leavePlan, listPlans, makePlan, MakePlanResult, Member, PlanPlayer,
 } from "../../../features/games";
 import { packLines } from "../../../shared/telegramText";
-import { weekdayOf } from "../../../shared/time";
 import { planningMessages as MSG } from "./messages";
 
 type Command = CommandContext<Context>;
-
-const WEEKDAY_SHORT = ["su", "ma", "ti", "ke", "to", "pe", "la"];
 
 /** `/hep <text>`: a plan in the fixed form, with its creator as the first player. */
 export async function makeGamePlan(ctx: Command): Promise<unknown> {
@@ -94,29 +91,6 @@ function formatMakePlanResult(result: MakePlanResult): string {
     case "past": return MSG.hepPast;
     case "too-far": return MSG.hepTooFar(result.maxDaysAhead);
   }
-}
-
-/** "la 10.10. klo 9.00 Karjaa + Härkälinna — Ville, Wiltzu". */
-export function formatPlanSummary(plan: GamePlan): string {
-  const when = plan.startTime ? `${formatDay(plan.day)} klo ${formatTime(plan.startTime)}` : formatDay(plan.day);
-  const where = plan.courses.join(" + ");
-  const who = plan.players.map(player => player.name).join(", ");
-
-  return who ? `${when} ${where} — ${who}` : `${when} ${where}`;
-}
-
-/** "la 10.10." from `2026-10-10`. */
-function formatDay(day: string): string {
-  const [, month, date] = day.split("-").map(Number);
-
-  return `${WEEKDAY_SHORT[weekdayOf(day)]} ${date}.${month}.`;
-}
-
-/** "9.00" from `09:00:00`. */
-function formatTime(time: string): string {
-  const [hours, minutes] = time.split(":");
-
-  return `${Number(hours)}.${minutes}`;
 }
 
 /** The plan number first, then an optional name, which may have spaces. */

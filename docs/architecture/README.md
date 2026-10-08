@@ -81,7 +81,8 @@ flowchart LR
 3. **Startup resume.** Every competition still `following` gets a new `ScoreTracker`, without a
    new player announcement. Each starts in the background and retries while Metrix doesn't
    answer, so startup doesn't wait for Metrix.
-4. **The morning greeting**, every day at 09:00 to `MORNING_CHAT_ID`, when it is set.
+4. **The morning greeting**, every day at 09:00 to `MORNING_CHAT_ID`, when it is set. With
+   `GAMES_CHAT_ID` set, it also lists that group's planned games for the coming week.
 
 Joining a group (`message:new_chat_members`, `message:group_chat_created`) stores the chat.
 
