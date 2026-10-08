@@ -100,8 +100,22 @@ describe("/hepit", () => {
 
     expect(mocks.listPlans).toHaveBeenCalledWith(CHAT_ID);
     expect(reply).toHaveBeenCalledWith(
-      `${MSG.hepitHeader}12. la 10.10. klo 9.00 Karjaa + Härkälinna — Ville\n13. su 11.10. Tali${MSG.hepitFooter}`,
+      `${MSG.hepitHeader}\n\n12. la 10.10. klo 9.00 Karjaa + Härkälinna — Ville\n13. su 11.10. Tali\n\n${MSG.hepitFooter}`,
     );
+  });
+
+  it("splits a long list into replies that each fit Telegram's limit, never splitting a plan", async () => {
+    const longCourse = "Keljo ".repeat(100).trim();
+    mocks.listPlans.mockResolvedValue(Array.from({ length: 12 }, (_, index) => plan({ id: index + 1, courses: [longCourse] })));
+    const { ctx, reply } = command("");
+
+    await listGamePlans(ctx);
+
+    const replies: string[] = reply.mock.calls.map(call => call[0]);
+    expect(replies.length).toBeGreaterThan(1);
+    expect(replies.every(text => text.length <= 4096)).toBe(true);
+    expect(replies.join("\n").match(/^\d+\. /gm)).toHaveLength(12);
+    expect(replies.at(-1)?.endsWith(MSG.hepitFooter)).toBe(true);
   });
 
   it("says so when there are none", async () => {

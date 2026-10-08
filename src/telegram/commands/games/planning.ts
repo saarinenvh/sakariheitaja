@@ -2,6 +2,7 @@ import { CommandContext, Context } from "grammy";
 import {
   cancelPlan, GamePlan, joinPlan, Leaver, leavePlan, listPlans, makePlan, MakePlanResult, Member, PlanPlayer,
 } from "../../../features/games";
+import { packLines } from "../../../shared/telegramText";
 import { weekdayOf } from "../../../shared/time";
 import { planningMessages as MSG } from "./messages";
 
@@ -18,17 +19,17 @@ export async function makeGamePlan(ctx: Command): Promise<unknown> {
 
   const result = await makePlan({ id: ctx.chat.id, name: ctx.chat.title ?? "" }, creator, ctx.match);
 
-  return ctx.reply(formatMakePlanResult(result));
+  return replyInParts(ctx, formatMakePlanResult(result).split("\n"));
 }
 
-/** `/hepit`: the chat's plans from today on. */
+/** `/hepit`: the chat's plans from today on, in as many replies as Telegram's length limit needs. */
 export async function listGamePlans(ctx: Command): Promise<unknown> {
   const plans = await listPlans(ctx.chat.id);
   if (plans.length === 0) return ctx.reply(MSG.hepitNone);
 
-  const lines = plans.map(plan => `${plan.id}. ${formatPlanSummary(plan)}`);
+  const planLines = plans.map(plan => `${plan.id}. ${formatPlanSummary(plan)}`);
 
-  return ctx.reply(MSG.hepitHeader + lines.join("\n") + MSG.hepitFooter);
+  return replyInParts(ctx, [MSG.hepitHeader, "", ...planLines, "", MSG.hepitFooter]);
 }
 
 /** `/mukaan <nr> [name]`: you, by your Telegram id, or any name. */
@@ -78,6 +79,11 @@ export async function cancelGamePlan(ctx: Command): Promise<unknown> {
     case "not-creator": return ctx.reply(MSG.notCreator);
     case "no-plan": return ctx.reply(MSG.noPlan);
   }
+}
+
+/** The lines in as few replies as fit, in order; a line too long for one reply is cut short. */
+async function replyInParts(ctx: Command, lines: readonly string[]): Promise<void> {
+  for (const message of packLines(lines)) await ctx.reply(message);
 }
 
 function formatMakePlanResult(result: MakePlanResult): string {

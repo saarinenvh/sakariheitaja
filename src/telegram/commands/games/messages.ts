@@ -17,8 +17,8 @@ export const planningMessages = {
   noSender:         "En tiedä kuka olet, joten en voi tallentaa.",
 
   hepitNone:        "Ei suunniteltuja pelejä. Heitä /hep ja houkuttele muut mukaan!",
-  hepitHeader:      "Tulevat pelit:\n\n",
-  hepitFooter:      "\n\nMukaan: /mukaan <nro>",
+  hepitHeader:      "Tulevat pelit:",
+  hepitFooter:      "Mukaan: /mukaan <nro>",
 
   planNumberUsage:  (command: string) => `Anna pelin numero. Esim: /${command} 12 (näkyy /hepit-listassa)`,
   noPlan:           "Ei löydy tommosta peliä tästä ryhmästä.",

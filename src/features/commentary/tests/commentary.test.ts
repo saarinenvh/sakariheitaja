@@ -6,7 +6,8 @@ import { CommentaryDelivery, RoundCommentary } from "../commentary";
 import { hasTrackedRoundEnded, selectFinalScores, trackRoundPlayers } from "../../../integrations/metrix/round/results";
 import { parseMetrixRound } from "../../../integrations/metrix/round/normalize";
 import { selectBagtagParticipants } from "../../bagtags";
-import { formatBatchCommentaryMessages, TELEGRAM_MESSAGE_LIMIT } from "../format/commentaryMessage";
+import { formatBatchCommentaryMessages } from "../format/commentaryMessage";
+import { TELEGRAM_MESSAGE_LIMIT } from "../../../shared/telegramText";
 import { FactualCommentaryBrief } from "../facts/playerBrief";
 
 const tracked = [{ id: 1, name: "Matti" }, { id: 2, name: "Jori" }];
