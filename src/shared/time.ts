@@ -3,6 +3,35 @@ export function wait(delayMs: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, delayMs));
 }
 
+const MS_PER_DAY = 86_400_000;
+
+/** The calendar day (`YYYY-MM-DD`) it is at this instant in the time zone. */
+export function dayInTimeZone(instant: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(instant);
+}
+
+/** The day `days` after `day` (before, when negative); both `YYYY-MM-DD`. */
+export function addDays(day: string, days: number): string {
+  return new Date(dayToUtcMs(day) + days * MS_PER_DAY).toISOString().slice(0, 10);
+}
+
+/** How many days `to` is after `from`; negative when it's before. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((dayToUtcMs(to) - dayToUtcMs(from)) / MS_PER_DAY);
+}
+
+/** 0 for Sunday to 6 for Saturday, like `Date.getDay`. */
+export function weekdayOf(day: string): number {
+  return new Date(dayToUtcMs(day)).getUTCDay();
+}
+
+/** A day's midnight as UTC milliseconds: day arithmetic without any time zone's DST. */
+function dayToUtcMs(day: string): number {
+  const [year, month, date] = day.split("-").map(Number);
+
+  return Date.UTC(year, month - 1, date);
+}
+
 /**
  * The instant a wall-clock time on a day happens in a time zone, with that day's DST.
  * `day` is `YYYY-MM-DD` and `time` is `HH:MM` or `HH:MM:SS`, both already validated.
