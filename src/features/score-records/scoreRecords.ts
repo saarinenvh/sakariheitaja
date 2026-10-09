@@ -2,29 +2,33 @@ import { FinalScore } from "../../integrations/metrix/round/results";
 import * as scoreRepo from "./db/scoreRepository";
 import * as courseRepo from "./db/courseRepository";
 import * as specialScoreRepo from "./db/specialScoreRepository";
-import { PlayedRound, SpecialScoreUpdate } from "../commentary";
+import { Scorecard } from "../../integrations/metrix/round/types";
 import { Course } from "./db/Course.entity";
 import { specialScoreDate, specialScores } from "./policy";
 
+/** Where and on which day the round is played; `day` is null when Metrix sent no real date. */
+export interface PlayedRound {
+  courseName: string;
+  day: string | null;
+}
+
 /**
- * Updates a player's saved special scores: `add` adds the new holes' ones; `rebuild` replaces what
- * the round has saved for the player with the card's, so a corrected or removed score goes away.
- * Every row is dated with the round's date, so a rebuild on a later day keeps the scores' dates; a
+ * Makes the player's saved special scores in the round what their card says, so a corrected or
+ * removed score goes away; the same card again changes nothing. An unavailable card leaves them as
+ * they are. Every row is dated with the round's date, so a later sync keeps the scores' dates; a
  * round without one uses `now`'s date, which the caller fixes once so a retry keeps it too.
  */
-export async function updateSpecialScores(
-  round: specialScoreRepo.PlayerRound, played: PlayedRound, update: SpecialScoreUpdate, now: Date,
+export async function syncSpecialScores(
+  round: specialScoreRepo.PlayerRound, played: PlayedRound, card: Scorecard, now: Date,
 ): Promise<void> {
-  const scores = specialScores(update.holes);
+  if (card.kind === "unavailable") return;
+
+  const scores = specialScores(card.holes);
   const rows = scores.length > 0
     ? { courseId: await findOrAddCourseId(played.courseName), date: specialScoreDate(played.day, now), scores }
     : null;
 
-  if (update.kind === "rebuild") {
-    await specialScoreRepo.rebuildSpecialScores(round, rows);
-  } else if (rows) {
-    await specialScoreRepo.addSpecialScores(round, rows);
-  }
+  await specialScoreRepo.syncSpecialScores(round, rows);
 }
 
 async function findOrAddCourseId(courseName: string): Promise<number> {

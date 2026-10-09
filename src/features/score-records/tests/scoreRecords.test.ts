@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { HoleResult, SpecialScoreUpdate } from "../../commentary";
+import { HoleScore, Scorecard } from "../../../integrations/metrix/round/types";
 
 // Mocked so this exercises which rows get written, without a database.
 vi.mock("../db/specialScoreRepository", () => ({
-  addSpecialScores: vi.fn(async () => undefined),
-  rebuildSpecialScores: vi.fn(async () => undefined),
+  syncSpecialScores: vi.fn(async () => undefined),
 }));
 vi.mock("../db/scoreRepository", () => ({
   addResult: vi.fn(),
@@ -21,49 +20,45 @@ vi.mock("../db/courseRepository", () => ({
 import * as scoreRepo from "../db/scoreRepository";
 import * as specialScoreRepo from "../db/specialScoreRepository";
 import * as courseRepo from "../db/courseRepository";
-import { findCourseResults, saveResults, updateSpecialScores } from "../scoreRecords";
+import { findCourseResults, saveResults, syncSpecialScores } from "../scoreRecords";
 import { specialScoreDate } from "../policy";
 
-const hole = (holeNumber: number, strokes: number, relativeToPar: number): HoleResult =>
-  ({ holeNumber, score: { strokes, relativeToPar, obCount: 0 } });
+const hole = (strokes: number, relativeToPar: number): HoleScore => ({ strokes, relativeToPar, obCount: 0 });
+const card = (...holes: (HoleScore | null)[]): Scorecard => ({ kind: "available", holes });
 const round = { playerId: 42, chatId: -100, competitionId: 55 };
 const played = { courseName: "Talin frisbeegolfrata", day: "2026-10-03" };
 const now = new Date(2026, 9, 5, 12, 0);
-const update = (kind: SpecialScoreUpdate["kind"], holes: HoleResult[]) => updateSpecialScores(round, played, { kind, holes }, now);
+const sync = (scorecard: Scorecard) => syncSpecialScores(round, played, scorecard, now);
 
 beforeEach(() => vi.clearAllMocks());
 
-describe("updateSpecialScores", () => {
-  it("adds the special scores among new holes, an ace that was entered with other holes included", async () => {
-    // A scorekeeper enters holes 1-4 in one go; the ace on hole 2 still happened.
-    await update("add", [hole(1, 2, -1), hole(2, 1, -2), hole(3, 2, -2), hole(4, 2, -3)]);
-    expect(specialScoreRepo.addSpecialScores).toHaveBeenCalledWith(round, {
+describe("syncSpecialScores", () => {
+  it("syncs the card's special scores of every kind, numbering holes by their place on the card", async () => {
+    await sync(card(hole(2, -1), hole(1, -2), hole(2, -2), hole(2, -3), null));
+
+    expect(specialScoreRepo.syncSpecialScores).toHaveBeenCalledWith(round, {
       courseId: 7, date: "2026-10-03",
       scores: [{ holeNumber: 2, kind: "ace" }, { holeNumber: 3, kind: "eagle" }, { holeNumber: 4, kind: "albatross" }],
     });
-    expect(specialScoreRepo.rebuildSpecialScores).not.toHaveBeenCalled();
   });
 
-  it("writes nothing and touches no course when no new hole is special", async () => {
-    await update("add", [hole(1, 3, 0)]);
-    expect(specialScoreRepo.addSpecialScores).not.toHaveBeenCalled();
+  it("syncs to none, touching no course, when the card has no special scores", async () => {
+    await sync(card(hole(2, -1), null));
+
+    expect(specialScoreRepo.syncSpecialScores).toHaveBeenCalledWith(round, null);
     expect(courseRepo.addIfAbsent).not.toHaveBeenCalled();
   });
 
-  it("rebuilds the player's special scores from a whole card", async () => {
-    await update("rebuild", [hole(1, 3, 0), hole(2, 1, -2), { holeNumber: 3, score: null }]);
-    expect(specialScoreRepo.rebuildSpecialScores).toHaveBeenCalledWith(round, { courseId: 7, date: "2026-10-03", scores: [{ holeNumber: 2, kind: "ace" }] });
-  });
+  it("leaves the saved special scores alone when the card is unavailable", async () => {
+    await sync({ kind: "unavailable" });
 
-  it("rebuilds to nothing when the card has no special scores left", async () => {
-    await update("rebuild", [hole(1, 2, -1), { holeNumber: 2, score: null }]);
-    expect(specialScoreRepo.rebuildSpecialScores).toHaveBeenCalledWith(round, null);
-    expect(courseRepo.addIfAbsent).not.toHaveBeenCalled();
+    expect(specialScoreRepo.syncSpecialScores).not.toHaveBeenCalled();
   });
 
   it("dates a round without a day with the given time's date", async () => {
-    await updateSpecialScores(round, { ...played, day: null }, { kind: "add", holes: [hole(1, 1, -2)] }, now);
-    expect(specialScoreRepo.addSpecialScores).toHaveBeenCalledWith(round, expect.objectContaining({ date: "2026-10-05" }));
+    await syncSpecialScores(round, { ...played, day: null }, card(hole(1, -2)), now);
+
+    expect(specialScoreRepo.syncSpecialScores).toHaveBeenCalledWith(round, expect.objectContaining({ date: "2026-10-05" }));
   });
 
   it("adds a course the bot hasn't seen before instead of dropping the score", async () => {
@@ -72,9 +67,11 @@ describe("updateSpecialScores", () => {
       courseExists = true;
     });
     vi.mocked(courseRepo.findByName).mockImplementationOnce(async name => (courseExists ? { id: 8, name } : null));
-    await update("add", [hole(1, 1, -2)]);
+
+    await sync(card(hole(1, -2)));
+
     expect(courseRepo.addIfAbsent).toHaveBeenCalledWith("Talin frisbeegolfrata");
-    expect(specialScoreRepo.addSpecialScores).toHaveBeenCalledWith(round, expect.objectContaining({ courseId: 8 }));
+    expect(specialScoreRepo.syncSpecialScores).toHaveBeenCalledWith(round, expect.objectContaining({ courseId: 8 }));
   });
 });
 

@@ -86,6 +86,38 @@ describe("competitions", () => {
     expect((await competitionRows()).at(-1)).toMatchObject({ day: null });
   });
 
+  it("stops a round without deleting it or its special scores, and doesn't resume it", async () => {
+    const { insertId } = await competitions.create(CHAT_ID, "3809488");
+    await dataSource.query("INSERT INTO players (name) VALUES ('Ville')");
+    await dataSource.query("INSERT INTO courses (name) VALUES ('Kaatis')");
+    await dataSource.query(
+      "INSERT INTO aces (date, player_id, chat_id, course_id, competition_id, hole_number) VALUES ('2026-10-09', 1, ?, 1, ?, 4)",
+      [CHAT_ID, insertId],
+    );
+
+    await competitions.markStopped(insertId);
+
+    expect((await competitionRows()).find(row => row.id === insertId)?.status).toBe("stopped");
+    const [{ count }]: { count: number }[] = await dataSource.query("SELECT COUNT(*) AS count FROM aces WHERE competition_id = ?", [insertId]);
+    expect(count).toBe(1);
+    expect((await competitions.findFollowing()).map(round => round.id)).not.toContain(insertId);
+  });
+
+  it("lets a round leave following only once, so an overlapping /lopeta and round end can't overwrite each other", async () => {
+    const { insertId: stopped } = await competitions.create(CHAT_ID, "3809489");
+    const { insertId: finished } = await competitions.create(CHAT_ID, "3809490");
+
+    await competitions.markStopped(stopped);
+    await competitions.markFinished(stopped);
+    await competitions.markError(stopped, "late", new Date());
+    await competitions.markFinished(finished);
+    await competitions.markStopped(finished);
+
+    const statusOf = async (id: number) => (await competitionRows()).find(row => row.id === id)?.status;
+    expect(await statusOf(stopped)).toBe("stopped");
+    expect(await statusOf(finished)).toBe("finished");
+  });
+
   it("marks a round as an error: no longer resumed, listed with when and why", async () => {
     const erroredAt = new Date("2026-10-07T09:30:00Z");
 

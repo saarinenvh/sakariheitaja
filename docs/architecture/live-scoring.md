@@ -15,6 +15,7 @@ sequenceDiagram
     participant Tracker as ScoreTracker
     participant Metrix as MetrixClient
     participant Players as playerRepository
+    participant Records as score-records
     participant Commentary as RoundCommentary
     participant Ollama as OllamaClient
     participant Messenger as ChatMessenger
@@ -26,6 +27,7 @@ sequenceDiagram
     Tracker->>Metrix: getRound(metrixId)
     Metrix-->>Tracker: MetrixRound (normalized)
     Tracker->>Players: findByChatId
+    Tracker->>Records: syncSpecialScores — each tracked card
     Tracker->>Commentary: observe(round, tracked) — the baseline
     Tracker->>Messenger: player announcement
     Cmd->>Cmd: trackerRegistry.add
@@ -33,9 +35,9 @@ sequenceDiagram
     loop Poller: slower while scores stay unchanged (live-scoring/policy.ts)
         Tracker->>Metrix: getRound
         Tracker->>Players: findByChatId
+        Tracker->>Records: syncSpecialScores — each tracked card
         Tracker->>Commentary: observe(round, tracked)
         Note over Commentary: detect → facts
-        Commentary->>Commentary: special scores: add the new holes, or rebuild from the card after a correction or on a first look
         Commentary->>Ollama: generateStructured(facts)
         Ollama-->>Commentary: opening, lines, closing (or fallback)
         Commentary->>Messenger: sendHtml (one message per division)
@@ -46,6 +48,9 @@ sequenceDiagram
 
 - Polls are handled one at a time, in order. A failed request or an unusable payload is logged
   and skipped; the last good round stays.
+- Each poll first makes every tracked player's saved special scores what their card says
+  (`specialScoreSync.ts`), then hands the round to commentary. The sync is safe to repeat, so one
+  that fails is logged and made good by the next poll; an unavailable card leaves the rows alone.
 - Course details, statistics and weather (`RoundCourseData`) are fetched with timeouts and never
   hold back a message.
 - Only an acknowledged send moves the published places and the recent-message history forward.
@@ -67,7 +72,7 @@ sequenceDiagram
     Tracker->>Commentary: idle() — the last message goes out first
     Tracker->>End: finishRound(round, tracked)
     End->>Messenger: end message
-    End->>Db: course, final results
+    End->>Db: special scores from the final cards, course, final results
     End->>Json: profiles, bagtag swaps
     End->>Db: competition marked finished
     End->>Messenger: TOP-5 (with ratings)
@@ -80,8 +85,9 @@ repeat. The TOP-5 and bagtag messages after it are best effort.
 
 ## `/lopeta`, restarts
 
-- `/lopeta <metrixId>` deletes the competition, then stops the tracker, then replies. If the
-  delete fails, the round goes on.
+- `/lopeta <metrixId>` marks the competition `stopped`, then stops the tracker, then replies.
+  The competition and its special scores stay, and a stopped round isn't resumed. If marking it
+  fails, the round goes on.
 - A restart loses the in-memory state. `main.ts` resumes each competition still `following`
   with a fresh tracker that takes the current scorecards as its baseline: nothing is replayed,
   and no movement is claimed against the old ranking.

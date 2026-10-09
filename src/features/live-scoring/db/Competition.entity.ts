@@ -1,10 +1,14 @@
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
-/** Where a followed round is: being followed (also while it waits to start), finished, or given up on. */
+/**
+ * Where a followed round is: being followed (also while it waits to start), finished, given up on, or
+ * stopped with `/lopeta`. Only `following` is resumed.
+ */
 export const COMPETITION_STATUS = {
   following: "following",
   finished: "finished",
   error: "error",
+  stopped: "stopped",
 } as const;
 
 export type CompetitionStatus = typeof COMPETITION_STATUS[keyof typeof COMPETITION_STATUS];

@@ -3,6 +3,7 @@ import { AddSpecialScoreHoles1791188409491, SqlRunner } from "../migrations/1791
 import { AddNameAndLinkUniqueKeys1791201684139 } from "../migrations/1791201684139-AddNameAndLinkUniqueKeys";
 import { AddCompetitionDay1791269243562 } from "../migrations/1791269243562-AddCompetitionDay";
 import { AddChatBotPinnedMessage1791525001570 } from "../migrations/1791525001570-AddChatBotPinnedMessage";
+import { AddCompetitionStoppedStatus1791553609581 } from "../migrations/1791553609581-AddCompetitionStoppedStatus";
 
 function recordingRunner(): { runner: SqlRunner; queries: string[] } {
   const queries: string[] = [];
@@ -71,6 +72,25 @@ describe("AddChatBotPinnedMessage", () => {
     expect(queries).toEqual([
       "ALTER TABLE chats ADD COLUMN IF NOT EXISTS bot_pinned_message_id INT NULL",
       "ALTER TABLE chats DROP COLUMN IF EXISTS bot_pinned_message_id",
+    ]);
+  });
+});
+
+describe("AddCompetitionStoppedStatus", () => {
+  it("adds stopped to the status, keeping every existing value", async () => {
+    const { runner, queries } = recordingRunner();
+    await new AddCompetitionStoppedStatus1791553609581().up(runner);
+    expect(queries).toEqual([
+      "ALTER TABLE competitions MODIFY status ENUM('following', 'finished', 'error', 'stopped') NOT NULL DEFAULT 'following'",
+    ]);
+  });
+
+  it("turns stopped rounds into finished ones before removing the value on down", async () => {
+    const { runner, queries } = recordingRunner();
+    await new AddCompetitionStoppedStatus1791553609581().down(runner);
+    expect(queries).toEqual([
+      "UPDATE competitions SET status = 'finished' WHERE status = 'stopped'",
+      "ALTER TABLE competitions MODIFY status ENUM('following', 'finished', 'error') NOT NULL DEFAULT 'following'",
     ]);
   });
 });

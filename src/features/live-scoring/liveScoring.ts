@@ -14,7 +14,7 @@ import { hasTrackedRoundEnded, isSamePlayerName, trackRoundPlayers } from "../..
 import { MetrixRound, RoundPlayer, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
 import { createCommentaryWriter, RoundCommentary } from "../commentary";
 import { getMissingTagPlayers } from "../bagtags";
-import * as scoreService from "../score-records";
+import { syncRoundSpecialScores } from "./specialScoreSync";
 import { withWriteRetry } from "../../db/writeRetry";
 import { moduleLogger } from "../../shared/logger";
 
@@ -86,11 +86,6 @@ export class ScoreTracker {
         await messenger.sendHtml(chatId, html);
         log.info({ metrixId, chars: html.length }, "commentary message sent");
       },
-      updateSpecialScores: (playerId, played, update) => {
-        const now = new Date();
-        return withWriteRetry("update special scores", () =>
-          scoreService.updateSpecialScores({ playerId, chatId, competitionId: id }, played, update, now));
-      },
       onError: error => log.error({ metrixId, err: error }, "commentary delivery failed"),
     });
   }
@@ -130,6 +125,7 @@ export class ScoreTracker {
     this.trackedPlayers = await this.refreshTrackedPlayers(this.snapshot);
     if (this.trackedPlayers.length === 0 && !this.playersAnnounced) return { kind: "no-players" };
 
+    await this.syncSpecialScores(this.snapshot, this.trackedPlayers);
     this.commentary.observe(this.snapshot, this.trackedPlayers);
     await this.announceIfNeeded();
 
@@ -184,6 +180,7 @@ export class ScoreTracker {
     const tracked = await this.refreshTrackedPlayers(round);
     if (this.state !== "following") return;
 
+    await this.syncSpecialScores(round, tracked);
     const changed = this.commentary.observe(round, tracked);
     if (changed) log.info({ metrixId: this.metrixId }, "score changes detected, commentary queued");
 
@@ -209,6 +206,15 @@ export class ScoreTracker {
         chatId: this.chatId, competitionId: this.id, messenger: this.messenger, sendTopList: () => this.sendTopList(),
       }, round, tracked);
     }).catch(error => log.error({ metrixId: this.metrixId, err: error }, "end handler failed"));
+  }
+
+  /** Before commentary, which reads none of it. A failure is logged: the next poll's sync makes it good. */
+  private async syncSpecialScores(round: MetrixRound, tracked: readonly TrackedRoundPlayer[]): Promise<void> {
+    try {
+      await syncRoundSpecialScores({ id: this.id, chatId: this.chatId }, round, tracked);
+    } catch (error) {
+      log.error({ metrixId: this.metrixId, err: error }, "could not sync special scores; the next poll tries again");
+    }
   }
 
   /** The day is metadata: failing to save it is logged and never stops the round being followed. */

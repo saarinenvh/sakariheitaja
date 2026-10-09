@@ -126,7 +126,6 @@ async function replayFixture(fixture: CommentaryFixture, run: number, runtime: R
     send: async html => {
       if (current) current.message = [current.message, toPlainText(html)].filter(Boolean).join("\n\n");
     },
-    updateSpecialScores: async () => undefined,
     onError: error => console.error(`  delivery error: ${error instanceof Error ? error.message : String(error)}`),
   });
 

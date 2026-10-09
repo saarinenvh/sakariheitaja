@@ -71,9 +71,9 @@ Monitoring ends once every tracked player has all layout slots recorded and
 known final totals, or has DNF status. This does not certify tournament results
 as final. Missing API totals can be derived from complete validated cards;
 otherwise monitoring continues. DNF players remain eligible for the existing
-bag-tag allocation rules. Historical score tables are unchanged. Corrections
-rebuild a player's special-score rows for that competition from the current card;
-they do not insert duplicate awards.
+bag-tag allocation rules. Historical score tables are unchanged. Every poll syncs
+a player's special-score rows for that competition to the current card, so a
+correction moves or removes its row; it never inserts duplicate awards.
 
 See [implementation findings and the owner test checklist](docs/commentary-findings.md),
 and the commentary eval harness below for prompt and model work.
@@ -139,7 +139,7 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
 | Command | Description |
 |---|---|
 | `/follow <metrixId>` | Start following a competition |
-| `/lopeta <metrixId>` | Stop following a competition |
+| `/lopeta <metrixId>` | Stop following a competition; its special scores stay |
 | `/pelit` | List active competitions |
 | `/top5 <id>` | Show top 5 results by division |
 | `/score <name>` | Show a player's current score and position |

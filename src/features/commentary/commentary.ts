@@ -1,5 +1,5 @@
 import { PublishedStanding } from "./detect/standingMovement";
-import { cardHoleResults, compareScorecards, planSpecialScoreUpdate, ScoreChange, SpecialScoreUpdate } from "./detect/scorecardChanges";
+import { compareScorecards, ScoreChange } from "./detect/scorecardChanges";
 import { buildFactualCommentaryBrief, CommentarySnapshot, FactualCommentaryBrief } from "./facts/playerBrief";
 import { buildCommentarySnapshot } from "./detect/commentarySnapshot";
 import { MetrixRound, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
@@ -23,15 +23,7 @@ export interface CommentaryDelivery {
   /** Course layout and statistics; called once per round, and may return empty parts. */
   fetchCourse(): Promise<CourseInfo>;
   send(html: string): Promise<unknown>;
-  /** Updates the player's saved special scores; the same update again must change nothing. */
-  updateSpecialScores(playerId: number, played: PlayedRound, update: SpecialScoreUpdate): Promise<void>;
   onError(error: unknown): void;
-}
-
-/** Where and on which day the round is played; `day` is null when Metrix sent no real date. */
-export interface PlayedRound {
-  courseName: string;
-  day: string | null;
 }
 
 interface ObservedPlayer {
@@ -44,16 +36,10 @@ interface PendingUpdate {
   changes: readonly ScoreChange[];
 }
 
-interface PendingSpecialScoreUpdate {
-  current: CommentarySnapshot;
-  update: SpecialScoreUpdate;
-}
-
 interface ObservationBatch {
   round: MetrixRound;
   resetPlayers: number[];
   updates: PendingUpdate[];
-  specialScoreUpdates: PendingSpecialScoreUpdate[];
 }
 
 interface PendingBrief {
@@ -111,7 +97,7 @@ export class RoundCommentary {
     if (this.observedLayout !== round.layoutKey) this.observed.clear();
     this.observedLayout = round.layoutKey;
 
-    const batch: ObservationBatch = { round, resetPlayers: [], updates: [], specialScoreUpdates: [] };
+    const batch: ObservationBatch = { round, resetPlayers: [], updates: [] };
     const currentPlayers = new Map<number, ObservedPlayer>();
     for (const player of tracked) {
       const current = buildCommentarySnapshot(round, player, this.chatId);
@@ -122,17 +108,12 @@ export class RoundCommentary {
 
       if (!samePlayer || !previous) {
         batch.resetPlayers.push(player.id);
-        addSpecialScoreUpdate(batch, current, { kind: "rebuild", holes: cardHoleResults(current.scorecard) });
         continue;
       }
 
       const comparison = compareScorecards(previous.snapshot.scorecard, current.scorecard);
-      if (comparison.kind === "unavailable") {
-        // What changed since the last comparable card is unknown, so the special scores are rebuilt from the card.
-        addSpecialScoreUpdate(batch, current, { kind: "rebuild", holes: cardHoleResults(current.scorecard) });
-      } else if (comparison.changes.length > 0) {
+      if (comparison.kind === "compared" && comparison.changes.length > 0) {
         batch.updates.push({ current, changes: comparison.changes });
-        addSpecialScoreUpdate(batch, current, planSpecialScoreUpdate(comparison.changes, current.scorecard));
       }
     }
 
@@ -146,9 +127,6 @@ export class RoundCommentary {
 
   private async publishBatch(batch: ObservationBatch): Promise<void> {
     if (!this.active) return;
-
-    // Saved before any writing or sending, so neither can lose a score.
-    for (const pending of batch.specialScoreUpdates) await this.updateSpecialScores(pending, batch.round.day);
 
     this.resetPublishedState(batch);
     for (const [division, pending] of this.buildBriefsByDivision(batch.updates)) {
@@ -261,15 +239,6 @@ export class RoundCommentary {
     }
   }
 
-  private async updateSpecialScores(pending: PendingSpecialScoreUpdate, roundDay: string | null): Promise<void> {
-    const { current, update } = pending;
-    try {
-      await this.delivery.updateSpecialScores(current.scope.playerId, { courseName: current.courseName, day: roundDay }, update);
-    } catch (error) {
-      this.delivery.onError(error);
-    }
-  }
-
   private acknowledge(post: PendingPost): void {
     const { scope, standing } = post.current;
     this.published.set(scope.playerId, { scope, standing });
@@ -299,9 +268,4 @@ function withTimeout<Value>(promise: Promise<Value>, timeoutMs: number, what: st
   });
 
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
-}
-
-/** A card that can't be read changes nothing, rather than rebuilding the saved scores to none. */
-function addSpecialScoreUpdate(batch: ObservationBatch, current: CommentarySnapshot, update: SpecialScoreUpdate): void {
-  if (update.holes.length > 0) batch.specialScoreUpdates.push({ current, update });
 }

@@ -1,5 +1,4 @@
 import { HoleScore } from "../../integrations/metrix/round/types";
-import { HoleResult } from "../commentary";
 
 /** A hole score the records keep: an ace wins over the eagle or albatross it may also be. */
 export type NotableScoreKind = "ace" | "eagle" | "albatross";
@@ -15,11 +14,11 @@ export function notableScoreKind(score: HoleScore): NotableScoreKind | null {
   return null;
 }
 
-/** The holes that are special scores, with their kind. */
-export function specialScores(holes: readonly HoleResult[]): { holeNumber: number; kind: NotableScoreKind }[] {
-  return holes.flatMap(({ holeNumber, score }) => {
+/** The card's special scores, with their kind; a hole's number is its place on the card, from 1. */
+export function specialScores(holes: readonly (HoleScore | null)[]): { holeNumber: number; kind: NotableScoreKind }[] {
+  return holes.flatMap((score, index) => {
     const kind = score ? notableScoreKind(score) : null;
-    return kind ? [{ holeNumber, kind }] : [];
+    return kind ? [{ holeNumber: index + 1, kind }] : [];
   });
 }
 

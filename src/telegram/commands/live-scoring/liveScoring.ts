@@ -70,7 +70,7 @@ async function startOrForget(tracker: ScoreTracker): Promise<StartResult> {
   }
 }
 
-/** Deletes the competition first: if that fails, the round goes on as before. */
+/** Marks the competition stopped first: if that fails, the round goes on as before. Its special scores stay. */
 export async function stopFollowing(ctx: Command): Promise<unknown> {
   if (!ctx.match) return ctx.reply(MSG.lopetaUsage);
 
@@ -78,7 +78,7 @@ export async function stopFollowing(ctx: Command): Promise<unknown> {
   const tracker = registry.findTracked(chatId, ctx.match.trim());
   if (!tracker) return ctx.reply(MSG.lopetaNotFound);
 
-  await competitionRepo.deleteById(tracker.id);
+  await competitionRepo.markStopped(tracker.id);
   registry.remove(chatId, tracker);
 
   return ctx.reply(MSG.lopetaOk);
