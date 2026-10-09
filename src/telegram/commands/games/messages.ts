@@ -13,7 +13,7 @@ export const planningMessages = {
   hepNoCourses:     "Missä pelataan? Lisää rata, esim: /hep la 18 Keljo",
   hepPast:          "Toi päivä on jo mennyt, urpo.",
   hepTooFar:        (maxDaysAhead: number) => `Noin pitkälle ei suunnitella, korkeintaan ${maxDaysAhead} päivää eteenpäin.`,
-  hepSaved:         (planId: number, summary: string) => `Tallennettu nro ${planId}: ${summary}\nMukaan: /mukaan ${planId}`,
+  hepSaved:         (planId: number, summary: string) => `Tallennettu nro ${planId}: ${summary}`,
   noSender:         "En tiedä kuka olet, joten en voi tallentaa.",
 
   hepitNone:        "Ei suunniteltuja pelejä. Heitä /hep ja houkuttele muut mukaan!",
