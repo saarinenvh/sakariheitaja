@@ -178,15 +178,15 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
 | `/mukaan <nr> [name]` | Join a game, or add someone by name |
 | `/pois <nr> [name]` | Leave a game, or remove someone added by name |
 | `/peru <nr>` | Cancel a game you planned |
-
-`/mukaan`, `/pois` and `/peru` edit the pinned list quietly, and cancelling the last game unpins it.
-The bot keeps one pin per chat; pinning needs it to be an admin with the right to pin messages.
-Without it the commands still work, and the refused pin is logged.
 | `/kukakirjaa <names...>` | Randomly pick who keeps score |
 | `/hyva` | You know what this does |
 | `/gifplz <term>` | Send a random matching GIF from Giphy |
 | `/mitatanaansyotaisiin` | A random Finnish recipe from the S-cloud API |
 | `/apua` | Show the in-bot command list |
+
+`/mukaan`, `/pois` and `/peru` edit the pinned list quietly. When no games are left, the bot unpins it.
+The bot keeps one pin per chat; pinning needs it to be an admin with the right to pin messages.
+Without it the commands still work, and the refused pin is logged.
 
 ### Dev
 Only registered when `LLM_ENABLED=true`:
