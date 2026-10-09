@@ -184,7 +184,8 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
 | `/mitatanaansyotaisiin` | A random Finnish recipe from the S-cloud API |
 | `/apua` | Show the in-bot command list |
 
-`/mukaan`, `/pois` and `/peru` edit the pinned list quietly. When no games are left, the bot unpins it.
+`/mukaan`, `/pois` and `/peru` edit the pinned list quietly, and so does a daily refresh just after
+midnight (Helsinki) and at startup, when past games drop out. When no games are left, the bot unpins it.
 The bot keeps one pin per chat; pinning needs it to be an admin with the right to pin messages.
 Without it the commands still work, and the refused pin is logged.
 

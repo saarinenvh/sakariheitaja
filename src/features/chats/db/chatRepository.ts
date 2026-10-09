@@ -1,3 +1,4 @@
+import { IsNull, Not } from "typeorm";
 import { moduleLogger } from "../../../shared/logger";
 import { dataSource } from "../../../db/dataSource";
 import { insertedRow } from "../../../db/insertResult";
@@ -30,4 +31,11 @@ export async function findBotPin(chatId: number): Promise<number | null> {
 /** Remembers the bot's pin in the chat, or forgets it with null. */
 export async function saveBotPin(chatId: number, messageId: number | null): Promise<void> {
   await repo().update({ id: chatId }, { botPinnedMessageId: messageId });
+}
+
+/** The chats where the bot has a pin. */
+export async function listChatsWithBotPin(): Promise<number[]> {
+  const chats = await repo().find({ where: { botPinnedMessageId: Not(IsNull()) }, select: { id: true } });
+
+  return chats.map(chat => chat.id);
 }

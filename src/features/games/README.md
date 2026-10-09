@@ -35,7 +35,9 @@ a collation that ignores case but not accents.
 
 `/hep` answers with the chat's whole list, which the bot pins as its one pin in the chat
 (`telegram/botPin.ts`, stored in `chats`); `/mukaan`, `/pois` and `/peru` edit that pin, and
-when no plans are left, the bot unpins it.
+when no plans are left, the bot unpins it. A daily refresh just after midnight, Helsinki time, and
+one at startup do the same for every pinned list, so yesterday's games drop out
+(`telegram/commands/games/pinnedList.ts`).
 
 Plans are per chat: commands only see the chat's own plans. A plan's creator isn't necessarily a
 player; a fixed-form plan makes its creator the first one. Past plans leave `/hepit` but stay

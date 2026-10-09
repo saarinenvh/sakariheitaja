@@ -17,6 +17,7 @@ import { createGiphyClient } from "./integrations/giphy/client";
 import { createRecipesClient } from "./integrations/recipes/client";
 import { resumeFollowedRounds } from "./features/live-scoring";
 import { startMorningGreeter } from "./features/morning-greeting";
+import { startPinnedListRefresher } from "./telegram/commands/games/pinnedList";
 
 // The composition root: everything the bot talks to is created here, once, and passed down.
 
@@ -44,6 +45,7 @@ bot.catch(botError => {
 async function main(): Promise<void> {
   await dataSource.initialize();
   startMorningGreeter(dependencies, config.telegram.morningChatId);
+  startPinnedListRefresher(bot.api);
   await resumeFollowedRounds(dependencies);
   bot.start();
 }
