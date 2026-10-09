@@ -67,10 +67,14 @@ sequenceDiagram
   the last good round.
 - Polling slows down while scores stay unchanged and backs off after failed requests. The rules
   and their values are in `policy.ts`; the base intervals come from the configuration.
+- The tracker's database writes are background writes: the special scores commentary saves, the
+  round's day, the round end's course, results and finished mark, and the resumer's `error`
+  marks. Each retries through a transient database error (`db/writeRetry.ts`, see
+  `docs/architecture/data.md`).
 - The round end saves the results, profiles and bagtags before it marks the competition done, so
-  a failure leaves the round unfinished and the round end runs again after a restart; the saves
-  are safe to repeat. The TOP-5 and bagtag messages after it are best effort: a failed send isn't
-  retried.
+  a failure that outlasts the retries leaves the round unfinished and the round end runs again
+  after a restart; the saves are safe to repeat. The TOP-5 and bagtag messages after it are best
+  effort: a failed send isn't retried.
 
 ## Files
 

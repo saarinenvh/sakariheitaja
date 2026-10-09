@@ -114,6 +114,23 @@ describe("poll to publication", () => {
     tracker.stopFollowing();
   });
 
+  it("saves a special score through a transient database error", async () => {
+    const tracker = await startTracker();
+    const deadlock = Object.assign(new Error("Deadlock found"), { code: "ER_LOCK_DEADLOCK" });
+    mocks.updateSpecialScores.mockClear().mockRejectedValueOnce(deadlock);
+    vi.useFakeTimers();
+
+    await poll(response([1, null, null]));
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
+    vi.useRealTimers();
+
+    const [failed, retried] = mocks.updateSpecialScores.mock.calls;
+    expect(mocks.updateSpecialScores).toHaveBeenCalledTimes(2);
+    expect(retried).toEqual(failed);
+    tracker.stopFollowing();
+  });
+
   it("finds a /score player ignoring case, and none when the name is ambiguous", async () => {
     const tracker = await startTracker();
     expect(tracker.getScoreByPlayerName("matti")?.name).toBe("Matti");

@@ -51,6 +51,20 @@ describe("finishRound", () => {
     expect(steps).not.toContain("top list");
   });
 
+  it("retries results through a transient database error, sending the end message only once", async () => {
+    vi.useFakeTimers();
+    const deadlock = Object.assign(new Error("Deadlock found"), { code: "ER_LOCK_DEADLOCK" });
+    mocks.saveResults.mockRejectedValueOnce(deadlock);
+
+    const finished = finishRound(end, round, []);
+    await vi.runAllTimersAsync();
+    await finished;
+    vi.useRealTimers();
+
+    expect(mocks.saveResults).toHaveBeenCalledTimes(2);
+    expect(steps).toEqual(["text: Dodii", "results", "profiles", "bagtags", "done", "top list", "html: Tags"]);
+  });
+
   it("treats a missing course as a failure instead of finishing without results", async () => {
     mocks.getOrCreate.mockResolvedValue(null);
     await expect(finishRound(end, round, [])).rejects.toThrow("Course Testirata could not be saved");
