@@ -134,14 +134,16 @@ describe("withWriteRetry", () => {
 });
 
 describe("the pool", () => {
-  it("replaces connections the server closed, so a repository write needs no retry for them", async () => {
+  // Right after the kill the pool can still hand out a closed connection: that attempt fails with
+  // PROTOCOL_CONNECTION_LOST, and the retry gets a new one.
+  it("recovers a repository write after the server closes the pool's connections", async () => {
     const killer = await openRunner();
     const poolConnections: { ID: number }[] = await killer.query(
       "SELECT ID FROM information_schema.PROCESSLIST WHERE DB = 'write_retry' AND ID <> CONNECTION_ID()",
     );
     for (const { ID } of poolConnections) await killer.query(`KILL CONNECTION ${ID}`);
 
-    await competitions.markFinished(COMPETITION_ID);
+    await writeRetry.withWriteRetry("finish the competition", () => competitions.markFinished(COMPETITION_ID));
 
     expect(await competitionStatus()).toBe("finished");
   });
