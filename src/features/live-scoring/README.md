@@ -9,6 +9,7 @@ sequenceDiagram
     participant Chat as /follow
     participant Tracker as ScoreTracker
     participant Metrix as MetrixClient
+    participant Records as score-records
     participant Commentary as RoundCommentary
     participant End as finishRound
     Chat->>Tracker: start()
@@ -16,6 +17,7 @@ sequenceDiagram
     Tracker->>Chat: player announcement
     loop every poll (Poller, intervals from policy.ts)
         Tracker->>Metrix: getRound
+        Tracker->>Records: sync each tracked card's special scores
         Tracker->>Commentary: observe(round, tracked players)
         Commentary-->>Chat: one message per division update
     end
@@ -34,15 +36,16 @@ sequenceDiagram
 | `registerCompetition` (`liveScoring.ts`) | `/follow`: stores the chat, if new, and the competition |
 | `trackerRegistry` (`trackerRegistry.ts`) | `main.ts`, and the `/follow`, `/lopeta`, `/pelit`, `/top5` and `/score` handlers |
 | `ScoreTracker.phase`, `ScoreTracker.sendTopList`, `ScoreTracker.getScoreByPlayerName` | `/pelit`, `/top5`, `/score` |
-| `competitionRepository` (`db/competitionRepository.ts`) | `/follow` (delete when the round can't start), `/lopeta` (delete), `finishRound` (mark finished), `roundResumer.ts` (rounds still followed; mark error), `/virheet` (rounds in error) |
+| `competitionRepository` (`db/competitionRepository.ts`) | `/follow` (delete when the round can't start), `/lopeta` (mark stopped), `finishRound` (mark finished), `roundResumer.ts` (rounds still followed; mark error), `/virheet` (rounds in error) |
 
 `registerCompetition` also stores the chat through the `chats` feature, in case the bot missed joining it.
 
 ## Data
 
 - Owns the `competitions` table (`db/`): a followed round's chat, Metrix id, day, and `status`:
-  `following`, `finished` or `error`. A round in `error` also has `errored_at` and
-  `error_reason`; it isn't resumed and stays for manual handling (`/virheet` lists them).
+  `following`, `finished`, `error` or `stopped`. A round in `error` also has `errored_at` and
+  `error_reason`; it isn't resumed and stays for manual handling (`/virheet` lists them). A
+  `stopped` round (`/lopeta`) isn't resumed either, and keeps its special scores.
 - In memory: the rounds each chat follows or is still starting (`trackerRegistry.ts`), and
   each round's last snapshot and tracked players (`ScoreTracker`). A restart rebuilds them from
   the competitions still `following`.
@@ -56,7 +59,7 @@ sequenceDiagram
 - A chat follows a round once. `/follow` takes the round in the registry before it awaits
   anything, so a second `/follow` of it, even at the same moment, is turned down.
 - `/follow` and `/lopeta` change the registry and the table before they reply. A failed start
-  deletes its competition; a failed delete in `/lopeta` leaves the round running.
+  deletes its competition. `/lopeta` marks it `stopped`; if that fails, the round keeps running.
 - A resumed round is in the registry from the start, so `/lopeta` can stop it. While Metrix
   doesn't answer it retries with the poll error backoff; after six hours, or at once when
   Metrix rejects the round, it is marked `error`. A second `following` row for a round the
@@ -65,15 +68,17 @@ sequenceDiagram
   that name, ignoring case. `/score <name>` matches the same way.
 - Polls are handled one at a time, in order; an unusable payload is logged and skipped, keeping
   the last good round.
+- On start and on every poll, before commentary, each tracked player's saved special scores are
+  synced to their card (`specialScoreSync.ts`, through `../score-records/`). A sync that fails is
+  logged, and the next poll's sync makes it good.
 - Polling slows down while scores stay unchanged and backs off after failed requests. The rules
   and their values are in `policy.ts`; the base intervals come from the configuration.
-- The tracker's database writes are background writes: the special scores commentary saves, the
-  round's day, the round end's course, results and finished mark, and the resumer's `error`
-  marks. Each retries through a transient database error (`db/writeRetry.ts`, see
-  `docs/architecture/data.md`).
-- The round end saves the results, profiles and bagtags before it marks the competition done, so
-  a failure that outlasts the retries leaves the round unfinished and the round end runs again
-  after a restart; the saves are safe to repeat. The TOP-5 and bagtag messages after it are best
+- The tracker's database writes are background writes: the special-score syncs, the round's day,
+  the round end's course, results and finished mark, and the resumer's `error` marks. Each retries
+  through a transient database error (`db/writeRetry.ts`, see `docs/architecture/data.md`).
+- The round end syncs the special scores from the final cards and saves the results, profiles
+  and bagtags before it marks the competition done, so a failure that outlasts the retries leaves
+  the round unfinished and the round end runs again after a restart; the saves are safe to repeat. The TOP-5 and bagtag messages after it are best
   effort: a failed send isn't retried.
 
 ## Files
@@ -86,6 +91,7 @@ sequenceDiagram
 | `policy.ts` | The polling rules: the interval by quiet polls, the error backoff, the jitter; and when a resumed round is given up on. |
 | `courseData.ts` | The round's course: layout details and statistics (once), and the weather at the layout's coordinates or the parent course's. |
 | `roundFinalizer.ts` | `finishRound`: the round end's steps and their order. |
+| `specialScoreSync.ts` | `syncRoundSpecialScores`: each tracked player's special scores synced to their card, retried through transient database errors. Used on every poll and at the round end. |
 | `topListRanking.ts` | Who is on the TOP-5: each division's top places, then the tracked players outside them. |
 | `messages.ts` | What live scoring says in the chat: the fixed texts, the player announcement and the TOP-5. |
 | `trackerRegistry.ts` | The rounds each chat follows or is starting, in memory, and the rounds a `/follow` is starting. |

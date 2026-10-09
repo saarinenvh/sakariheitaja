@@ -86,6 +86,23 @@ describe("competitions", () => {
     expect((await competitionRows()).at(-1)).toMatchObject({ day: null });
   });
 
+  it("stops a round without deleting it or its special scores, and doesn't resume it", async () => {
+    const { insertId } = await competitions.create(CHAT_ID, "3809488");
+    await dataSource.query("INSERT INTO players (name) VALUES ('Ville')");
+    await dataSource.query("INSERT INTO courses (name) VALUES ('Kaatis')");
+    await dataSource.query(
+      "INSERT INTO aces (date, player_id, chat_id, course_id, competition_id, hole_number) VALUES ('2026-10-09', 1, ?, 1, ?, 4)",
+      [CHAT_ID, insertId],
+    );
+
+    await competitions.markStopped(insertId);
+
+    expect((await competitionRows()).find(row => row.id === insertId)?.status).toBe("stopped");
+    const [{ count }]: { count: number }[] = await dataSource.query("SELECT COUNT(*) AS count FROM aces WHERE competition_id = ?", [insertId]);
+    expect(count).toBe(1);
+    expect((await competitions.findFollowing()).map(round => round.id)).not.toContain(insertId);
+  });
+
   it("marks a round as an error: no longer resumed, listed with when and why", async () => {
     const erroredAt = new Date("2026-10-07T09:30:00Z");
 

@@ -55,6 +55,12 @@ export async function deleteById(id: number): Promise<void> {
   log.info({ competitionId: id }, "competition removed");
 }
 
+/** Stops following the round (`/lopeta`); its special scores stay. */
+export async function markStopped(id: number): Promise<void> {
+  await repo().update(id, { status: COMPETITION_STATUS.stopped });
+  log.info({ competitionId: id }, "competition stopped");
+}
+
 export async function markFinished(id: number): Promise<void> {
   await repo().update(id, { status: COMPETITION_STATUS.finished });
 }

@@ -36,10 +36,10 @@ describe("ReplaceCompetitionFinishedWithStatus", () => {
     expect(columns.map(column => column.Field)).not.toContain("finished");
   });
 
-  it("keeps the status to its three words", async () => {
+  it("keeps the status to its four words", async () => {
     const [column]: { Type: string }[] = await dataSource.query("SHOW COLUMNS FROM competitions LIKE 'status'");
 
-    expect(column.Type).toBe("enum('following','finished','error')");
+    expect(column.Type).toBe("enum('following','finished','error','stopped')");
     await expect(dataSource.query("UPDATE competitions SET status = 'done' WHERE id = 1")).rejects.toThrow();
   });
 });

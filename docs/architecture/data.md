@@ -14,10 +14,10 @@ in the migrations.
 | `players` | `features/players/` | player names, matched to Metrix names; unique, ignoring case (`latin1_swedish_ci`) |
 | `player_to_chat` | `features/players/` | which chat tracks which player (`/lisaa`, `/poista`); one row per player and chat |
 | `chats` | `features/chats/` | the groups the bot is in |
-| `competitions` | `features/live-scoring/` | followed rounds: chat, Metrix id, `status` (`following`, `finished` or `error`), and the round's `day` from Metrix (NULL on rounds followed before 2026-10). A round in `error` keeps `errored_at` and `error_reason` for manual handling. |
+| `competitions` | `features/live-scoring/` | followed rounds: chat, Metrix id, `status` (`following`, `finished`, `error` or `stopped`), and the round's `day` from Metrix (NULL on rounds followed before 2026-10). A round in `error` keeps `errored_at` and `error_reason` for manual handling. `/lopeta` marks a round `stopped`, keeping its row and special scores; only `following` rounds are resumed. |
 | `courses` | `features/score-records/` | course names, from rounds and special scores; unique, ignoring case |
 | `scores` | `features/score-records/` | final results per player and round (`/tulokset`) |
-| `aces`, `eagles`, `albatrosses` | `features/score-records/` | special scores, one row per competition, player and hole (`hole_number`; NULL on rows saved before 2026-10). A corrected hole moves or removes its row. |
+| `aces`, `eagles`, `albatrosses` | `features/score-records/` | special scores, one row per competition, player and hole (`hole_number`; NULL on rows saved before 2026-10). Live scoring syncs a followed round's rows to each tracked player's card on every poll, so a corrected hole moves or removes its row; other rounds' rows are never touched. |
 | `game_plans` | `features/games/` | planned games (`/hep`): chat, creator (Telegram id and name), day, optional start time, courses (JSON list), the text as written. utf8mb4. Past plans stay as history. |
 | `game_plan_players` | `features/games/` | a plan's players: a name, with the Telegram id when known. Unique per plan by Telegram id, or by name ignoring case when there's no id (generated `name_without_id`). utf8mb4. |
 

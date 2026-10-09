@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareScorecards, planSpecialScoreUpdate, ScoreChange } from "../scorecardChanges";
+import { compareScorecards } from "../scorecardChanges";
 import { parseScorecard } from "../../../../integrations/metrix/round/normalize";
 
 describe("compareScorecards", () => {
@@ -75,32 +75,6 @@ describe("compareScorecards", () => {
   ])("requires a stable hole count instead of guessing at a changed layout", (previous, current) => {
     expect(compareScorecards(parseScorecard(previous), parseScorecard(current))).toEqual({
       kind: "unavailable", reason: "hole-count-changed",
-    });
-  });
-});
-
-describe("planSpecialScoreUpdate", () => {
-  const ace = { strokes: 1, relativeToPar: -2, obCount: 0 };
-  const two = { strokes: 2, relativeToPar: -1, obCount: 0 };
-  const card = parseScorecard([{ Result: "1", Diff: -2 }, [], { Result: "2", Diff: -1 }]);
-
-  it("adds only the new holes when every change is a recorded hole", () => {
-    const changes: ScoreChange[] = [{ kind: "recorded", holeNumber: 3, score: two }];
-    expect(planSpecialScoreUpdate(changes, card)).toEqual({ kind: "add", holes: [{ holeNumber: 3, score: two }] });
-  });
-
-  it.each<[string, ScoreChange]>([
-    ["a correction", { kind: "corrected", holeNumber: 1, previous: two, current: ace }],
-    ["a removal", { kind: "removed", holeNumber: 2, previous: ace }],
-  ])("rebuilds from the whole card after %s", (_, change) => {
-    const recorded: ScoreChange = { kind: "recorded", holeNumber: 3, score: two };
-    expect(planSpecialScoreUpdate([recorded, change], card)).toEqual({
-      kind: "rebuild",
-      holes: [
-        { holeNumber: 1, score: { strokes: 1, relativeToPar: -2, obCount: null } },
-        { holeNumber: 2, score: null },
-        { holeNumber: 3, score: { strokes: 2, relativeToPar: -1, obCount: null } },
-      ],
     });
   });
 });

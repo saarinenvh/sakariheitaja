@@ -4,10 +4,13 @@ import type { StartResult, TrackerDependencies } from "../../../../features/live
 const mocks = vi.hoisted(() => ({
   create: vi.fn<(chatId: number, metrixId: string) => Promise<{ insertId: number }>>(),
   deleteById: vi.fn<(id: number) => Promise<void>>(),
+  markStopped: vi.fn<(id: number) => Promise<void>>(),
   start: vi.fn<() => Promise<StartResult>>(),
 }));
 
-vi.mock("../../../../features/live-scoring/db/competitionRepository", () => ({ deleteById: mocks.deleteById }));
+vi.mock("../../../../features/live-scoring/db/competitionRepository", () => ({
+  deleteById: mocks.deleteById, markStopped: mocks.markStopped,
+}));
 vi.mock("../../../../features/live-scoring/liveScoring", () => ({
   registerCompetition: (chatId: number, _chatName: string, metrixId: string) => mocks.create(chatId, metrixId),
   ScoreTracker: class {
@@ -56,6 +59,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.create.mockResolvedValue({ insertId: 7 });
   mocks.deleteById.mockResolvedValue(undefined);
+  mocks.markStopped.mockResolvedValue(undefined);
   mocks.start.mockResolvedValue({ kind: "following" });
 });
 
@@ -122,7 +126,7 @@ describe("/lopeta", () => {
     expect(reply).toHaveBeenCalledWith(expect.stringContaining("metrixId"));
   });
 
-  it("deletes the competition and stops the round before confirming", async () => {
+  it("marks the competition stopped, keeping it, and stops the round before confirming", async () => {
     await follow(command(METRIX_ID).ctx, dependencies);
     const tracker = registry.findTracked(chatId, METRIX_ID);
     const { ctx, reply } = command(METRIX_ID);
@@ -130,15 +134,16 @@ describe("/lopeta", () => {
 
     await stopFollowing(ctx);
 
-    expect(mocks.deleteById).toHaveBeenCalledWith(7);
+    expect(mocks.markStopped).toHaveBeenCalledWith(7);
+    expect(mocks.deleteById).not.toHaveBeenCalled();
     expect(tracker?.stopped).toBe(true);
     expect(tracked()).toBe(false);
     expect(reply).toHaveBeenCalledWith(MSG.lopetaOk);
   });
 
-  it("keeps following when deleting the competition fails", async () => {
+  it("keeps following when marking the competition stopped fails", async () => {
     await follow(command(METRIX_ID).ctx, dependencies);
-    mocks.deleteById.mockRejectedValueOnce(new Error("database offline"));
+    mocks.markStopped.mockRejectedValueOnce(new Error("database offline"));
     const { ctx, reply } = command(METRIX_ID);
 
     await expect(stopFollowing(ctx)).rejects.toThrow("database offline");
@@ -154,7 +159,7 @@ describe("/lopeta", () => {
 
     await stopFollowing(command(METRIX_ID).ctx);
 
-    expect(mocks.deleteById).toHaveBeenCalledWith(9);
+    expect(mocks.markStopped).toHaveBeenCalledWith(9);
     expect(retrying.stopped).toBe(true);
   });
 

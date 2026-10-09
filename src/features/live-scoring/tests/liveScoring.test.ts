@@ -6,14 +6,14 @@ const mocks = vi.hoisted(() => ({
   send: vi.fn<(chatId: number, text: string) => Promise<void>>(),
   generate: vi.fn<(messages: OllamaMessage[], jsonSchema: unknown, options: unknown) => Promise<string>>(),
   handlers: new Map<string, (result: RoundFetchResult) => Promise<void>>(),
-  markDone: vi.fn(), saveDay: vi.fn(), updateSpecialScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
+  markDone: vi.fn(), saveDay: vi.fn(), syncSpecialScores: vi.fn(), saveResults: vi.fn(), stop: vi.fn(),
 }));
 
 vi.mock("../../../prompts/prompts", () => ({ loadPrompt: () => "Sakke", loadContext: () => "" }));
 vi.mock("../../players", () => ({ findByChatId: async () => [{ id: 1, name: "Matti" }], Player: class Player {} }));
 vi.mock("../db/competitionRepository", () => ({ markFinished: mocks.markDone, saveDay: mocks.saveDay }));
 vi.mock("../../score-records", () => ({
-  updateSpecialScores: mocks.updateSpecialScores, saveResults: mocks.saveResults, getOrCreateCourse: async () => ({ id: 2 }),
+  syncSpecialScores: mocks.syncSpecialScores, saveResults: mocks.saveResults, getOrCreateCourse: async () => ({ id: 2 }),
 }));
 vi.mock("../../player-profiles", () => ({ updateProfiles: vi.fn() }));
 vi.mock("../../bagtags", () => ({
@@ -118,19 +118,30 @@ describe("poll to publication", () => {
     tracker.stopFollowing();
   });
 
-  it("saves a special score through a transient database error, with the same time across midnight", async () => {
+  it("syncs special scores from the card on start and every poll", async () => {
     const tracker = await startTracker();
-    const deadlock = Object.assign(new Error("Deadlock found"), { code: "ER_LOCK_DEADLOCK" });
-    mocks.updateSpecialScores.mockClear().mockRejectedValueOnce(deadlock);
-    vi.useFakeTimers({ now: new Date(2026, 8, 27, 23, 59, 59, 500) });
+    expect(mocks.syncSpecialScores).toHaveBeenCalledTimes(1);
 
     await poll(response([1, null, null]));
-    await vi.advanceTimersByTimeAsync(1_000);
-    await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
 
-    const [failed, retried] = mocks.updateSpecialScores.mock.calls;
-    expect(mocks.updateSpecialScores).toHaveBeenCalledTimes(2);
-    expect(retried).toEqual(failed);
+    expect(mocks.syncSpecialScores).toHaveBeenCalledTimes(2);
+    expect(mocks.syncSpecialScores.mock.calls[1]).toEqual([
+      { playerId: 1, chatId: -100, competitionId: 1 }, { courseName: "Test course", day: "2026-09-27" },
+      { kind: "available", holes: [{ strokes: 1, relativeToPar: -2, obCount: 0 }, null, null] }, expect.any(Date),
+    ]);
+    tracker.stopFollowing();
+  });
+
+  it("goes on with commentary when a sync fails, and the next poll syncs the card again", async () => {
+    const tracker = await startTracker();
+    mocks.syncSpecialScores.mockClear().mockRejectedValueOnce(new Error("database down"));
+
+    await poll(response([1, null, null]));
+    await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
+    await poll(response([1, null, null]));
+
+    const [failed, next] = mocks.syncSpecialScores.mock.calls;
+    expect(next[2]).toEqual(failed[2]);
     tracker.stopFollowing();
   });
 

@@ -6,6 +6,7 @@ import { computeAndApplySwaps, formatBagtagAnnouncement, selectBagtagParticipant
 import { updateProfiles } from "../player-profiles";
 import * as competitionRepo from "./db/competitionRepository";
 import * as scoreService from "../score-records";
+import { syncRoundSpecialScores } from "./specialScoreSync";
 import { withWriteRetry } from "../../db/writeRetry";
 
 export interface RoundEnd {
@@ -17,8 +18,9 @@ export interface RoundEnd {
 }
 
 /**
- * Finishes a round once every tracked player is done: the end message, then results, profiles and bagtags,
- * then the competition marked finished, then the TOP-5 and the bagtag announcement.
+ * Finishes a round once every tracked player is done: the end message, then the special scores from the final
+ * cards, results, profiles and bagtags, then the competition marked finished, then the TOP-5 and the bagtag
+ * announcement.
  * The competition is marked finished only after everything is saved: if a step fails, the round stays `following`
  * and the round end runs again when the bot restarts. Every step before that is safe to repeat, and each
  * database write is retried through a transient failure first.
@@ -30,6 +32,7 @@ export async function finishRound(end: RoundEnd, round: MetrixRound, tracked: re
 
   await messenger.sendText(chatId, MSG.endSoon);
 
+  await syncRoundSpecialScores({ id: competitionId, chatId }, round, tracked);
   const course = await withWriteRetry("save the course", () => scoreService.getOrCreateCourse(round.courseName));
   if (!course) throw new Error(`Course ${round.courseName} could not be saved`);
   await withWriteRetry("save results", () =>

@@ -1,5 +1,5 @@
-export { findCourseResults, getOrCreateCourse, saveResults, updateSpecialScores } from "./scoreRecords";
-export type { CourseResultsReport } from "./scoreRecords";
+export { findCourseResults, getOrCreateCourse, saveResults, syncSpecialScores } from "./scoreRecords";
+export type { CourseResultsReport, PlayedRound } from "./scoreRecords";
 export type { CourseResult } from "./db/scoreRepository";
 export { buildSpecialScoreReport } from "./specialScoreReport";
 export type { SpecialScorePeriod, SpecialScoreReport, SpecialScoreSubject } from "./specialScoreReport";
