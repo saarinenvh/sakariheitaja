@@ -1,7 +1,7 @@
 import { IsNull } from "typeorm";
 import { moduleLogger } from "../../../shared/logger";
 import { dataSource } from "../../../db/dataSource";
-import { Competition, COMPETITION_STATUS } from "./Competition.entity";
+import { Competition, COMPETITION_STATUS, CompetitionStatus } from "./Competition.entity";
 
 const log = moduleLogger("competitions");
 
@@ -55,20 +55,27 @@ export async function deleteById(id: number): Promise<void> {
   log.info({ competitionId: id }, "competition removed");
 }
 
+// A round leaves `following` once: these only change a round still `following`, so of a `/lopeta`
+// and a round end that overlap, the first one to reach the database wins.
+
 /** Stops following the round (`/lopeta`); its special scores stay. */
 export async function markStopped(id: number): Promise<void> {
-  await repo().update(id, { status: COMPETITION_STATUS.stopped });
+  await repo().update(stillFollowing(id), { status: COMPETITION_STATUS.stopped });
   log.info({ competitionId: id }, "competition stopped");
 }
 
 export async function markFinished(id: number): Promise<void> {
-  await repo().update(id, { status: COMPETITION_STATUS.finished });
+  await repo().update(stillFollowing(id), { status: COMPETITION_STATUS.finished });
 }
 
 /** Gives up on a round: it isn't resumed again and stays for manual handling. */
 export async function markError(id: number, reason: string, erroredAt: Date): Promise<void> {
-  await repo().update(id, {
+  await repo().update(stillFollowing(id), {
     status: COMPETITION_STATUS.error, erroredAt, errorReason: reason.slice(0, ERROR_REASON_MAX_LENGTH),
   });
   log.warn({ competitionId: id, reason }, "competition marked as error");
+}
+
+function stillFollowing(id: number): { id: number; status: CompetitionStatus } {
+  return { id, status: COMPETITION_STATUS.following };
 }

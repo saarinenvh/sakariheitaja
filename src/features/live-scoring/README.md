@@ -45,7 +45,9 @@ sequenceDiagram
 - Owns the `competitions` table (`db/`): a followed round's chat, Metrix id, day, and `status`:
   `following`, `finished`, `error` or `stopped`. A round in `error` also has `errored_at` and
   `error_reason`; it isn't resumed and stays for manual handling (`/virheet` lists them). A
-  `stopped` round (`/lopeta`) isn't resumed either, and keeps its special scores.
+  `stopped` round (`/lopeta`) isn't resumed either, and keeps its special scores. A round leaves
+  `following` once: `finished`, `stopped` and `error` only change a round still `following`, so of
+  an overlapping `/lopeta` and round end, the first to reach the database wins.
 - In memory: the rounds each chat follows or is still starting (`trackerRegistry.ts`), and
   each round's last snapshot and tracked players (`ScoreTracker`). A restart rebuilds them from
   the competitions still `following`.

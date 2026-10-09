@@ -103,6 +103,21 @@ describe("competitions", () => {
     expect((await competitions.findFollowing()).map(round => round.id)).not.toContain(insertId);
   });
 
+  it("lets a round leave following only once, so an overlapping /lopeta and round end can't overwrite each other", async () => {
+    const { insertId: stopped } = await competitions.create(CHAT_ID, "3809489");
+    const { insertId: finished } = await competitions.create(CHAT_ID, "3809490");
+
+    await competitions.markStopped(stopped);
+    await competitions.markFinished(stopped);
+    await competitions.markError(stopped, "late", new Date());
+    await competitions.markFinished(finished);
+    await competitions.markStopped(finished);
+
+    const statusOf = async (id: number) => (await competitionRows()).find(row => row.id === id)?.status;
+    expect(await statusOf(stopped)).toBe("stopped");
+    expect(await statusOf(finished)).toBe("finished");
+  });
+
   it("marks a round as an error: no longer resumed, listed with when and why", async () => {
     const erroredAt = new Date("2026-10-07T09:30:00Z");
 
