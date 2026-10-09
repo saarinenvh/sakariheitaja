@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const steps = vi.hoisted(() => [] as string[]);
 const mocks = vi.hoisted(() => ({
@@ -38,6 +38,10 @@ beforeEach(() => {
   mocks.getOrCreate.mockReset().mockResolvedValue({ id: 2 });
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("finishRound", () => {
   it("saves everything before marking the competition done, then posts the results", async () => {
     await finishRound(end, round, []);
@@ -59,7 +63,6 @@ describe("finishRound", () => {
     const finished = finishRound(end, round, []);
     await vi.runAllTimersAsync();
     await finished;
-    vi.useRealTimers();
 
     expect(mocks.saveResults).toHaveBeenCalledTimes(2);
     expect(steps).toEqual(["text: Dodii", "results", "profiles", "bagtags", "done", "top list", "html: Tags"]);

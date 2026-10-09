@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OllamaMessage } from "../../../integrations/ollama/client";
 
 const mocks = vi.hoisted(() => ({
@@ -97,6 +97,10 @@ beforeEach(() => {
   mocks.generate.mockResolvedValue(batchReply("Matti, ihan jees."));
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("poll to publication", () => {
   it("saves the round's day from the first fetch", async () => {
     const tracker = await startTracker();
@@ -123,7 +127,6 @@ describe("poll to publication", () => {
     await poll(response([1, null, null]));
     await vi.advanceTimersByTimeAsync(1_000);
     await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
-    vi.useRealTimers();
 
     const [failed, retried] = mocks.updateSpecialScores.mock.calls;
     expect(mocks.updateSpecialScores).toHaveBeenCalledTimes(2);

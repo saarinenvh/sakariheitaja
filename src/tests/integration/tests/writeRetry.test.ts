@@ -1,10 +1,13 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import type { DataSource, QueryRunner } from "typeorm";
 import { startBotDatabase } from "../botDatabase";
+import { wait } from "../../../shared/time";
 
 const CHAT_ID = -5238320046;
 const COMPETITION_ID = 1;
 const LOCK_WAIT_TIMEOUT_S = 1;
+const QUERY_START_TIMEOUT_MS = 5_000;
+const PROCESSLIST_POLL_MS = 20;
 
 let dataSource: DataSource;
 // Imported after the database is up: the data source reads its settings when first imported.
@@ -70,10 +73,16 @@ function finishCompetition(runner: QueryRunner): Promise<unknown> {
 }
 
 async function waitUntilRunningQuery(observer: QueryRunner, connectionId: number): Promise<void> {
-  for (;;) {
+  const deadline = Date.now() + QUERY_START_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
     const [connection] = await observer.query("SELECT COMMAND FROM information_schema.PROCESSLIST WHERE ID = ?", [connectionId]);
     if (connection?.COMMAND === "Query") return;
+
+    await wait(PROCESSLIST_POLL_MS);
   }
+
+  throw new Error(`Connection ${connectionId} never started its query`);
 }
 
 async function competitionStatus(): Promise<string> {
