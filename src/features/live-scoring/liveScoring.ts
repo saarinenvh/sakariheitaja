@@ -86,8 +86,11 @@ export class ScoreTracker {
         await messenger.sendHtml(chatId, html);
         log.info({ metrixId, chars: html.length }, "commentary message sent");
       },
-      updateSpecialScores: (playerId, played, update) => withWriteRetry("update special scores", () =>
-        scoreService.updateSpecialScores({ playerId, chatId, competitionId: id }, played, update)),
+      updateSpecialScores: (playerId, played, update) => {
+        const now = new Date();
+        return withWriteRetry("update special scores", () =>
+          scoreService.updateSpecialScores({ playerId, chatId, competitionId: id }, played, update, now));
+      },
       onError: error => log.error({ metrixId, err: error }, "commentary delivery failed"),
     });
   }

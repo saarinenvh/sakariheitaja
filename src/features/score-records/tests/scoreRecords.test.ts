@@ -28,7 +28,8 @@ const hole = (holeNumber: number, strokes: number, relativeToPar: number): HoleR
   ({ holeNumber, score: { strokes, relativeToPar, obCount: 0 } });
 const round = { playerId: 42, chatId: -100, competitionId: 55 };
 const played = { courseName: "Talin frisbeegolfrata", day: "2026-10-03" };
-const update = (kind: SpecialScoreUpdate["kind"], holes: HoleResult[]) => updateSpecialScores(round, played, { kind, holes });
+const now = new Date(2026, 9, 5, 12, 0);
+const update = (kind: SpecialScoreUpdate["kind"], holes: HoleResult[]) => updateSpecialScores(round, played, { kind, holes }, now);
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -58,6 +59,11 @@ describe("updateSpecialScores", () => {
     await update("rebuild", [hole(1, 2, -1), { holeNumber: 2, score: null }]);
     expect(specialScoreRepo.rebuildSpecialScores).toHaveBeenCalledWith(round, null);
     expect(courseRepo.addIfAbsent).not.toHaveBeenCalled();
+  });
+
+  it("dates a round without a day with the given time's date", async () => {
+    await updateSpecialScores(round, { ...played, day: null }, { kind: "add", holes: [hole(1, 1, -2)] }, now);
+    expect(specialScoreRepo.addSpecialScores).toHaveBeenCalledWith(round, expect.objectContaining({ date: "2026-10-05" }));
   });
 
   it("adds a course the bot hasn't seen before instead of dropping the score", async () => {

@@ -9,14 +9,15 @@ import { specialScoreDate, specialScores } from "./policy";
 /**
  * Updates a player's saved special scores: `add` adds the new holes' ones; `rebuild` replaces what
  * the round has saved for the player with the card's, so a corrected or removed score goes away.
- * Every row is dated with the round's date, so a rebuild on a later day keeps the scores' dates.
+ * Every row is dated with the round's date, so a rebuild on a later day keeps the scores' dates; a
+ * round without one uses `now`'s date, which the caller fixes once so a retry keeps it too.
  */
 export async function updateSpecialScores(
-  round: specialScoreRepo.PlayerRound, played: PlayedRound, update: SpecialScoreUpdate,
+  round: specialScoreRepo.PlayerRound, played: PlayedRound, update: SpecialScoreUpdate, now: Date,
 ): Promise<void> {
   const scores = specialScores(update.holes);
   const rows = scores.length > 0
-    ? { courseId: await findOrAddCourseId(played.courseName), date: specialScoreDate(played.day, new Date()), scores }
+    ? { courseId: await findOrAddCourseId(played.courseName), date: specialScoreDate(played.day, now), scores }
     : null;
 
   if (update.kind === "rebuild") {

@@ -1,5 +1,6 @@
 import { GamePlan, formatPlanSummary, listPlans, PLAN_TIME_ZONE } from "../../../features/games";
 import { listChatsWithBotPin } from "../../../features/chats";
+import { withWriteRetry } from "../../../db/writeRetry";
 import { moduleLogger } from "../../../shared/logger";
 import { packLines } from "../../../shared/telegramText";
 import { addDays, dayInTimeZone, zonedTimeToInstant } from "../../../shared/time";
@@ -48,7 +49,10 @@ export function msUntilNextRefresh(now: Date): number {
   return zonedTimeToInstant(tomorrow, DAILY_REFRESH_TIME, PLAN_TIME_ZONE).getTime() - now.getTime();
 }
 
-/** Refreshes each chat's pin on its own, so one failing chat doesn't stop the rest. Never throws. */
+/**
+ * Refreshes each chat's pin on its own, so one failing chat doesn't stop the rest. Never throws.
+ * A chat's refresh is retried whole: its Telegram calls are safe to repeat.
+ */
 export async function refreshAllPinnedLists(api: PinApi): Promise<void> {
   let chatIds: number[];
   try {
@@ -60,7 +64,7 @@ export async function refreshAllPinnedLists(api: PinApi): Promise<void> {
 
   for (const chatId of chatIds) {
     try {
-      await refreshPinnedList(api, chatId);
+      await withWriteRetry("refresh the pinned list", () => refreshPinnedList(api, chatId));
     } catch (error) {
       log.error({ err: error, chatId }, "could not refresh the pinned list");
     }

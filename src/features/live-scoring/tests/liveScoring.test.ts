@@ -118,11 +118,11 @@ describe("poll to publication", () => {
     tracker.stopFollowing();
   });
 
-  it("saves a special score through a transient database error", async () => {
+  it("saves a special score through a transient database error, with the same time across midnight", async () => {
     const tracker = await startTracker();
     const deadlock = Object.assign(new Error("Deadlock found"), { code: "ER_LOCK_DEADLOCK" });
     mocks.updateSpecialScores.mockClear().mockRejectedValueOnce(deadlock);
-    vi.useFakeTimers();
+    vi.useFakeTimers({ now: new Date(2026, 8, 27, 23, 59, 59, 500) });
 
     await poll(response([1, null, null]));
     await vi.advanceTimersByTimeAsync(1_000);

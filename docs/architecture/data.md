@@ -35,8 +35,9 @@ A failed migration stops the start, and the log says why.
 Who retries a failed write depends on whether someone is waiting for it:
 
 - **Background writes** go through `withWriteRetry` (`db/writeRetry.ts`): live scoring's special
-  scores, the round's day, the round end's course, results and status, and a resumed round's
-  `error` mark. Nobody would notice them fail, so they retry themselves: up to five attempts over
+  scores, the round's day, the round end's course, results and status, a resumed round's `error`
+  mark, and each chat's nightly pinned-list refresh. Nobody would notice them fail, so they retry
+  themselves: up to five attempts over
   about 15 seconds, on a transient error only (a deadlock, a lock wait timeout, a lost or refused
   connection). Any other error fails at once.
 - **Command writes** (`/follow`, `/hep`, `/lisaa` and the rest) aren't retried. The command
