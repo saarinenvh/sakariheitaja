@@ -1,3 +1,4 @@
+import { IsNull, Not } from "typeorm";
 import { moduleLogger } from "../../../shared/logger";
 import { dataSource } from "../../../db/dataSource";
 import { insertedRow } from "../../../db/insertResult";
@@ -18,4 +19,23 @@ export async function addIfAbsent(chatId: number, name: string): Promise<void> {
   const result = await repo().createQueryBuilder().insert().into(Chat).values({ id: chatId, name }).orIgnore().execute();
 
   if (insertedRow(result)) log.info({ chatId, name }, "added new chat");
+}
+
+/** The message the bot keeps pinned in the chat, or null. */
+export async function findBotPin(chatId: number): Promise<number | null> {
+  const chat = await repo().findOne({ where: { id: chatId }, select: { id: true, botPinnedMessageId: true } });
+
+  return chat?.botPinnedMessageId ?? null;
+}
+
+/** Remembers the bot's pin in the chat, or forgets it with null. */
+export async function saveBotPin(chatId: number, messageId: number | null): Promise<void> {
+  await repo().update({ id: chatId }, { botPinnedMessageId: messageId });
+}
+
+/** The chats where the bot has a pin. */
+export async function listChatsWithBotPin(): Promise<number[]> {
+  const chats = await repo().find({ where: { botPinnedMessageId: Not(IsNull()) }, select: { id: true } });
+
+  return chats.map(chat => chat.id);
 }

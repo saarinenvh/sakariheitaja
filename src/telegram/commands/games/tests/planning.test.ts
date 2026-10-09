@@ -3,7 +3,9 @@ import type { GamePlan, MakePlanResult } from "../../../../features/games";
 
 const mocks = vi.hoisted(() => ({
   makePlan: vi.fn(), listPlans: vi.fn(), joinPlan: vi.fn(), leavePlan: vi.fn(), cancelPlan: vi.fn(),
+  replaceBotPin: vi.fn(), editBotPin: vi.fn(), removeBotPin: vi.fn(),
 }));
+vi.mock("../../../botPin", () => ({ replaceBotPin: mocks.replaceBotPin, editBotPin: mocks.editBotPin, removeBotPin: mocks.removeBotPin }));
 // The real summary format, so the replies are checked as they're sent.
 vi.mock("../../../../features/games", async () => ({
   ...mocks, formatPlanSummary: (await import("../../../../features/games/planSummary")).formatPlanSummary,
@@ -18,11 +20,13 @@ const VILLE = { id: 42, first_name: "Ville" };
 
 /** `from: null` is a message without a sender, like a channel post. */
 function command(match: string, from: { id: number; first_name: string } | null = VILLE) {
-  const reply = vi.fn().mockResolvedValue(undefined);
+  let nextMessageId = 500;
+  const reply = vi.fn(async (text: string) => ({ message_id: nextMessageId++, text }));
+  const api = {};
   // Only the fields the handlers read.
-  const ctx = { match, chat: { id: CHAT_ID, title: "SakariPelit" }, from: from ?? undefined, reply } as unknown as CommandContext<Context>;
+  const ctx = { match, chat: { id: CHAT_ID, title: "SakariPelit" }, from: from ?? undefined, reply, api } as unknown as CommandContext<Context>;
 
-  return { ctx, reply };
+  return { ctx, reply, api };
 }
 
 /** A plan as the feature returns it; only the fields the formatting reads. */
@@ -58,14 +62,41 @@ describe("/hep", () => {
     expect(mocks.makePlan).not.toHaveBeenCalled();
   });
 
-  it("makes the plan in this chat as the sender, and confirms it with its number", async () => {
-    mocks.makePlan.mockResolvedValue({ kind: "saved", plan: plan({ startTime: "18:00:00", courses: ["Keljo"], playerNames: ["Ville"] }) });
+  it("makes the plan in this chat as the sender, and confirms it with its number and the whole list", async () => {
+    const saved = plan({ startTime: "18:00:00", courses: ["Keljo"], playerNames: ["Ville"] });
+    mocks.makePlan.mockResolvedValue({ kind: "saved", plan: saved });
+    mocks.listPlans.mockResolvedValue([saved, plan({ id: 13, day: "2026-10-11", startTime: null, courses: ["Tali"] })]);
     const { ctx, reply } = command("la 18 Keljo");
 
     await makeGamePlan(ctx);
 
     expect(mocks.makePlan).toHaveBeenCalledWith({ id: CHAT_ID, name: "SakariPelit" }, { telegramUserId: 42, name: "Ville" }, "la 18 Keljo");
-    expect(reply).toHaveBeenCalledWith(MSG.hepSaved(12, "la 10.10. klo 18.00 Keljo — Ville"));
+    expect(reply.mock.calls).toEqual([[
+      `${MSG.hepSaved(12, "la 10.10. klo 18.00 Keljo — Ville")}\n\n${MSG.hepitHeader}\n\n`
+      + `12. la 10.10. klo 18.00 Keljo — Ville\n13. su 11.10. Tali\n\n${MSG.hepitFooter}`,
+    ]]);
+  });
+
+  it("pins the list it sent in place of the bot's previous pin", async () => {
+    mocks.makePlan.mockResolvedValue({ kind: "saved", plan: plan({}) });
+    mocks.listPlans.mockResolvedValue([plan({})]);
+    const { ctx, api } = command("la 9 Karjaa + Härkälinna");
+
+    await makeGamePlan(ctx);
+
+    expect(mocks.replaceBotPin).toHaveBeenCalledWith(api, CHAT_ID, 500);
+  });
+
+  it("pins the first part of a list too long for one message", async () => {
+    const longCourse = "Keljo ".repeat(100).trim();
+    mocks.makePlan.mockResolvedValue({ kind: "saved", plan: plan({}) });
+    mocks.listPlans.mockResolvedValue(Array.from({ length: 12 }, (_, index) => plan({ id: index + 1, courses: [longCourse] })));
+    const { ctx, reply } = command("la 9 Keljo");
+
+    await makeGamePlan(ctx);
+
+    expect(reply.mock.calls.length).toBeGreaterThan(1);
+    expect(mocks.replaceBotPin).toHaveBeenCalledWith(expect.anything(), CHAT_ID, 500);
   });
 
   it.each<[MakePlanResult, string]>([
@@ -80,6 +111,52 @@ describe("/hep", () => {
     await makeGamePlan(ctx);
 
     expect(reply).toHaveBeenCalledWith(expected);
+    expect(mocks.replaceBotPin).not.toHaveBeenCalled();
+  });
+});
+
+describe("the pinned list after a change", () => {
+  it.each<[string, () => void, (ctx: CommandContext<Context>) => Promise<unknown>]>([
+    ["/mukaan", () => mocks.joinPlan.mockResolvedValue({ kind: "joined" }), joinGamePlan],
+    ["/pois", () => mocks.leavePlan.mockResolvedValue({ kind: "left" }), leaveGamePlan],
+    ["/peru", () => mocks.cancelPlan.mockResolvedValue({ kind: "cancelled" }), cancelGamePlan],
+  ])("%s edits it to the current list, after the reply", async (_name, succeed, handle) => {
+    succeed();
+    mocks.listPlans.mockResolvedValue([plan({ playerNames: ["Ville", "Wiltzu"] })]);
+    const { ctx, reply, api } = command("12");
+
+    await handle(ctx);
+
+    expect(mocks.editBotPin).toHaveBeenCalledWith(
+      api, CHAT_ID, `${MSG.hepitHeader}\n\n12. la 10.10. klo 9.00 Karjaa + Härkälinna — Ville, Wiltzu\n\n${MSG.hepitFooter}`,
+    );
+    expect(reply.mock.invocationCallOrder[0]).toBeLessThan(mocks.editBotPin.mock.invocationCallOrder[0]);
+  });
+
+  it("is unpinned when the last plan is cancelled", async () => {
+    mocks.cancelPlan.mockResolvedValue({ kind: "cancelled" });
+    mocks.listPlans.mockResolvedValue([]);
+    const { ctx, api } = command("12");
+
+    await cancelGamePlan(ctx);
+
+    expect(mocks.removeBotPin).toHaveBeenCalledWith(api, CHAT_ID);
+    expect(mocks.editBotPin).not.toHaveBeenCalled();
+  });
+
+  it.each<[string, () => void, (ctx: CommandContext<Context>) => Promise<unknown>]>([
+    ["/mukaan", () => mocks.joinPlan.mockResolvedValue({ kind: "already" }), joinGamePlan],
+    ["/pois", () => mocks.leavePlan.mockResolvedValue({ kind: "not-in-plan" }), leaveGamePlan],
+    ["/peru", () => mocks.cancelPlan.mockResolvedValue({ kind: "not-creator" }), cancelGamePlan],
+  ])("%s leaves it alone when nothing changed", async (_name, refuse, handle) => {
+    refuse();
+    const { ctx } = command("12");
+
+    await handle(ctx);
+
+    expect(mocks.listPlans).not.toHaveBeenCalled();
+    expect(mocks.editBotPin).not.toHaveBeenCalled();
+    expect(mocks.removeBotPin).not.toHaveBeenCalled();
   });
 });
 

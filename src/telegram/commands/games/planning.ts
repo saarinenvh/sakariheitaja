@@ -1,13 +1,20 @@
 import { CommandContext, Context } from "grammy";
+import type { Message } from "grammy/types";
 import {
-  cancelPlan, formatPlanSummary, joinPlan, Leaver, leavePlan, listPlans, makePlan, MakePlanResult, Member, PlanPlayer,
+  CancelResult, cancelPlan, formatPlanSummary, JoinResult, joinPlan, Leaver, LeaveResult, leavePlan, listPlans, makePlan,
+  MakePlanResult, Member, PlanPlayer,
 } from "../../../features/games";
 import { packLines } from "../../../shared/telegramText";
+import { replaceBotPin } from "../../botPin";
 import { planningMessages as MSG } from "./messages";
+import { formatPlanList, refreshPinnedList } from "./pinnedList";
 
 type Command = CommandContext<Context>;
 
-/** `/hep <text>`: a plan in the fixed form, with its creator as the first player. */
+/**
+ * `/hep <text>`: a plan in the fixed form, with its creator as the first player. The confirmation
+ * comes with the chat's whole list, which the bot pins in place of its previous pin.
+ */
 export async function makeGamePlan(ctx: Command): Promise<unknown> {
   if (!ctx.match) return ctx.reply(MSG.hepUsage);
 
@@ -15,8 +22,12 @@ export async function makeGamePlan(ctx: Command): Promise<unknown> {
   if (!creator) return ctx.reply(MSG.noSender);
 
   const result = await makePlan({ id: ctx.chat.id, name: ctx.chat.title ?? "" }, creator, ctx.match);
+  if (result.kind !== "saved") return ctx.reply(formatRejectedPlan(result));
 
-  return replyInParts(ctx, formatMakePlanResult(result).split("\n"));
+  const plans = await listPlans(ctx.chat.id);
+
+  const [listMessage] = await replyInParts(ctx, [MSG.hepSaved(result.plan.id, formatPlanSummary(result.plan)), "", ...formatPlanList(plans)]);
+  await replaceBotPin(ctx.api, ctx.chat.id, listMessage.message_id);
 }
 
 /** `/hepit`: the chat's plans from today on, in as many replies as Telegram's length limit needs. */
@@ -24,9 +35,7 @@ export async function listGamePlans(ctx: Command): Promise<unknown> {
   const plans = await listPlans(ctx.chat.id);
   if (plans.length === 0) return ctx.reply(MSG.hepitNone);
 
-  const planLines = plans.map(plan => `${plan.id}. ${formatPlanSummary(plan)}`);
-
-  return replyInParts(ctx, [MSG.hepitHeader, "", ...planLines, "", MSG.hepitFooter]);
+  return replyInParts(ctx, formatPlanList(plans));
 }
 
 /** `/mukaan <nr> [name]`: you, by your Telegram id, or any name. */
@@ -38,12 +47,9 @@ export async function joinGamePlan(ctx: Command): Promise<unknown> {
   if (!player) return ctx.reply(MSG.noSender);
 
   const result = await joinPlan(ctx.chat.id, args.planId, player);
-  switch (result.kind) {
-    case "joined": return ctx.reply(MSG.joined(player.name, args.planId));
-    case "already": return ctx.reply(MSG.alreadyIn(player.name));
-    case "no-plan": return ctx.reply(MSG.noPlan);
-    case "name-too-long": return ctx.reply(MSG.nameTooLong(result.maxLength));
-  }
+
+  await ctx.reply(formatJoinResult(result, player.name, args.planId));
+  if (result.kind === "joined") await refreshPinnedList(ctx.api, ctx.chat.id);
 }
 
 /** `/pois <nr> [name]`: you, by your Telegram id, or a name added without one. */
@@ -55,11 +61,9 @@ export async function leaveGamePlan(ctx: Command): Promise<unknown> {
   if (!leaving) return ctx.reply(MSG.noSender);
 
   const result = await leavePlan(ctx.chat.id, args.planId, leaving.leaver);
-  switch (result.kind) {
-    case "left": return ctx.reply(MSG.left(leaving.name, args.planId));
-    case "not-in-plan": return ctx.reply(MSG.notInPlan(leaving.name));
-    case "no-plan": return ctx.reply(MSG.noPlan);
-  }
+
+  await ctx.reply(formatLeaveResult(result, leaving.name, args.planId));
+  if (result.kind === "left") await refreshPinnedList(ctx.api, ctx.chat.id);
 }
 
 /** `/peru <nr>`: deletes the plan, for its creator only. */
@@ -71,25 +75,50 @@ export async function cancelGamePlan(ctx: Command): Promise<unknown> {
   if (!sender) return ctx.reply(MSG.noSender);
 
   const result = await cancelPlan(ctx.chat.id, args.planId, sender.telegramUserId);
-  switch (result.kind) {
-    case "cancelled": return ctx.reply(MSG.cancelled(args.planId));
-    case "not-creator": return ctx.reply(MSG.notCreator);
-    case "no-plan": return ctx.reply(MSG.noPlan);
-  }
+
+  await ctx.reply(formatCancelResult(result, args.planId));
+  if (result.kind === "cancelled") await refreshPinnedList(ctx.api, ctx.chat.id);
 }
 
 /** The lines in as few replies as fit, in order; a line too long for one reply is cut short. */
-async function replyInParts(ctx: Command, lines: readonly string[]): Promise<void> {
-  for (const message of packLines(lines)) await ctx.reply(message);
+async function replyInParts(ctx: Command, lines: readonly string[]): Promise<Message[]> {
+  const sent: Message[] = [];
+  for (const text of packLines(lines)) sent.push(await ctx.reply(text));
+
+  return sent;
 }
 
-function formatMakePlanResult(result: MakePlanResult): string {
+function formatRejectedPlan(result: Exclude<MakePlanResult, { kind: "saved" }>): string {
   switch (result.kind) {
-    case "saved": return MSG.hepSaved(result.plan.id, formatPlanSummary(result.plan));
     case "free-text": return MSG.hepFreeText;
     case "no-courses": return MSG.hepNoCourses;
     case "past": return MSG.hepPast;
     case "too-far": return MSG.hepTooFar(result.maxDaysAhead);
+  }
+}
+
+function formatJoinResult(result: JoinResult, name: string, planId: number): string {
+  switch (result.kind) {
+    case "joined": return MSG.joined(name, planId);
+    case "already": return MSG.alreadyIn(name);
+    case "no-plan": return MSG.noPlan;
+    case "name-too-long": return MSG.nameTooLong(result.maxLength);
+  }
+}
+
+function formatLeaveResult(result: LeaveResult, name: string, planId: number): string {
+  switch (result.kind) {
+    case "left": return MSG.left(name, planId);
+    case "not-in-plan": return MSG.notInPlan(name);
+    case "no-plan": return MSG.noPlan;
+  }
+}
+
+function formatCancelResult(result: CancelResult, planId: number): string {
+  switch (result.kind) {
+    case "cancelled": return MSG.cancelled(planId);
+    case "not-creator": return MSG.notCreator;
+    case "no-plan": return MSG.noPlan;
   }
 }
 

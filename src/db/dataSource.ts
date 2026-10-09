@@ -16,6 +16,7 @@ import { AddCompetitionDay1791269243562 } from "./migrations/1791269243562-AddCo
 import { ReplaceCompetitionFinishedWithStatus1791362797286 } from "./migrations/1791362797286-ReplaceCompetitionFinishedWithStatus";
 import { MakeCompetitionChatAndMetrixRequired1791378525211 } from "./migrations/1791378525211-MakeCompetitionChatAndMetrixRequired";
 import { CreateGamePlans1791465872374 } from "./migrations/1791465872374-CreateGamePlans";
+import { AddChatBotPinnedMessage1791525001570 } from "./migrations/1791525001570-AddChatBotPinnedMessage";
 
 const database = readConfig().database;
 
@@ -38,6 +39,6 @@ export const dataSource = new DataSource({
   migrations: [
     AddSpecialScoreHoles1791188409491, AddNameAndLinkUniqueKeys1791201684139, AddCompetitionDay1791269243562,
     ReplaceCompetitionFinishedWithStatus1791362797286, MakeCompetitionChatAndMetrixRequired1791378525211,
-    CreateGamePlans1791465872374,
+    CreateGamePlans1791465872374, AddChatBotPinnedMessage1791525001570,
   ],
 });
