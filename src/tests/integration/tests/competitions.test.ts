@@ -28,7 +28,22 @@ describe("chats", () => {
     await chats.addIfAbsent(CHAT_ID, "Testi");
     await chats.addIfAbsent(CHAT_ID, "Uusi nimi");
 
-    await expect(chats.findById(CHAT_ID)).resolves.toEqual({ id: CHAT_ID, name: "Testi" });
+    await expect(chats.findById(CHAT_ID)).resolves.toEqual({ id: CHAT_ID, name: "Testi", botPinnedMessageId: null });
+  });
+
+  it("remembers the bot's one pin, replaces it, and forgets it", async () => {
+    await chats.addIfAbsent(CHAT_ID, "Testi");
+
+    await chats.saveBotPin(CHAT_ID, 501);
+    await chats.saveBotPin(CHAT_ID, 502);
+    await expect(chats.findBotPin(CHAT_ID)).resolves.toBe(502);
+
+    await chats.saveBotPin(CHAT_ID, null);
+    await expect(chats.findBotPin(CHAT_ID)).resolves.toBeNull();
+  });
+
+  it("has no pin for a chat it doesn't know", async () => {
+    await expect(chats.findBotPin(-1)).resolves.toBeNull();
   });
 });
 
