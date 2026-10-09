@@ -173,7 +173,7 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
 ### Fun
 | Command | Description |
 |---|---|
-| `/hep [day] [klo] [time] <course + course>` | Plan a game, today or up to 60 days ahead (e.g. `/hep la 18 Keljo`); you're its first player |
+| `/hep [day] [klo] [time] <course + course>` | Plan a game, today or up to 60 days ahead (e.g. `/hep la 18 Keljo`); you're its first player. The reply lists all the chat's games and is pinned, with a notification, in place of the bot's previous pin |
 | `/hepit` | The chat's planned games from today on, with their numbers |
 | `/mukaan <nr> [name]` | Join a game, or add someone by name |
 | `/pois <nr> [name]` | Leave a game, or remove someone added by name |
@@ -183,6 +183,10 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
 | `/gifplz <term>` | Send a random matching GIF from Giphy |
 | `/mitatanaansyotaisiin` | A random Finnish recipe from the S-cloud API |
 | `/apua` | Show the in-bot command list |
+
+`/mukaan`, `/pois` and `/peru` edit the pinned list quietly. When no games are left, the bot unpins it.
+The bot keeps one pin per chat; pinning needs it to be an admin with the right to pin messages.
+Without it the commands still work, and the refused pin is logged.
 
 ### Dev
 Only registered when `LLM_ENABLED=true`:
