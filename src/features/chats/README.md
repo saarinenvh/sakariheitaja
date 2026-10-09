@@ -8,6 +8,7 @@ The groups the bot is in.
 | --- | --- |
 | `addIfAbsent` (`db/chatRepository.ts`) | `telegram/chatRegistration.ts`, when the bot is added to a group or a group is created with it; `/follow`, in case the bot missed the join |
 | `findBotPin`, `saveBotPin` | `telegram/botPin.ts`: the one message the bot keeps pinned in the chat |
+| `listChatsWithBotPin` | the daily pinned list refresh (`telegram/commands/games/pinnedList.ts`) |
 
 ## Data
 

@@ -1,12 +1,13 @@
 import { CommandContext, Context } from "grammy";
 import type { Message } from "grammy/types";
 import {
-  CancelResult, cancelPlan, formatPlanSummary, GamePlan, JoinResult, joinPlan, Leaver, LeaveResult, leavePlan, listPlans, makePlan,
+  CancelResult, cancelPlan, formatPlanSummary, JoinResult, joinPlan, Leaver, LeaveResult, leavePlan, listPlans, makePlan,
   MakePlanResult, Member, PlanPlayer,
 } from "../../../features/games";
 import { packLines } from "../../../shared/telegramText";
-import { editBotPin, removeBotPin, replaceBotPin } from "../../botPin";
+import { replaceBotPin } from "../../botPin";
 import { planningMessages as MSG } from "./messages";
+import { formatPlanList, refreshPinnedList } from "./pinnedList";
 
 type Command = CommandContext<Context>;
 
@@ -48,7 +49,7 @@ export async function joinGamePlan(ctx: Command): Promise<unknown> {
   const result = await joinPlan(ctx.chat.id, args.planId, player);
 
   await ctx.reply(formatJoinResult(result, player.name, args.planId));
-  if (result.kind === "joined") await refreshPinnedList(ctx);
+  if (result.kind === "joined") await refreshPinnedList(ctx.api, ctx.chat.id);
 }
 
 /** `/pois <nr> [name]`: you, by your Telegram id, or a name added without one. */
@@ -62,7 +63,7 @@ export async function leaveGamePlan(ctx: Command): Promise<unknown> {
   const result = await leavePlan(ctx.chat.id, args.planId, leaving.leaver);
 
   await ctx.reply(formatLeaveResult(result, leaving.name, args.planId));
-  if (result.kind === "left") await refreshPinnedList(ctx);
+  if (result.kind === "left") await refreshPinnedList(ctx.api, ctx.chat.id);
 }
 
 /** `/peru <nr>`: deletes the plan, for its creator only. */
@@ -76,20 +77,7 @@ export async function cancelGamePlan(ctx: Command): Promise<unknown> {
   const result = await cancelPlan(ctx.chat.id, args.planId, sender.telegramUserId);
 
   await ctx.reply(formatCancelResult(result, args.planId));
-  if (result.kind === "cancelled") await refreshPinnedList(ctx);
-}
-
-/**
- * Brings the bot's pinned list up to date after a change, quietly, by editing it; with no plans
- * left, unpins it. A list longer than one message keeps its first part pinned.
- */
-async function refreshPinnedList(ctx: Command): Promise<void> {
-  const plans = await listPlans(ctx.chat.id);
-  if (plans.length === 0) return removeBotPin(ctx.api, ctx.chat.id);
-
-  const [firstPart] = packLines(formatPlanList(plans));
-
-  await editBotPin(ctx.api, ctx.chat.id, firstPart);
+  if (result.kind === "cancelled") await refreshPinnedList(ctx.api, ctx.chat.id);
 }
 
 /** The lines in as few replies as fit, in order; a line too long for one reply is cut short. */
@@ -98,13 +86,6 @@ async function replyInParts(ctx: Command, lines: readonly string[]): Promise<Mes
   for (const text of packLines(lines)) sent.push(await ctx.reply(text));
 
   return sent;
-}
-
-/** The `/hepit` list: a header, a line per plan with its number, and how to join. */
-function formatPlanList(plans: readonly GamePlan[]): string[] {
-  const planLines = plans.map(plan => `${plan.id}. ${formatPlanSummary(plan)}`);
-
-  return [MSG.hepitHeader, "", ...planLines, "", MSG.hepitFooter];
 }
 
 function formatRejectedPlan(result: Exclude<MakePlanResult, { kind: "saved" }>): string {

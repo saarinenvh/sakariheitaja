@@ -45,6 +45,17 @@ describe("chats", () => {
   it("has no pin for a chat it doesn't know", async () => {
     await expect(chats.findBotPin(-1)).resolves.toBeNull();
   });
+
+  it("lists only the chats with a pin", async () => {
+    await chats.addIfAbsent(-7001, "Pinned");
+    await chats.addIfAbsent(-7002, "Not pinned");
+    await chats.saveBotPin(-7001, 601);
+
+    const chatIds = await chats.listChatsWithBotPin();
+
+    expect(chatIds).toContain(-7001);
+    expect(chatIds).not.toContain(-7002);
+  });
 });
 
 describe("competitions", () => {
