@@ -28,6 +28,11 @@ jobs:
         # tsconfig.build.json leaves them out.
         run: npx tsc --noEmit
 
+      - name: Eval harnesses compile
+        # The harnesses under scripts/ have their own tsconfig, which the type-check above doesn't
+        # cover; a renamed app type broke the commentary eval unnoticed for days.
+        run: npm run typecheck:eval
+
       - name: Test
         run: npm test
 

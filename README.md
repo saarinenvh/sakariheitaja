@@ -130,7 +130,8 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
   so they don't add to the recent-message history.
 - `results.json` keeps the full results, and `prompt.md` the exact prompt, for comparing a
   prompt change against a baseline run. Rejected model replies are kept with fallbacks.
-- `npm run typecheck:eval` type-checks the harness, which `npx tsc --noEmit` doesn't cover.
+- `npm run typecheck:eval` type-checks the harness, which `npx tsc --noEmit` doesn't cover. CI
+  runs it too, so a change to the app's types can't silently break the harness.
 
 ## Commands
 
