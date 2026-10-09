@@ -2,6 +2,7 @@ import { ScoreTracker, StartResult, TrackerDependencies } from "./liveScoring";
 import * as registry from "./trackerRegistry";
 import { errorBackoffMs, hasResumeTimedOut } from "./policy";
 import * as competitionRepo from "./db/competitionRepository";
+import { withWriteRetry } from "../../db/writeRetry";
 import { moduleLogger } from "../../shared/logger";
 import { wait } from "../../shared/time";
 
@@ -37,7 +38,8 @@ export async function resumeFollowedRounds(dependencies: TrackerDependencies): P
 /** A failure is logged: the duplicate stays `following` and is caught again at the next restart. */
 async function markDuplicate(id: number, originalId: number): Promise<void> {
   try {
-    await competitionRepo.markError(id, `duplicate of competition ${originalId}`, new Date());
+    await withWriteRetry("mark a duplicate competition", () =>
+      competitionRepo.markError(id, `duplicate of competition ${originalId}`, new Date()));
   } catch (error) {
     log.error({ competitionId: id, err: error }, "could not mark a duplicate competition");
   }
@@ -89,5 +91,5 @@ async function settleStart(tracker: ResumableRound, result: Exclude<StartResult,
 /** If marking it fails, the competition stays `following` and the next restart tries again. */
 async function giveUp(tracker: ResumableRound, reason: string): Promise<void> {
   tracker.stopFollowing();
-  await competitionRepo.markError(tracker.id, reason, new Date());
+  await withWriteRetry("mark the competition as an error", () => competitionRepo.markError(tracker.id, reason, new Date()));
 }

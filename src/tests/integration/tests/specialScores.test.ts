@@ -4,6 +4,7 @@ import { startBotDatabase } from "../botDatabase";
 
 const CHAT_ID = -5238320046;
 const PLAYED = { courseName: "Kaatis", day: "2026-10-03" };
+const NOW = new Date(2026, 9, 5, 12, 0);
 const strokes = (holeNumber: number, count: number, relativeToPar: number) =>
   ({ holeNumber, score: { strokes: count, relativeToPar, obCount: 0 } });
 
@@ -45,14 +46,14 @@ describe("special scores", () => {
   it("adds an ace once, dated with the round's day", async () => {
     const update = { kind: "add" as const, holes: [strokes(6, 1, -2)] };
 
-    await scoreRecords.updateSpecialScores(round, PLAYED, update);
-    await scoreRecords.updateSpecialScores(round, PLAYED, update);
+    await scoreRecords.updateSpecialScores(round, PLAYED, update, NOW);
+    await scoreRecords.updateSpecialScores(round, PLAYED, update, NOW);
 
     expect(await aceRows()).toEqual([{ hole: 6, date: "2026-10-03" }]);
   });
 
   it("rebuilds from the card, so a corrected ace goes and a new one is saved", async () => {
-    await scoreRecords.updateSpecialScores(round, PLAYED, { kind: "rebuild", holes: [strokes(6, 2, -1), strokes(7, 1, -2)] });
+    await scoreRecords.updateSpecialScores(round, PLAYED, { kind: "rebuild", holes: [strokes(6, 2, -1), strokes(7, 1, -2)] }, NOW);
 
     expect(await aceRows()).toEqual([{ hole: 7, date: "2026-10-03" }]);
   });

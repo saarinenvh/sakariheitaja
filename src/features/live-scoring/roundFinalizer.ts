@@ -6,6 +6,7 @@ import { computeAndApplySwaps, formatBagtagAnnouncement, selectBagtagParticipant
 import { updateProfiles } from "../player-profiles";
 import * as competitionRepo from "./db/competitionRepository";
 import * as scoreService from "../score-records";
+import { withWriteRetry } from "../../db/writeRetry";
 
 export interface RoundEnd {
   chatId: number;
@@ -19,7 +20,8 @@ export interface RoundEnd {
  * Finishes a round once every tracked player is done: the end message, then results, profiles and bagtags,
  * then the competition marked finished, then the TOP-5 and the bagtag announcement.
  * The competition is marked finished only after everything is saved: if a step fails, the round stays `following`
- * and the round end runs again when the bot restarts. Every step before that is safe to repeat.
+ * and the round end runs again when the bot restarts. Every step before that is safe to repeat, and each
+ * database write is retried through a transient failure first.
  * The TOP-5 and bagtag messages after it are best effort: a failed send is logged, not retried, and the
  * saved results stay available through /tulokset and /bagtag.
  */
@@ -28,14 +30,15 @@ export async function finishRound(end: RoundEnd, round: MetrixRound, tracked: re
 
   await messenger.sendText(chatId, MSG.endSoon);
 
-  const course = await scoreService.getOrCreateCourse(round.courseName);
+  const course = await withWriteRetry("save the course", () => scoreService.getOrCreateCourse(round.courseName));
   if (!course) throw new Error(`Course ${round.courseName} could not be saved`);
-  await scoreService.saveResults(selectFinalScores(tracked), chatId, course.id, competitionId);
+  await withWriteRetry("save results", () =>
+    scoreService.saveResults(selectFinalScores(tracked), chatId, course.id, competitionId));
 
   updateProfiles(chatId, competitionId, selectTrackedRankedResults(tracked), selectRankedResults(round.players));
   const bagtags = computeAndApplySwaps(chatId, selectBagtagParticipants(tracked));
 
-  await competitionRepo.markFinished(competitionId);
+  await withWriteRetry("mark the competition finished", () => competitionRepo.markFinished(competitionId));
 
   await end.sendTopList();
   await messenger.sendHtml(chatId, formatBagtagAnnouncement(bagtags));

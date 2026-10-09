@@ -30,6 +30,25 @@ run when the bot starts (`migrationsRun`), before anything else uses the databas
 user therefore needs `ALTER`, `INDEX` and `CREATE`, the last for TypeORM's `migrations` table.
 A failed migration stops the start, and the log says why.
 
+### When a write fails
+
+Who retries a failed write depends on whether someone is waiting for it:
+
+- **Background writes** go through `withWriteRetry` (`db/writeRetry.ts`): live scoring's special
+  scores, the round's day, the round end's course, results and status, a resumed round's `error`
+  mark, and each chat's nightly pinned-list refresh. Nobody would notice them fail, so they retry
+  themselves: up to five attempts over
+  about 15 seconds, on a transient error only (a deadlock, a lock wait timeout, a lost or refused
+  connection). Any other error fails at once.
+- **Command writes** (`/follow`, `/hep`, `/lisaa` and the rest) aren't retried. The command
+  replies with the error, and the user is the retry.
+
+A retried write must be safe to repeat, since a failed attempt may still have committed. Retry
+the whole operation, never one statement of a transaction: a deadlock rolls the whole
+transaction back. `saveResults`, for example, is safe to repeat as a whole because it skips the
+players already saved, while its single insert isn't. A write that isn't safe to repeat, such as
+the `competitions` insert on `/follow`, can't be made a background write until it is.
+
 ## JSON stores
 
 Written with `shared/jsonStore.ts` (atomic replace, cached; this process is the only writer).

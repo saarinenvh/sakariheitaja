@@ -15,6 +15,7 @@ import { MetrixRound, RoundPlayer, TrackedRoundPlayer } from "../../integrations
 import { createCommentaryWriter, RoundCommentary } from "../commentary";
 import { getMissingTagPlayers } from "../bagtags";
 import * as scoreService from "../score-records";
+import { withWriteRetry } from "../../db/writeRetry";
 import { moduleLogger } from "../../shared/logger";
 
 const log = moduleLogger("live-scoring");
@@ -85,8 +86,11 @@ export class ScoreTracker {
         await messenger.sendHtml(chatId, html);
         log.info({ metrixId, chars: html.length }, "commentary message sent");
       },
-      updateSpecialScores: (playerId, played, update) =>
-        scoreService.updateSpecialScores({ playerId, chatId, competitionId: id }, played, update),
+      updateSpecialScores: (playerId, played, update) => {
+        const now = new Date();
+        return withWriteRetry("update special scores", () =>
+          scoreService.updateSpecialScores({ playerId, chatId, competitionId: id }, played, update, now));
+      },
       onError: error => log.error({ metrixId, err: error }, "commentary delivery failed"),
     });
   }
@@ -209,10 +213,11 @@ export class ScoreTracker {
 
   /** The day is metadata: failing to save it is logged and never stops the round being followed. */
   private async saveRoundDay(round: MetrixRound): Promise<void> {
-    if (round.day === null) return;
+    const { day } = round;
+    if (day === null) return;
 
     try {
-      await competitionRepo.saveDay(this.id, round.day);
+      await withWriteRetry("save the round's day", () => competitionRepo.saveDay(this.id, day));
     } catch (error) {
       log.error({ metrixId: this.metrixId, err: error }, "could not save the round's day");
     }

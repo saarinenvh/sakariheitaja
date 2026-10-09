@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GamePlan } from "../../../../features/games";
 
 const mocks = vi.hoisted(() => ({
-  listPlans: vi.fn(), listChatsWithBotPin: vi.fn(), editBotPin: vi.fn(), removeBotPin: vi.fn(), info: vi.fn(), error: vi.fn(),
+  listPlans: vi.fn(), listChatsWithBotPin: vi.fn(), editBotPin: vi.fn(), removeBotPin: vi.fn(),
+  info: vi.fn(), warn: vi.fn(), error: vi.fn(),
 }));
 vi.mock("../../../../features/games", async () => ({
   listPlans: mocks.listPlans,
@@ -11,7 +12,7 @@ vi.mock("../../../../features/games", async () => ({
 }));
 vi.mock("../../../../features/chats", () => ({ listChatsWithBotPin: mocks.listChatsWithBotPin }));
 vi.mock("../../../botPin", () => ({ editBotPin: mocks.editBotPin, removeBotPin: mocks.removeBotPin }));
-vi.mock("../../../../shared/logger", () => ({ moduleLogger: () => ({ info: mocks.info, error: mocks.error }) }));
+vi.mock("../../../../shared/logger", () => ({ moduleLogger: () => ({ info: mocks.info, warn: mocks.warn, error: mocks.error }) }));
 
 import { msUntilNextRefresh, refreshAllPinnedLists, refreshPinnedList, startPinnedListRefresher } from "../pinnedList";
 import type { PinApi } from "../../../botPin";
@@ -79,6 +80,21 @@ describe("refreshAllPinnedLists", () => {
     expect(mocks.editBotPin).toHaveBeenCalledWith(api, -1, expect.any(String));
     expect(mocks.removeBotPin).toHaveBeenCalledWith(api, -3);
     expect(mocks.error).toHaveBeenCalledWith(expect.objectContaining({ chatId: -2 }), expect.any(String));
+  });
+
+  it("retries a chat's refresh through a transient database error", async () => {
+    vi.useFakeTimers();
+    const deadlock = Object.assign(new Error("Deadlock found"), { code: "ER_LOCK_DEADLOCK" });
+    mocks.listChatsWithBotPin.mockResolvedValue([-3]);
+    mocks.listPlans.mockResolvedValue([]);
+    mocks.removeBotPin.mockRejectedValueOnce(deadlock);
+
+    const refreshed = refreshAllPinnedLists(api);
+    await vi.runAllTimersAsync();
+    await refreshed;
+
+    expect(mocks.removeBotPin).toHaveBeenCalledTimes(2);
+    expect(mocks.error).not.toHaveBeenCalled();
   });
 
   it("logs and returns when the chats can't be listed", async () => {

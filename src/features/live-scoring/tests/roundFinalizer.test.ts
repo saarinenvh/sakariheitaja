@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const steps = vi.hoisted(() => [] as string[]);
 const mocks = vi.hoisted(() => ({
@@ -38,6 +38,10 @@ beforeEach(() => {
   mocks.getOrCreate.mockReset().mockResolvedValue({ id: 2 });
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("finishRound", () => {
   it("saves everything before marking the competition done, then posts the results", async () => {
     await finishRound(end, round, []);
@@ -49,6 +53,19 @@ describe("finishRound", () => {
     await expect(finishRound(end, round, [])).rejects.toThrow("database down");
     expect(steps).not.toContain("done");
     expect(steps).not.toContain("top list");
+  });
+
+  it("retries results through a transient database error, sending the end message only once", async () => {
+    vi.useFakeTimers();
+    const deadlock = Object.assign(new Error("Deadlock found"), { code: "ER_LOCK_DEADLOCK" });
+    mocks.saveResults.mockRejectedValueOnce(deadlock);
+
+    const finished = finishRound(end, round, []);
+    await vi.runAllTimersAsync();
+    await finished;
+
+    expect(mocks.saveResults).toHaveBeenCalledTimes(2);
+    expect(steps).toEqual(["text: Dodii", "results", "profiles", "bagtags", "done", "top list", "html: Tags"]);
   });
 
   it("treats a missing course as a failure instead of finishing without results", async () => {

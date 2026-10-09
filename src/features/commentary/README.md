@@ -15,7 +15,9 @@ fact; the model only writes the words.** The ScoreTracker (`../live-scoring/`) c
 
 Commentary owns no tables. Each update's special scores are saved through the
 `updateSpecialScores` callback (`../score-records/`) before anything is written or sent, so a
-failed model call or Telegram send can't lose them (`planSpecialScoreUpdate`). Newly recorded
+failed model call or Telegram send can't lose them (`planSpecialScoreUpdate`). Live scoring's
+callback retries through a transient database error; a save that still fails is logged, and the
+commentary goes on without it. Newly recorded
 holes are added. A correction or removal, a player's first observation, and a card that returns
 after being missing rebuild the player's special scores from the whole card instead, so a
 restart misses nothing. Only special scores are saved, never the card. Its state is in memory (see State).

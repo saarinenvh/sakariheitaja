@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OllamaMessage } from "../../../integrations/ollama/client";
 
 const mocks = vi.hoisted(() => ({
@@ -97,6 +97,10 @@ beforeEach(() => {
   mocks.generate.mockResolvedValue(batchReply("Matti, ihan jees."));
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("poll to publication", () => {
   it("saves the round's day from the first fetch", async () => {
     const tracker = await startTracker();
@@ -111,6 +115,22 @@ describe("poll to publication", () => {
     const tracker = await startTracker();
 
     expect(tracker.phase).toBe("following");
+    tracker.stopFollowing();
+  });
+
+  it("saves a special score through a transient database error, with the same time across midnight", async () => {
+    const tracker = await startTracker();
+    const deadlock = Object.assign(new Error("Deadlock found"), { code: "ER_LOCK_DEADLOCK" });
+    mocks.updateSpecialScores.mockClear().mockRejectedValueOnce(deadlock);
+    vi.useFakeTimers({ now: new Date(2026, 8, 27, 23, 59, 59, 500) });
+
+    await poll(response([1, null, null]));
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.waitFor(() => expect(mocks.send).toHaveBeenCalledTimes(1));
+
+    const [failed, retried] = mocks.updateSpecialScores.mock.calls;
+    expect(mocks.updateSpecialScores).toHaveBeenCalledTimes(2);
+    expect(retried).toEqual(failed);
     tracker.stopFollowing();
   });
 
