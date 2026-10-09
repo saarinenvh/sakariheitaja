@@ -60,8 +60,8 @@ export async function deleteById(id: number): Promise<void> {
 
 /** Stops following the round (`/lopeta`); its special scores stay. */
 export async function markStopped(id: number): Promise<void> {
-  await repo().update(stillFollowing(id), { status: COMPETITION_STATUS.stopped });
-  log.info({ competitionId: id }, "competition stopped");
+  const result = await repo().update(stillFollowing(id), { status: COMPETITION_STATUS.stopped });
+  if (result.affected) log.info({ competitionId: id }, "competition stopped");
 }
 
 export async function markFinished(id: number): Promise<void> {
@@ -70,10 +70,10 @@ export async function markFinished(id: number): Promise<void> {
 
 /** Gives up on a round: it isn't resumed again and stays for manual handling. */
 export async function markError(id: number, reason: string, erroredAt: Date): Promise<void> {
-  await repo().update(stillFollowing(id), {
+  const result = await repo().update(stillFollowing(id), {
     status: COMPETITION_STATUS.error, erroredAt, errorReason: reason.slice(0, ERROR_REASON_MAX_LENGTH),
   });
-  log.warn({ competitionId: id, reason }, "competition marked as error");
+  if (result.affected) log.warn({ competitionId: id, reason }, "competition marked as error");
 }
 
 function stillFollowing(id: number): { id: number; status: CompetitionStatus } {
