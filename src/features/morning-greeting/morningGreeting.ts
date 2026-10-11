@@ -5,12 +5,12 @@ import { OllamaClient } from "../../integrations/ollama/client";
 import { formatCityWeather, randomTown } from "../weather-report";
 import { GifSearchWord, giphySearchWords, randomGoodMorning } from "./phrases";
 import { formatFallbackGreeting } from "./messages";
-import { formatClockTime, getRandom } from "../../shared/utils";
+import { getRandom } from "../../shared/utils";
 import { moduleLogger } from "../../shared/logger";
-import { dayInTimeZone } from "../../shared/time";
+import { clockTimeInTimeZone, dayInTimeZone } from "../../shared/time";
 import { GamePlan, listPlansForDays, PLAN_TIME_ZONE } from "../games";
 import { formatGamesPart } from "./gamesPart";
-import { msUntilNextGreeting } from "./policy";
+import { GREETING_TIME_ZONE, msUntilNextGreeting } from "./policy";
 import { buildGreetingFacts } from "./facts";
 import { GreetingResult, writeGreeting } from "./greetingWriter";
 
@@ -64,8 +64,13 @@ export function startMorningGreeter(deps: MorningGreetingDependencies, chatId: n
   log.info({ delayMs }, "next morning greeting scheduled");
 
   setTimeout(async () => {
-    await sendMorningGreeting(deps, chatId);
-    startMorningGreeter(deps, chatId);
+    try {
+      await sendMorningGreeting(deps, chatId);
+    } catch (error) {
+      log.error({ err: error }, "morning greeting failed");
+    } finally {
+      startMorningGreeter(deps, chatId);
+    }
   }, delayMs);
 }
 
@@ -84,7 +89,7 @@ async function sendGreetingText(
   if (greeting.kind === "generated") return deps.messenger.sendText(chatId, greeting.reply.text);
 
   log.info({ reason: greeting.reason }, "canned morning greeting");
-  await deps.messenger.sendHtml(chatId, formatFallbackGreeting(inputs.mood, formatClockTime(inputs.now)));
+  await deps.messenger.sendHtml(chatId, formatFallbackGreeting(inputs.mood, clockTimeInTimeZone(inputs.now, GREETING_TIME_ZONE)));
   if (inputs.weather) await deps.messenger.sendHtml(chatId, formatCityWeather(inputs.weather));
 }
 

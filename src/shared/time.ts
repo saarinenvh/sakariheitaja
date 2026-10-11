@@ -5,6 +5,14 @@ export function wait(delayMs: number): Promise<void> {
 
 const MS_PER_DAY = 86_400_000;
 
+/** The wall-clock time (`9:05`) it is at this instant in the time zone. */
+export function clockTimeInTimeZone(instant: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone, hourCycle: "h23", hour: "2-digit", minute: "2-digit" }).formatToParts(instant);
+  const part = (type: Intl.DateTimeFormatPartTypes): string => parts.find(entry => entry.type === type)?.value ?? "";
+
+  return `${Number(part("hour"))}:${part("minute")}`;
+}
+
 /** The calendar day (`YYYY-MM-DD`) it is at this instant in the time zone. */
 export function dayInTimeZone(instant: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(instant);

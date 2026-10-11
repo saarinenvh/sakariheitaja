@@ -7,7 +7,7 @@ vi.mock("../../games", async () => ({
   formatPlanSummary: (await import("../../games/planSummary")).formatPlanSummary,
 }));
 
-import { MorningGreetingDependencies, sendMorningGreeting } from "../morningGreeting";
+import { MorningGreetingDependencies, sendMorningGreeting, startMorningGreeter } from "../morningGreeting";
 import { giphySearchWords } from "../phrases";
 import { ChatMessenger } from "../../chatMessenger";
 import { OllamaClient } from "../../../integrations/ollama/client";
@@ -93,7 +93,7 @@ describe("the morning greeting", () => {
 
     expect(generateStructured).not.toHaveBeenCalled();
     expect(sent.map(([kind]) => kind)).toEqual(["html", "html", "text", "animation"]);
-    expect(sent[0][1]).toContain("&amp; tämmöstä keliä");
+    expect(sent[0][1]).toContain("Kello on <b>9:00</b> &amp; tämmöstä keliä");
     expect(sent[1][1]).toContain("Helsinki");
     expect(giphySearchWords).toContain(searchGif.mock.calls[0][0]);
   });
@@ -136,5 +136,20 @@ describe("the morning greeting", () => {
     await sendMorningGreeting(deps, MAIN_CHAT);
 
     expect(sent).toEqual([["animation", "https://media.giphy.test/party.mp4"]]);
+  });
+});
+
+describe("the morning greeter", () => {
+  it("schedules the next day's greeting even when one fails outright", async () => {
+    vi.useFakeTimers({ now: new Date("2026-10-10T05:59:00Z") });
+    const getCityWeather = vi.fn().mockRejectedValue(new Error("weather client threw"));
+    const { deps } = fakes({ openWeather: { getCurrentWeather: vi.fn(), getCityWeather } });
+
+    startMorningGreeter(deps, MAIN_CHAT);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(getCityWeather).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(24 * 60 * 60_000);
+    expect(getCityWeather).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,5 +1,6 @@
 import type { CityWeather } from "../../integrations/openweather/api";
 import { formatClockTime } from "../../shared/utils";
+import { escapeHtml } from "../../shared/html";
 
 /** An emoji per OpenWeatherMap condition group. */
 export const weatherEmojis: Record<string, string> = {
@@ -15,8 +16,8 @@ export const cityNotFound = (city: string): string => `Mikä vitun ${city}? - Ei
 /** The `/saa` report for a found city. */
 export function formatCityWeather(data: CityWeather): string {
   const emoji = weatherEmojis[data.condition] ?? "";
-  let msg = `${emoji} ${data.city} <b>${Math.round(data.temperatureC * 10) / 10}°C</b> ${emoji}\n`;
-  msg += `Tällä hetkellä siis <b>${data.description}</b>.\n`;
+  let msg = `${emoji} ${escapeHtml(data.city)} <b>${Math.round(data.temperatureC * 10) / 10}°C</b> ${emoji}\n`;
+  msg += `Tällä hetkellä siis <b>${escapeHtml(data.description)}</b>.\n`;
   msg += `Tuulta puskis <b>${data.windSpeedMs} m/s</b>.\n`;
   msg += `Aurinko nousee <b>${formatClockTime(data.sunrise)}</b> 🌅\n`;
   msg += `Aurinko laskee <b>${formatClockTime(data.sunset)}</b> 🌇\n`;

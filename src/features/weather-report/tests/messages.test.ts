@@ -17,3 +17,12 @@ describe("formatCityWeather", () => {
     );
   });
 });
+
+describe("formatCityWeather's escaping", () => {
+  it("escapes the city and the description for Telegram's HTML", () => {
+    const html = formatCityWeather(buildCityWeather({ city: "Pori & <Ulvila>", description: "sade & tuuli" }));
+
+    expect(html).toContain("Pori &amp; &lt;Ulvila&gt;");
+    expect(html).toContain("<b>sade &amp; tuuli</b>");
+  });
+});
