@@ -9,12 +9,12 @@ const facts: GreetingFacts = {
   weather: { town: "Tampere", temperatureC: 4, windMs: 9, description: "kovaa sadetta" }, todaysGames: [],
 };
 
-function ollamaReplying(reply: string | Error): OllamaClient & { generateStructured: ReturnType<typeof vi.fn> } {
-  const generateStructured = vi.fn();
+function ollamaReplying(reply: string | Error) {
+  const generateStructured = vi.fn<OllamaClient["generateStructured"]>();
   if (reply instanceof Error) generateStructured.mockRejectedValue(reply);
   else generateStructured.mockResolvedValue(reply);
 
-  return { generate: vi.fn(), generateStructured };
+  return { generate: vi.fn<OllamaClient["generate"]>(), generateStructured } satisfies OllamaClient;
 }
 
 describe("writeGreeting", () => {

@@ -1,6 +1,9 @@
 import type { CityWeather } from "../../integrations/openweather/api";
-import { formatClockTime } from "../../shared/utils";
+import { clockTimeInTimeZone } from "../../shared/time";
 import { escapeHtml } from "../../shared/html";
+
+/** The towns are Finnish, so their sun times are shown in Helsinki time, whatever the container's time zone. */
+const WEATHER_TIME_ZONE = "Europe/Helsinki";
 
 /** An emoji per OpenWeatherMap condition group. */
 export const weatherEmojis: Record<string, string> = {
@@ -19,7 +22,7 @@ export function formatCityWeather(data: CityWeather): string {
   let msg = `${emoji} ${escapeHtml(data.city)} <b>${Math.round(data.temperatureC * 10) / 10}°C</b> ${emoji}\n`;
   msg += `Tällä hetkellä siis <b>${escapeHtml(data.description)}</b>.\n`;
   msg += `Tuulta puskis <b>${data.windSpeedMs} m/s</b>.\n`;
-  msg += `Aurinko nousee <b>${formatClockTime(data.sunrise)}</b> 🌅\n`;
-  msg += `Aurinko laskee <b>${formatClockTime(data.sunset)}</b> 🌇\n`;
+  msg += `Aurinko nousee <b>${clockTimeInTimeZone(data.sunrise, WEATHER_TIME_ZONE)}</b> 🌅\n`;
+  msg += `Aurinko laskee <b>${clockTimeInTimeZone(data.sunset, WEATHER_TIME_ZONE)}</b> 🌇\n`;
   return msg;
 }

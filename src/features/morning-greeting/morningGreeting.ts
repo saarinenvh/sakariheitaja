@@ -46,9 +46,11 @@ interface GreetingInputs {
 export async function sendMorningGreeting(deps: MorningGreetingDependencies, chatId: number): Promise<void> {
   const inputs = await gatherInputs(deps);
 
-  const greeting = await writeGreeting(deps.ollama, buildGreetingFacts({ ...inputs, todaysPlans: todaysPlans(inputs) }), deps.llmEnabled);
+  const facts = buildGreetingFacts({ ...inputs, todaysPlans: todaysPlans(inputs) });
+  const greeting = await writeGreeting(deps.ollama, facts, deps.llmEnabled);
 
   await sendPart("text", () => sendGreetingText(deps, chatId, greeting, inputs));
+  await sendPart("weather", () => sendFallbackWeather(deps, chatId, greeting, inputs));
   await sendPart("games", () => sendPlannedGames(deps, chatId, inputs));
   await sendPart("gif", () => sendGif(deps, chatId, gifWord(greeting)));
 }
@@ -90,7 +92,15 @@ async function sendGreetingText(
 
   log.info({ reason: greeting.reason }, "canned morning greeting");
   await deps.messenger.sendHtml(chatId, formatFallbackGreeting(inputs.mood, clockTimeInTimeZone(inputs.now, GREETING_TIME_ZONE)));
-  if (inputs.weather) await deps.messenger.sendHtml(chatId, formatCityWeather(inputs.weather));
+}
+
+/** The canned greeting is followed by the weather card; Sakke's own greeting already tells the weather. */
+async function sendFallbackWeather(
+  deps: MorningGreetingDependencies, chatId: number, greeting: GreetingResult, inputs: GreetingInputs,
+): Promise<void> {
+  if (greeting.kind === "generated" || !inputs.weather) return;
+
+  await deps.messenger.sendHtml(chatId, formatCityWeather(inputs.weather));
 }
 
 /** The coming week's games, with their numbers for `/mukaan`; nothing when none are planned. */
@@ -119,10 +129,14 @@ function todaysPlans(inputs: GreetingInputs): GamePlan[] {
 
 /** A random town's weather; null when it can't be had, and the greeting goes without. */
 async function fetchWeather(deps: MorningGreetingDependencies): Promise<CityWeather | null> {
-  const result = await deps.openWeather.getCityWeather(randomTown());
-  if (result.kind === "observed") return result.weather;
+  try {
+    const result = await deps.openWeather.getCityWeather(randomTown());
+    if (result.kind === "observed") return result.weather;
 
-  log.warn({ reason: result.reason }, "morning greeting weather unavailable");
+    log.warn({ reason: result.reason }, "morning greeting weather unavailable");
+  } catch (error) {
+    log.error({ err: error }, "morning greeting weather failed");
+  }
   return null;
 }
 

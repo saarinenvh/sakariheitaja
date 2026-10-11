@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { createOpenWeatherApi } from "../api";
 import { OpenWeatherClient, OpenWeatherResponse } from "../client";
 
-function clientReturning(response: OpenWeatherResponse): OpenWeatherClient & { get: ReturnType<typeof vi.fn> } {
-  return { get: vi.fn().mockResolvedValue(response) };
+function clientReturning(response: OpenWeatherResponse) {
+  return { get: vi.fn<OpenWeatherClient["get"]>().mockResolvedValue(response) } satisfies OpenWeatherClient;
 }
 
 describe("current weather", () => {

@@ -11,6 +11,8 @@ import { MorningGreetingDependencies, sendMorningGreeting, startMorningGreeter }
 import { giphySearchWords } from "../phrases";
 import { ChatMessenger } from "../../chatMessenger";
 import { OllamaClient } from "../../../integrations/ollama/client";
+import { GiphyClient } from "../../../integrations/giphy/client";
+import { OpenWeatherApi } from "../../../integrations/openweather/api";
 import { buildGamePlan } from "../../../tests/fixtures/gamePlans";
 import { buildCityWeather } from "../../../tests/fixtures/weather";
 
@@ -25,35 +27,37 @@ const sundaysGame = buildGamePlan({ id: 13, day: "2026-10-11", startTime: null, 
 
 type Sent = [kind: "text" | "html" | "animation", content: string];
 
-interface Fakes {
-  deps: MorningGreetingDependencies;
-  sent: Sent[];
-  generateStructured: ReturnType<typeof vi.fn>;
-  searchGif: ReturnType<typeof vi.fn>;
+type GenerateStructured = ReturnType<typeof vi.fn<OllamaClient["generateStructured"]>>;
+
+/** A messenger that records what it sends; `failing` kinds reject instead. */
+function recordingMessenger(sent: Sent[], failing: readonly Sent[0][] = []): ChatMessenger {
+  const send = (kind: Sent[0]) => async (_chatId: number, content: string): Promise<void> => {
+    if (failing.includes(kind)) throw new Error(`Telegram refused the ${kind}`);
+    sent.push([kind, content]);
+  };
+
+  return { sendText: send("text"), sendHtml: send("html"), sendAnimation: send("animation") };
 }
 
-function fakes(overrides: Partial<MorningGreetingDependencies> = {}): Fakes {
+function fakes(overrides: Partial<MorningGreetingDependencies> = {}, failing: readonly Sent[0][] = []) {
   const sent: Sent[] = [];
-  const messenger: ChatMessenger = {
-    sendText: async (_chatId, text) => { sent.push(["text", text]); },
-    sendHtml: async (_chatId, html) => { sent.push(["html", html]); },
-    sendAnimation: async (_chatId, url) => { sent.push(["animation", url]); },
-  };
-  const generateStructured = vi.fn().mockResolvedValue(JSON.stringify({ text: "Kaks pelaa tänään, muut lintsaa.", gifQuery: "party" }));
-  const ollama: OllamaClient = { generate: vi.fn(), generateStructured };
-  const searchGif = vi.fn(async (word: string) => `https://media.giphy.test/${word}.mp4`);
+  const generateStructured: GenerateStructured = vi.fn<OllamaClient["generateStructured"]>()
+    .mockResolvedValue(JSON.stringify({ text: "Kaks pelaa tänään, muut lintsaa.", gifQuery: "party" }));
+  const searchGif = vi.fn<GiphyClient["searchGif"]>(async word => `https://media.giphy.test/${word}.mp4`);
+  const getCityWeather = vi.fn<OpenWeatherApi["getCityWeather"]>().mockResolvedValue({ kind: "observed", weather });
   const deps: MorningGreetingDependencies = {
-    messenger, ollama, llmEnabled: true, gamesChatId: GAMES_CHAT,
-    openWeather: { getCurrentWeather: vi.fn(), getCityWeather: vi.fn().mockResolvedValue({ kind: "observed", weather }) },
+    messenger: recordingMessenger(sent, failing), llmEnabled: true, gamesChatId: GAMES_CHAT,
+    ollama: { generate: vi.fn<OllamaClient["generate"]>(), generateStructured },
+    openWeather: { getCurrentWeather: vi.fn<OpenWeatherApi["getCurrentWeather"]>(), getCityWeather },
     giphy: { searchGif },
     ...overrides,
   };
 
-  return { deps, sent, generateStructured, searchGif };
+  return { deps, sent, generateStructured, searchGif, getCityWeather };
 }
 
 /** The facts the model was asked with. */
-function factsSent(generateStructured: ReturnType<typeof vi.fn>): Record<string, unknown> {
+function factsSent(generateStructured: GenerateStructured): Record<string, unknown> {
   return JSON.parse(generateStructured.mock.calls[0][0][1].content);
 }
 
@@ -120,7 +124,10 @@ describe("the morning greeting", () => {
   it("still greets when the plans or the weather can't be read", async () => {
     mocks.listPlansForDays.mockRejectedValue(new Error("database offline"));
     const { deps, sent, generateStructured } = fakes({
-      openWeather: { getCurrentWeather: vi.fn(), getCityWeather: vi.fn().mockResolvedValue({ kind: "failed", reason: "weather down" }) },
+      openWeather: {
+        getCurrentWeather: vi.fn<OpenWeatherApi["getCurrentWeather"]>(),
+        getCityWeather: vi.fn<OpenWeatherApi["getCityWeather"]>().mockResolvedValue({ kind: "failed", reason: "weather down" }),
+      },
     });
 
     await sendMorningGreeting(deps, MAIN_CHAT);
@@ -130,26 +137,50 @@ describe("the morning greeting", () => {
   });
 
   it("sends the later parts when one fails to send", async () => {
-    const { deps, sent } = fakes();
-    deps.messenger.sendText = vi.fn().mockRejectedValue(new Error("Telegram down"));
+    const { deps, sent } = fakes({}, ["text"]);
 
     await sendMorningGreeting(deps, MAIN_CHAT);
 
     expect(sent).toEqual([["animation", "https://media.giphy.test/party.mp4"]]);
+  });
+
+  it("sends the weather card even when the canned greeting fails to send", async () => {
+    const sent: Sent[] = [];
+    const messenger = recordingMessenger(sent);
+    const sendHtml = vi.fn<ChatMessenger["sendHtml"]>()
+      .mockRejectedValueOnce(new Error("Telegram refused the greeting"))
+      .mockImplementation(messenger.sendHtml);
+    const { deps } = fakes({ llmEnabled: false, messenger: { ...messenger, sendHtml } });
+
+    await sendMorningGreeting(deps, MAIN_CHAT);
+
+    expect(sent.map(([kind]) => kind)).toEqual(["html", "text", "animation"]);
+    expect(sent[0][1]).toContain("Helsinki");
+  });
+
+  it("still greets when the weather client throws", async () => {
+    const getCityWeather = vi.fn<OpenWeatherApi["getCityWeather"]>().mockRejectedValue(new Error("weather client threw"));
+    const { deps, sent, generateStructured } = fakes({ openWeather: { getCurrentWeather: vi.fn<OpenWeatherApi["getCurrentWeather"]>(), getCityWeather } });
+
+    await sendMorningGreeting(deps, MAIN_CHAT);
+
+    expect(sent[0]).toEqual(["text", "Kaks pelaa tänään, muut lintsaa."]);
+    expect(factsSent(generateStructured)).toMatchObject({ weather: null });
   });
 });
 
 describe("the morning greeter", () => {
   it("schedules the next day's greeting even when one fails outright", async () => {
     vi.useFakeTimers({ now: new Date("2026-10-10T05:59:00Z") });
-    const getCityWeather = vi.fn().mockRejectedValue(new Error("weather client threw"));
-    const { deps } = fakes({ openWeather: { getCurrentWeather: vi.fn(), getCityWeather } });
+    // A plan without its players makes the facts throw, so the whole greeting fails.
+    mocks.listPlansForDays.mockResolvedValue([{ day: "2026-10-10" }]);
+    const { deps } = fakes();
 
     startMorningGreeter(deps, MAIN_CHAT);
     await vi.advanceTimersByTimeAsync(60_000);
-    expect(getCityWeather).toHaveBeenCalledTimes(1);
+    expect(mocks.listPlansForDays).toHaveBeenCalledTimes(1);
 
     await vi.advanceTimersByTimeAsync(24 * 60 * 60_000);
-    expect(getCityWeather).toHaveBeenCalledTimes(2);
+    expect(mocks.listPlansForDays).toHaveBeenCalledTimes(2);
   });
 });
