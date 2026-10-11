@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // OpenWeatherMap → bot, GET api.openweathermap.org/data/2.5/weather (units=metric, lang=fi).
-// One endpoint, read twice: by coordinates for commentary, and by city name for /saa.
+// One endpoint, read twice: by coordinates for commentary, and by city name for /saa and the morning greeting.
 
 /** The reply to `?lat=&lon=`, for commentary. */
 export const currentWeatherExample = {
@@ -31,7 +31,7 @@ export const currentWeatherExample = {
   cod: 200, // ignored
 };
 
-/** The reply to `?q=<city>`, for /saa. */
+/** The reply to `?q=<city>`, for /saa and the morning greeting. */
 export const cityWeatherExample = {
   coord: { lon: 24.9384, lat: 60.1699 }, // ignored
   weather: [{ id: 803, main: "Clouds", description: "pilvistä", icon: "04d" }], // ignored: id, icon
@@ -78,5 +78,4 @@ export const cityWeatherSchema = z.object({
   sys: z.object({ sunrise: z.number(), sunset: z.number() }),
 });
 
-/** The weather at a city, as `/saa` shows it. */
-export type CityWeather = z.output<typeof cityWeatherSchema>;
+export type CityWeatherResponse = z.output<typeof cityWeatherSchema>;

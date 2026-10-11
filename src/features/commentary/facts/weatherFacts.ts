@@ -1,4 +1,4 @@
-import { WeatherObservation } from "../../../integrations/openweather/client";
+import { WeatherObservation } from "../../../integrations/openweather/api";
 import { formatDecimal } from "./numberText";
 
 /** What the model hears about the weather: the current conditions, and how they changed since the start. */

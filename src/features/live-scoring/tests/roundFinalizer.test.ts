@@ -28,7 +28,7 @@ const end: RoundEnd = {
   messenger: {
     sendText: async (_chatId, text) => { steps.push(`text: ${text.slice(0, 5)}`); },
     sendHtml: async (_chatId, html) => { steps.push(`html: ${html}`); },
-    sendVideo: async () => {},
+    sendAnimation: async () => {},
   },
   sendTopList: async () => { steps.push("top list"); },
 };

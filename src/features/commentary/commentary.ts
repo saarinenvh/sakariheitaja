@@ -7,7 +7,7 @@ import { formatBatchCommentaryMessages } from "./format/commentaryMessage";
 import { BatchCommentaryContext, BatchContextInput, buildBatchCommentaryContext } from "./facts/commentaryContext";
 import { WeatherFacts } from "./facts/weatherFacts";
 import { BatchCommentaryResult } from "./write/commentaryWriter";
-import { WeatherObservation } from "../../integrations/openweather/client";
+import { WeatherObservation } from "../../integrations/openweather/api";
 import { describeWeather, describeWeatherChange } from "./facts/weatherFacts";
 import { CourseInfo } from "./facts/courseCommentaryFacts";
 

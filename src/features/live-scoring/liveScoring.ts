@@ -8,7 +8,7 @@ import { findByChatId } from "../players";
 import { addIfAbsent } from "../chats";
 import * as competitionRepo from "./db/competitionRepository";
 import { MetrixClient, RoundFetchResult } from "../../integrations/metrix/client";
-import { OpenWeatherClient } from "../../integrations/openweather/client";
+import { OpenWeatherApi } from "../../integrations/openweather/api";
 import { OllamaClient } from "../../integrations/ollama/client";
 import { hasTrackedRoundEnded, isSamePlayerName, trackRoundPlayers } from "../../integrations/metrix/round/results";
 import { MetrixRound, RoundPlayer, TrackedRoundPlayer } from "../../integrations/metrix/round/types";
@@ -30,7 +30,7 @@ export async function registerCompetition(chatId: number, chatName: string, metr
 export interface TrackerDependencies {
   messenger: ChatMessenger;
   metrix: MetrixClient;
-  openWeather: OpenWeatherClient;
+  openWeather: OpenWeatherApi;
   ollama: OllamaClient;
 }
 

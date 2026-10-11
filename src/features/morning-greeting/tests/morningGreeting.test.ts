@@ -1,5 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GamePlan } from "../../games";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ listPlansForDays: vi.fn() }));
 vi.mock("../../games", async () => ({
@@ -7,77 +6,135 @@ vi.mock("../../games", async () => ({
   PLAN_TIME_ZONE: "Europe/Helsinki",
   formatPlanSummary: (await import("../../games/planSummary")).formatPlanSummary,
 }));
-vi.mock("../../weather-report", () => ({
-  cities: ["Lahti"],
-  buildCityWeatherReport: async () => ({ kind: "found", html: "Lahti: 12°C" }),
-}));
 
 import { MorningGreetingDependencies, sendMorningGreeting } from "../morningGreeting";
-import { morningCallToAction } from "../messages";
+import { giphySearchWords } from "../phrases";
 import { ChatMessenger } from "../../chatMessenger";
+import { OllamaClient } from "../../../integrations/ollama/client";
+import { buildGamePlan } from "../../../tests/fixtures/gamePlans";
+import { buildCityWeather } from "../../../tests/fixtures/weather";
 
 const MAIN_CHAT = -1;
 const GAMES_CHAT = -2;
+/** Saturday 2026-10-10, 09:00 in Helsinki. */
+const NOW = new Date("2026-10-10T06:00:00Z");
 
-function greetingDependencies(gamesChatId: number | undefined): { deps: MorningGreetingDependencies; sent: string[] } {
-  const sent: string[] = [];
-  const record = async (_chatId: number, text: string): Promise<void> => { sent.push(text); };
-  const messenger: ChatMessenger = { sendText: record, sendHtml: record, sendVideo: record };
-  // The greeting only uses the weather through buildCityWeatherReport, mocked above.
-  const deps = {
-    messenger, openWeather: {} as MorningGreetingDependencies["openWeather"],
-    giphy: { searchGif: async () => null }, gamesChatId,
-  };
+const weather = buildCityWeather();
+const todaysGame = buildGamePlan({ id: 12, day: "2026-10-10", startTime: "11:00:00" }, ["Ville", "Wiltzu"]);
+const sundaysGame = buildGamePlan({ id: 13, day: "2026-10-11", startTime: null, courses: ["Karjaa"] }, ["Matti"]);
 
-  return { deps, sent };
+type Sent = [kind: "text" | "html" | "animation", content: string];
+
+interface Fakes {
+  deps: MorningGreetingDependencies;
+  sent: Sent[];
+  generateStructured: ReturnType<typeof vi.fn>;
+  searchGif: ReturnType<typeof vi.fn>;
 }
 
-function plan(id: number, day: string): GamePlan {
-  return { id, day, startTime: "18:00:00", courses: ["Keljo"], players: [{ name: "Ville" }] } as GamePlan;
+function fakes(overrides: Partial<MorningGreetingDependencies> = {}): Fakes {
+  const sent: Sent[] = [];
+  const messenger: ChatMessenger = {
+    sendText: async (_chatId, text) => { sent.push(["text", text]); },
+    sendHtml: async (_chatId, html) => { sent.push(["html", html]); },
+    sendAnimation: async (_chatId, url) => { sent.push(["animation", url]); },
+  };
+  const generateStructured = vi.fn().mockResolvedValue(JSON.stringify({ text: "Kaks pelaa tänään, muut lintsaa.", gifQuery: "party" }));
+  const ollama: OllamaClient = { generate: vi.fn(), generateStructured };
+  const searchGif = vi.fn(async (word: string) => `https://media.giphy.test/${word}.mp4`);
+  const deps: MorningGreetingDependencies = {
+    messenger, ollama, llmEnabled: true, gamesChatId: GAMES_CHAT,
+    openWeather: { getCurrentWeather: vi.fn(), getCityWeather: vi.fn().mockResolvedValue({ kind: "observed", weather }) },
+    giphy: { searchGif },
+    ...overrides,
+  };
+
+  return { deps, sent, generateStructured, searchGif };
+}
+
+/** The facts the model was asked with. */
+function factsSent(generateStructured: ReturnType<typeof vi.fn>): Record<string, unknown> {
+  return JSON.parse(generateStructured.mock.calls[0][0][1].content);
 }
 
 beforeEach(() => {
-  mocks.listPlansForDays.mockReset();
+  vi.useFakeTimers({ toFake: ["Date"], now: NOW });
+  mocks.listPlansForDays.mockReset().mockResolvedValue([todaysGame, sundaysGame]);
 });
 
-describe("the morning greeting's games", () => {
-  it("lists the planning group's next seven days after the weather", async () => {
-    mocks.listPlansForDays.mockResolvedValue([plan(12, "2026-10-14")]);
-    const { deps, sent } = greetingDependencies(GAMES_CHAT);
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("the morning greeting", () => {
+  it("sends Sakke's greeting, the week's games, and a gif found with the model's word", async () => {
+    const { deps, sent, generateStructured, searchGif } = fakes();
 
     await sendMorningGreeting(deps, MAIN_CHAT);
 
-    expect(mocks.listPlansForDays).toHaveBeenCalledWith(GAMES_CHAT, 7, expect.any(Date));
-    expect(sent[1]).toBe("Lahti: 12°C");
-    expect(sent[2]).toContain("12. ke 14.10. klo 18.00 Keljo — Ville");
-    expect(sent[3]).toBe(morningCallToAction);
-  });
-
-  it("has no games part without plans", async () => {
-    mocks.listPlansForDays.mockResolvedValue([]);
-    const { deps, sent } = greetingDependencies(GAMES_CHAT);
-
-    await sendMorningGreeting(deps, MAIN_CHAT);
-
+    expect(sent[0]).toEqual(["text", "Kaks pelaa tänään, muut lintsaa."]);
+    expect(sent[1][0]).toBe("text");
+    expect(sent[1][1]).toContain("12. la 10.10. klo 11.00 Keljo — Ville, Wiltzu");
+    expect(sent[1][1]).toContain("13. su 11.10. Karjaa — Matti");
+    expect(sent[2]).toEqual(["animation", "https://media.giphy.test/party.mp4"]);
     expect(sent).toHaveLength(3);
+    expect(searchGif).toHaveBeenCalledWith("party");
+    expect(mocks.listPlansForDays).toHaveBeenCalledWith(GAMES_CHAT, 7, NOW);
+    expect(factsSent(generateStructured)).toMatchObject({
+      weekday: "lauantai", date: "2026-10-10", todaysGames: [{ players: 2 }],
+      weather: { town: "Helsinki", temperatureC: 9, windMs: 3, description: "pilvistä" },
+    });
   });
 
-  it("doesn't look for plans without a planning group", async () => {
-    const { deps, sent } = greetingDependencies(undefined);
+  it("sends the canned greeting with the weather card when the model is off, and a gif from the word list", async () => {
+    const { deps, sent, generateStructured, searchGif } = fakes({ llmEnabled: false });
+
+    await sendMorningGreeting(deps, MAIN_CHAT);
+
+    expect(generateStructured).not.toHaveBeenCalled();
+    expect(sent.map(([kind]) => kind)).toEqual(["html", "html", "text", "animation"]);
+    expect(sent[0][1]).toContain("&amp; tämmöstä keliä");
+    expect(sent[1][1]).toContain("Helsinki");
+    expect(giphySearchWords).toContain(searchGif.mock.calls[0][0]);
+  });
+
+  it("sends the canned greeting when the model fails", async () => {
+    const { deps, sent, generateStructured } = fakes();
+    generateStructured.mockRejectedValue(new Error("Ollama timed out"));
+
+    await sendMorningGreeting(deps, MAIN_CHAT);
+
+    expect(sent.map(([kind]) => kind)).toEqual(["html", "html", "text", "animation"]);
+  });
+
+  it("has no games part, and tells the model of no games, without a planning group", async () => {
+    const { deps, sent, generateStructured } = fakes({ gamesChatId: undefined });
 
     await sendMorningGreeting(deps, MAIN_CHAT);
 
     expect(mocks.listPlansForDays).not.toHaveBeenCalled();
-    expect(sent).toHaveLength(3);
+    expect(sent.map(([kind]) => kind)).toEqual(["text", "animation"]);
+    expect(factsSent(generateStructured)).toMatchObject({ todaysGames: [] });
   });
 
-  it("still sends the other parts when the plans can't be read", async () => {
+  it("still greets when the plans or the weather can't be read", async () => {
     mocks.listPlansForDays.mockRejectedValue(new Error("database offline"));
-    const { deps, sent } = greetingDependencies(GAMES_CHAT);
+    const { deps, sent, generateStructured } = fakes({
+      openWeather: { getCurrentWeather: vi.fn(), getCityWeather: vi.fn().mockResolvedValue({ kind: "failed", reason: "weather down" }) },
+    });
 
     await sendMorningGreeting(deps, MAIN_CHAT);
 
-    expect(sent).toHaveLength(3);
-    expect(sent.at(-1)).toBe(morningCallToAction);
+    expect(sent.map(([kind]) => kind)).toEqual(["text", "animation"]);
+    expect(factsSent(generateStructured)).toMatchObject({ weather: null, todaysGames: [] });
+  });
+
+  it("sends the later parts when one fails to send", async () => {
+    const { deps, sent } = fakes();
+    deps.messenger.sendText = vi.fn().mockRejectedValue(new Error("Telegram down"));
+
+    await sendMorningGreeting(deps, MAIN_CHAT);
+
+    expect(sent).toEqual([["animation", "https://media.giphy.test/party.mp4"]]);
   });
 });

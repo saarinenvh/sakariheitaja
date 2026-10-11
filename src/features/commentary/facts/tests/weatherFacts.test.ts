@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WeatherObservation } from "../../../../integrations/openweather/client";
+import { WeatherObservation } from "../../../../integrations/openweather/api";
 import { describeWeather, describeWeatherChange } from "../weatherFacts";
 
 function observation(overrides: Partial<WeatherObservation> = {}): WeatherObservation {

@@ -1,7 +1,7 @@
 import { CommandContext, Context } from "grammy";
 import { ChatMessenger } from "../../features/chatMessenger";
 import { MetrixClient } from "../../integrations/metrix/client";
-import { OpenWeatherClient } from "../../integrations/openweather/client";
+import { OpenWeatherApi } from "../../integrations/openweather/api";
 import { OllamaClient } from "../../integrations/ollama/client";
 import { ChallongeClient } from "../../integrations/challonge/client";
 import { GiphyClient } from "../../integrations/giphy/client";
@@ -11,7 +11,7 @@ import { RecipesClient } from "../../integrations/recipes/client";
 export interface CommandDependencies {
   messenger: ChatMessenger;
   metrix: MetrixClient;
-  openWeather: OpenWeatherClient;
+  openWeather: OpenWeatherApi;
   ollama: OllamaClient;
   challonge: ChallongeClient;
   giphy: GiphyClient;

@@ -5,7 +5,7 @@ import { MetrixRound } from "../../integrations/metrix/round/types";
 import { CourseStatistics } from "../../integrations/metrix/statistics/courseStatistics";
 import { CourseInfo } from "../commentary";
 import { moduleLogger } from "../../shared/logger";
-import { OpenWeatherClient, WeatherObservation } from "../../integrations/openweather/client";
+import { OpenWeatherApi, WeatherObservation } from "../../integrations/openweather/api";
 
 const log = moduleLogger("course-data");
 
@@ -19,7 +19,7 @@ export class RoundCourseData {
 
   constructor(
     private readonly metrix: MetrixClient,
-    private readonly openWeather: OpenWeatherClient,
+    private readonly openWeather: OpenWeatherApi,
     private readonly metrixId: string,
     private readonly currentRound: () => MetrixRound | null,
   ) {}

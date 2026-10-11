@@ -34,10 +34,10 @@ import { ScoreTracker, TrackerDependencies } from "../liveScoring";
 import { UnsupportedRoundError } from "../../../integrations/metrix/round/normalize";
 import { ChatMessenger } from "../../chatMessenger";
 import { MetrixClient, readRoundPayload, RoundFetchResult } from "../../../integrations/metrix/client";
-import { OpenWeatherClient } from "../../../integrations/openweather/client";
+import { OpenWeatherApi } from "../../../integrations/openweather/api";
 
-const messenger: ChatMessenger = { sendText: mocks.send, sendHtml: mocks.send, sendVideo: vi.fn() };
-const openWeather: OpenWeatherClient = { getCurrentWeather: vi.fn(), getCityWeather: vi.fn() };
+const messenger: ChatMessenger = { sendText: mocks.send, sendHtml: mocks.send, sendAnimation: vi.fn() };
+const openWeather: OpenWeatherApi = { getCurrentWeather: vi.fn(), getCityWeather: vi.fn() };
 const metrix: MetrixClient = {
   getRound: async roundId => readRoundPayload(await mocks.getData(), roundId),
   getCourseDetails: async () => ({ kind: "unconfigured" }),

@@ -11,7 +11,7 @@ A Telegram bot that follows and commentates disc golf competitions live from [Di
 - **Score history** — query best scores by course name or ID
 - **Special scores** — aces, eagles and albatrosses are persisted, including the ones on earlier holes when a player's card is caught up several holes at once; a corrected hole moves or removes its score, and a restart mid-round misses none
 - **Bag tags** — per-chat tag standings
-- **Morning greeter** — daily good morning message to `MORNING_CHAT_ID`, with the coming week's planned games from `GAMES_CHAT_ID`
+- **Morning greeter** — at 09:00 Helsinki time, Sakke greets `MORNING_CHAT_ID` with a model-written message from the day's weather and today's games (a canned one when the model is off or fails), the coming week's planned games from `GAMES_CHAT_ID`, and a GIF
 - **Game planning** — `/hep` plans a game today or days ahead, others join with `/mukaan`; see the command list
 - **Weather, GIFs, recipes** — assorted nonsense, see the command list
 

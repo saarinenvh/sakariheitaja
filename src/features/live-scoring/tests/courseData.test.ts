@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { OpenWeatherClient, WeatherObservation } from "../../../integrations/openweather/client";
+import { OpenWeatherApi, WeatherObservation } from "../../../integrations/openweather/api";
 
 import { RoundCourseData } from "../courseData";
 import { MetrixClient } from "../../../integrations/metrix/client";
 import { CourseDetails } from "../../../integrations/metrix/course/courseDetails";
 import { MetrixRound } from "../../../integrations/metrix/round/types";
 
-const getCurrentWeather = vi.fn<OpenWeatherClient["getCurrentWeather"]>();
+const getCurrentWeather = vi.fn<OpenWeatherApi["getCurrentWeather"]>();
 
 const observation: WeatherObservation = {
   observedAt: new Date(0), temperatureC: 12, windSpeedMs: 3, windFromDeg: 180, description: "pilvistä", precipitationMmPerHour: null,
@@ -17,7 +17,7 @@ const round: MetrixRound = {
 };
 const details: CourseDetails = { courseId: "456", location: { latitude: 60.2, longitude: 24.5 }, rating: null, holes: [] };
 
-const openWeather: OpenWeatherClient = { getCurrentWeather, getCityWeather: vi.fn() };
+const openWeather: OpenWeatherApi = { getCurrentWeather, getCityWeather: vi.fn() };
 
 function metrix(overrides: Partial<MetrixClient> = {}): MetrixClient {
   return {

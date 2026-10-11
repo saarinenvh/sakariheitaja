@@ -14,8 +14,10 @@ export const randomGoodMorning = [
   "Joo, ei kyllä tänään pysty, takasin pullolle.",
 ];
 
-/** Search words for the morning gif. */
+/** Search words for the morning gif: the model picks one, or the fallback a random one. */
 export const giphySearchWords = [
   "morning", "discgolf", "party", "sad", "happy", "sunshine", "rain",
   "erotic", "beer", "booze", "alcohol", "funny", "lol", "vodka", "russian",
-];
+] as const;
+
+export type GifSearchWord = typeof giphySearchWords[number];

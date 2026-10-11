@@ -30,7 +30,7 @@ flowchart TD
 | `main.ts` | Builds the bot, every client and the `CommandDependencies`, registers the commands, starts the bot. | everything |
 | `telegram/` | grammY: the bot, `commands/<feature>/` (a `command.ts` with the names and `/apua` help, a handler), the text listener, chat tracking, the Telegram `ChatMessenger`. | features (their `index.ts`), integrations (types), shared |
 | `features/` | The application: live scoring, commentary, bagtags, players, score records, … Each table's entity and repository live in the owning feature's `db/` folder. A feature's `index.ts` is its public module: what other modules may use. | its own files, other features' `index.ts`, integrations, db, shared |
-| `integrations/` | `createXClient(config)` for Metrix, OpenWeatherMap, Ollama, Challonge, Giphy and the recipe API. Clients own their URLs (a constant, with a build function for the variable parts), keys, validation and normalization, and return normalized types or a result union. Their requests go through `shared/http.ts`: `httpGet` (a 10 s timeout, a result instead of a throw, logs without the query string, where the keys are) and `getData` on top of it for JSON. Ollama still calls `fetch` itself, with its own timeout. Each boundary's Zod schemas, with an example payload, live in a `schema.ts` next to the code that fetches it: the client, or for Metrix the endpoint folder (`round/`, `course/`, `location/`, `statistics/`). | shared |
+| `integrations/` | `createXClient(config)` for Metrix, OpenWeatherMap, Ollama, Challonge, Giphy and the recipe API. Clients own their URLs (a constant, with a build function for the variable parts), keys, validation and normalization, and return normalized types or a result union. OpenWeatherMap is split in two: `client.ts` holds only the connection (base URL, key, the shared query, `get(path, query)`), and `api.ts` (`createOpenWeatherApi(client)`) the endpoints, their parsing and the bot's types; features use the api. Their requests go through `shared/http.ts`: `httpGet` (a 10 s timeout, a result instead of a throw, logs without the query string, where the keys are) and `getData` on top of it for JSON. Ollama still calls `fetch` itself, with its own timeout. Each boundary's Zod schemas, with an example payload, live in a `schema.ts` next to the code that fetches it: the client, or for Metrix the endpoint folder (`round/`, `course/`, `location/`, `statistics/`). | shared |
 | `db/` | The TypeORM data source and its entity list. | entities (`*.entity.ts`) |
 | `shared/` | Generic helpers only. | shared |
 
@@ -81,8 +81,9 @@ flowchart LR
 3. **Startup resume.** Every competition still `following` gets a new `ScoreTracker`, without a
    new player announcement. Each starts in the background and retries while Metrix doesn't
    answer, so startup doesn't wait for Metrix.
-4. **The morning greeting**, every day at 09:00 to `MORNING_CHAT_ID`, when it is set. With
-   `GAMES_CHAT_ID` set, it also lists that group's planned games for the coming week.
+4. **The morning greeting**, every day at 09:00 Helsinki time to `MORNING_CHAT_ID`, when it is set:
+   Sakke's greeting written by the model (or a canned one), then, with `GAMES_CHAT_ID` set, that
+   group's planned games for the coming week, then a GIF.
 
 Joining a group (`message:new_chat_members`, `message:group_chat_created`) stores the chat.
 
