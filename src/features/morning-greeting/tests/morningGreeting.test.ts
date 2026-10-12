@@ -71,17 +71,19 @@ afterEach(() => {
 });
 
 describe("the morning greeting", () => {
-  it("sends Sakke's greeting, the week's games, and a gif found with the model's word", async () => {
+  it("sends Sakke's greeting, the weather card, the week's games, and a gif found with the model's word", async () => {
     const { deps, sent, generateStructured, searchGif } = fakes();
 
     await sendMorningGreeting(deps, MAIN_CHAT);
 
     expect(sent[0]).toEqual(["text", "Kaks pelaa tänään, muut lintsaa."]);
-    expect(sent[1][0]).toBe("text");
-    expect(sent[1][1]).toContain("12. la 10.10. klo 11.00 Keljo — Ville, Wiltzu");
-    expect(sent[1][1]).toContain("13. su 11.10. Karjaa — Matti");
-    expect(sent[2]).toEqual(["animation", "https://media.giphy.test/party.mp4"]);
-    expect(sent).toHaveLength(3);
+    expect(sent[1][0]).toBe("html");
+    expect(sent[1][1]).toContain("Helsinki");
+    expect(sent[2][0]).toBe("text");
+    expect(sent[2][1]).toContain("12. la 10.10. klo 11.00 Keljo — Ville, Wiltzu");
+    expect(sent[2][1]).toContain("13. su 11.10. Karjaa — Matti");
+    expect(sent[3]).toEqual(["animation", "https://media.giphy.test/party.mp4"]);
+    expect(sent).toHaveLength(4);
     expect(searchGif).toHaveBeenCalledWith("party");
     expect(mocks.listPlansForDays).toHaveBeenCalledWith(GAMES_CHAT, 7, NOW);
     expect(factsSent(generateStructured)).toMatchObject({
@@ -117,7 +119,7 @@ describe("the morning greeting", () => {
     await sendMorningGreeting(deps, MAIN_CHAT);
 
     expect(mocks.listPlansForDays).not.toHaveBeenCalled();
-    expect(sent.map(([kind]) => kind)).toEqual(["text", "animation"]);
+    expect(sent.map(([kind]) => kind)).toEqual(["text", "html", "animation"]);
     expect(factsSent(generateStructured)).toMatchObject({ todaysGames: [] });
   });
 
@@ -141,10 +143,10 @@ describe("the morning greeting", () => {
 
     await sendMorningGreeting(deps, MAIN_CHAT);
 
-    expect(sent).toEqual([["animation", "https://media.giphy.test/party.mp4"]]);
+    expect(sent.map(([kind]) => kind)).toEqual(["html", "animation"]);
   });
 
-  it("sends the weather card even when the canned greeting fails to send", async () => {
+  it("sends the weather card even when the greeting fails to send", async () => {
     const sent: Sent[] = [];
     const messenger = recordingMessenger(sent);
     const sendHtml = vi.fn<ChatMessenger["sendHtml"]>()

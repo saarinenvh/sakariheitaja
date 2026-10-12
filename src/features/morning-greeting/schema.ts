@@ -4,7 +4,7 @@ import { z } from "zod";
 import { giphySearchWords } from "./phrases";
 
 export const greetingReplyExample = {
-  text: "Tampereella sataa vaakatasossa, eli maanantai alkaa juuri niin hyvin kuin ansaitsette.",
+  text: "Huomenta vaan. Tampereella sataa vaakatasossa, eli maanantai alkaa juuri niin hyvin kuin ansaitsette.",
   gifQuery: "rain",
 };
 

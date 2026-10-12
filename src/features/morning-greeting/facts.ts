@@ -8,8 +8,6 @@ export interface GreetingFacts {
   weekday: string;
   /** `YYYY-MM-DD`, Helsinki time. */
   date: string;
-  /** One of the group's canned lines, for Sakke to build on. */
-  mood: string;
   weather: GreetingWeather | null;
   /** Today's games, only how many are coming: the games list with courses and times follows the greeting. */
   todaysGames: { players: number }[];
@@ -24,16 +22,14 @@ export interface GreetingWeather {
 
 export interface GreetingFactsInput {
   now: Date;
-  mood: string;
   weather: CityWeather | null;
   todaysPlans: readonly GamePlan[];
 }
 
-export function buildGreetingFacts({ now, mood, weather, todaysPlans }: GreetingFactsInput): GreetingFacts {
+export function buildGreetingFacts({ now, weather, todaysPlans }: GreetingFactsInput): GreetingFacts {
   return {
     weekday: finnishWeekday(now),
     date: dayInTimeZone(now, GREETING_TIME_ZONE),
-    mood: mood.trim(),
     weather: weather ? describeWeather(weather) : null,
     todaysGames: todaysPlans.map(plan => ({ players: plan.players.length })),
   };

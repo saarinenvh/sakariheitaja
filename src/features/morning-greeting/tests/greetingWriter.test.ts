@@ -5,7 +5,7 @@ import { greetingReplyJsonSchema } from "../schema";
 import { OllamaClient } from "../../../integrations/ollama/client";
 
 const facts: GreetingFacts = {
-  weekday: "maanantai", date: "2026-10-12", mood: "Oli se jallu hyvä idea eilen...",
+  weekday: "maanantai", date: "2026-10-12",
   weather: { town: "Tampere", temperatureC: 4, windMs: 9, description: "kovaa sadetta" }, todaysGames: [],
 };
 
@@ -30,6 +30,14 @@ describe("writeGreeting", () => {
     expect(JSON.parse(messages[1].content)).toEqual(facts);
     expect(jsonSchema).toBe(greetingReplyJsonSchema);
     expect(options).toBe(GREETING_MODEL_OPTIONS);
+  });
+
+  it("asks with a given system prompt instead of the real one, for the eval harness", async () => {
+    const ollama = ollamaReplying(JSON.stringify({ text: "Huomenta.", gifQuery: "morning" }));
+
+    await writeGreeting(ollama, facts, true, "Variant prompt");
+
+    expect(ollama.generateStructured.mock.calls[0][0][0].content).toBe("Variant prompt");
   });
 
   it("removes stray quote marks around the text", async () => {

@@ -2,6 +2,7 @@ import { BatchCommentaryContext } from "../../src/features/commentary/facts/comm
 import { BatchCommentaryResult } from "../../src/features/commentary/write/commentaryWriter";
 import { FactualCommentaryBrief } from "../../src/features/commentary/facts/playerBrief";
 import { selectCommentaryRating } from "../../src/features/commentary/facts/roundRatings";
+import { countSentences } from "../eval-shared/sentences";
 
 export type CheckSeverity = "fail" | "warn" | "info";
 
@@ -84,10 +85,6 @@ export function runChecks(batch: CheckedBatch): CheckFinding[] {
     findings.push({ check: "comparison-count", severity: "warn", detail: `${comparisons} comparisons` });
   }
   return findings;
-}
-
-export function countSentences(text: string): number {
-  return text.trim().split(/(?<=[.!?…])\s+/u).filter(part => /\p{L}/u.test(part)).length;
 }
 
 function checkPlayerLine(context: BatchCommentaryContext, brief: FactualCommentaryBrief, text: string): CheckFinding[] {
