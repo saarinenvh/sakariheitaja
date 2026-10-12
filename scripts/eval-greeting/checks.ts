@@ -53,11 +53,13 @@ const WEATHER_NUMBER = new RegExp(
     + "|(?<!\\S)[+−-]\\d+|(?<!\\p{L})(?:plus|miinus)\\s*\\d+",
   "iu",
 );
-// A count right before what it counts: "kuusi pelaajaa", "3 sankaria", "kaks porukkaa", "kolme eri porukkaa".
-const COUNTED = new RegExp(
-  `(?<!\\p{L})(\\d{1,2}|${Object.keys(NUMBER_WORDS).join("|")})\\s+(?:eri\\s+)?(?:pel\\p{L}*|sankar\\p{L}*|porukk\\p{L}*|pelaaj\\p{L}*|tyyp\\p{L}*|ihmi\\p{L}*)`,
-  "giu",
+// A count right before what it counts: games ("kaks peliä", "kolme eri porukkaa", a group being one game)
+// and players ("kuusi pelaajaa", "3 sankaria").
+const countBefore = (nouns: string) => new RegExp(
+  `(?<!\\p{L})(\\d{1,2}|${Object.keys(NUMBER_WORDS).join("|")})\\s+(?:eri\\s+)?(?:${nouns})`, "giu",
 );
+const GAMES_COUNTED = countBefore("pel(?!aaj)\\p{L}*|porukk\\p{L}*");
+const PLAYERS_COUNTED = countBefore("pelaaj\\p{L}*|sankar\\p{L}*|tyyp\\p{L}*|ihmi\\p{L}*");
 
 export function runChecks(facts: GreetingFacts, result: GreetingResult): CheckFinding[] {
   if (result.kind === "fallback") return [{ check: "fallback", severity: "fail", detail: result.reason }];
@@ -94,14 +96,20 @@ export function opening(text: string): string {
   return firstPhrase.split(/\s+/u).filter(Boolean).slice(0, 2).join(" ").toLocaleLowerCase("fi");
 }
 
-/** Every count of games or players must be one the facts allow: the number of games, a game's players, or all players. */
+/** A count of games must be the number of games; a count of players, one game's players or all of them. */
 function checkCounts(facts: GreetingFacts, text: string): CheckFinding[] {
   const players = facts.todaysGames.map(game => game.players);
-  const allowed = new Set([facts.todaysGames.length, ...players, players.reduce((sum, count) => sum + count, 0)]);
-  allowed.delete(0);
+  const allPlayers = players.reduce((sum, count) => sum + count, 0);
 
-  return [...text.matchAll(COUNTED)]
-    .filter(match => !allowed.has(toNumber(match[1])))
+  return [
+    ...countsNotIn(text, GAMES_COUNTED, [facts.todaysGames.length]),
+    ...countsNotIn(text, PLAYERS_COUNTED, [...players, allPlayers]),
+  ];
+}
+
+function countsNotIn(text: string, pattern: RegExp, allowed: readonly number[]): CheckFinding[] {
+  return [...text.matchAll(pattern)]
+    .filter(match => !allowed.includes(toNumber(match[1])))
     .map(match => ({ check: "wrong-count", severity: "warn", detail: `"${match[0]}"` }));
 }
 

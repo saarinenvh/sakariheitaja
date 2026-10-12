@@ -72,6 +72,9 @@ describe("greeting checks", () => {
     expect(checksOf("Huomenta. Seitsemän pelaajaa on tulossa. Hyvä.", twoGames)).toContain("wrong-count");
     expect(checksOf("Huomenta. Kolme sankaria on lähdössä. Hyvä.")).toContain("wrong-count");
     expect(checksOf("Huomenta. Kaks peliä ja 4 pelaajaa toisessa. Hyvä.", twoGames)).not.toContain("wrong-count");
+    expect(checksOf("Huomenta. Kuusi peliä tänään. Hyvä.", twoGames)).toContain("wrong-count");
+    expect(checksOf("Huomenta. Kaks pelaajaa vaan. Hyvä.", { ...rainyNoGames, todaysGames: [{ players: 5 }, { players: 3 }] }))
+      .toContain("wrong-count");
   });
 
   it("warns about too few or too many sentences, emojis and hashtags", () => {
