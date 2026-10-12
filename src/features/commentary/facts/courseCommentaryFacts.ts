@@ -1,4 +1,4 @@
-import { WeatherObservation } from "../../../integrations/openweather/client";
+import { WeatherObservation } from "../../../integrations/openweather/api";
 import { buildRoundRatings, describeCourseDifficulty } from "./roundRatings";
 import { describeHoleHistory, describeHoleLength, describeTodayFieldAverage, describeWindOnHole } from "./holeDescriptions";
 import { CourseStatistics } from "../../../integrations/metrix/statistics/courseStatistics";

@@ -1,4 +1,4 @@
-import { WeatherObservation } from "../../../integrations/openweather/client";
+import { WeatherObservation } from "../../../integrations/openweather/api";
 import { buildCourseCommentaryFacts, CourseInfo } from "./courseCommentaryFacts";
 import { buildDivisionStandings, DivisionStanding } from "./standings";
 import { FactualCommentaryBrief } from "./playerBrief";

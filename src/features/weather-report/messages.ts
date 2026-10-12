@@ -1,7 +1,9 @@
-import type { CityWeather } from "../../integrations/openweather/schema";
-import { formatClockTime } from "../../shared/utils";
+import type { CityWeather } from "../../integrations/openweather/api";
+import { clockTimeInTimeZone } from "../../shared/time";
+import { escapeHtml } from "../../shared/html";
 
-const MS_PER_SECOND = 1000;
+/** The towns are Finnish, so their sun times are shown in Helsinki time, whatever the container's time zone. */
+const WEATHER_TIME_ZONE = "Europe/Helsinki";
 
 /** An emoji per OpenWeatherMap condition group. */
 export const weatherEmojis: Record<string, string> = {
@@ -16,11 +18,11 @@ export const cityNotFound = (city: string): string => `Mikä vitun ${city}? - Ei
 
 /** The `/saa` report for a found city. */
 export function formatCityWeather(data: CityWeather): string {
-  const emoji = weatherEmojis[data.weather[0].main] ?? "";
-  let msg = `${emoji} ${data.name} <b>${Math.round(data.main.temp * 10) / 10}°C</b> ${emoji}\n`;
-  msg += `Tällä hetkellä siis <b>${data.weather[0].description}</b>.\n`;
-  msg += `Tuulta puskis <b>${data.wind.speed} m/s</b>.\n`;
-  msg += `Aurinko nousee <b>${formatClockTime(new Date(data.sys.sunrise * MS_PER_SECOND))}</b> 🌅\n`;
-  msg += `Aurinko laskee <b>${formatClockTime(new Date(data.sys.sunset * MS_PER_SECOND))}</b> 🌇\n`;
+  const emoji = weatherEmojis[data.condition] ?? "";
+  let msg = `${emoji} ${escapeHtml(data.city)} <b>${Math.round(data.temperatureC * 10) / 10}°C</b> ${emoji}\n`;
+  msg += `Tällä hetkellä siis <b>${escapeHtml(data.description)}</b>.\n`;
+  msg += `Tuulta puskis <b>${data.windSpeedMs} m/s</b>.\n`;
+  msg += `Aurinko nousee <b>${clockTimeInTimeZone(data.sunrise, WEATHER_TIME_ZONE)}</b> 🌅\n`;
+  msg += `Aurinko laskee <b>${clockTimeInTimeZone(data.sunset, WEATHER_TIME_ZONE)}</b> 🌇\n`;
   return msg;
 }

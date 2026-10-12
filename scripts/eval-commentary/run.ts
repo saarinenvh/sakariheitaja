@@ -10,7 +10,7 @@ import { join } from "path";
 import type { OllamaMessage, OllamaOptions } from "../../src/integrations/ollama/client";
 import type { BatchCommentaryContext } from "../../src/features/commentary/facts/commentaryContext";
 import type { BatchCommentaryResult } from "../../src/features/commentary/write/commentaryWriter";
-import type { WeatherObservation } from "../../src/integrations/openweather/client";
+import type { WeatherObservation } from "../../src/integrations/openweather/api";
 import type { CourseInfo } from "../../src/features/commentary/facts/courseCommentaryFacts";
 import { HoleRange, parseFlags, parseHoleRange, parsePositiveIntegerFlag } from "./cliFlags";
 import { CommentaryFixture, FixtureWeather, loadFixtures } from "./fixtureFile";

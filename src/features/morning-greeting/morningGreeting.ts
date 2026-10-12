@@ -1,48 +1,58 @@
 import { ChatMessenger } from "../chatMessenger";
-import { OpenWeatherClient } from "../../integrations/openweather/client";
+import { CityWeather, OpenWeatherApi } from "../../integrations/openweather/api";
 import { GiphyClient } from "../../integrations/giphy/client";
-import { buildCityWeatherReport, cities } from "../weather-report";
-import { giphySearchWords, randomGoodMorning } from "./phrases";
-import { formatMorningGreeting, morningCallToAction } from "./messages";
-import { formatClockTime, getRandom } from "../../shared/utils";
+import { OllamaClient } from "../../integrations/ollama/client";
+import { formatCityWeather, randomTown } from "../weather-report";
+import { GifSearchWord, giphySearchWords, randomGoodMorning } from "./phrases";
+import { formatFallbackGreeting } from "./messages";
+import { getRandom } from "../../shared/utils";
 import { moduleLogger } from "../../shared/logger";
-import { dayInTimeZone } from "../../shared/time";
-import { listPlansForDays, PLAN_TIME_ZONE } from "../games";
+import { clockTimeInTimeZone, dayInTimeZone } from "../../shared/time";
+import { GamePlan, listPlansForDays, PLAN_TIME_ZONE } from "../games";
 import { formatGamesPart } from "./gamesPart";
+import { GREETING_TIME_ZONE, msUntilNextGreeting } from "./policy";
+import { buildGreetingFacts } from "./facts";
+import { GreetingResult, writeGreeting } from "./greetingWriter";
 
 const log = moduleLogger("morning-greeter");
-
-const GREETING_HOUR = 9;
-const MS_PER_DAY = 86_400_000;
 
 /** How many days of planned games the greeting lists, today included. */
 const GAMES_DAYS = 7;
 
 export interface MorningGreetingDependencies {
   messenger: ChatMessenger;
-  openWeather: OpenWeatherClient;
+  openWeather: OpenWeatherApi;
   giphy: GiphyClient;
+  ollama: OllamaClient;
+  llmEnabled: boolean;
   /** The group whose game plans the greeting lists; without it, there's no games part. */
   gamesChatId: number | undefined;
 }
 
+/** What the greeting is written from; a part that can't be read is left out. */
+interface GreetingInputs {
+  now: Date;
+  mood: string;
+  weather: CityWeather | null;
+  /** The planning group's games for the coming week. */
+  plans: GamePlan[];
+}
+
 /**
- * The greeting, a random town's weather, the coming week's planned games, the call to action and a
- * gif; each part is sent even if another fails.
+ * Sakke's greeting, written by the model from the day's facts (or the canned greeting with the
+ * weather card when it can't be), then the coming week's games and a gif; each part is sent even if
+ * another fails.
  */
 export async function sendMorningGreeting(deps: MorningGreetingDependencies, chatId: number): Promise<void> {
-  const { messenger } = deps;
-  const greeting = randomGoodMorning[getRandom(randomGoodMorning.length)];
-  const message = formatMorningGreeting(greeting, formatClockTime(new Date()));
+  const inputs = await gatherInputs(deps);
 
-  try { await messenger.sendHtml(chatId, message); } catch (e: any) { log.error({ err: e }, "morning greeting text failed"); }
-  try { await sendCityWeather(deps, chatId, cities[getRandom(cities.length)]); } catch (e: any) { log.error({ err: e }, "morning greeting weather failed"); }
-  try { await sendPlannedGames(deps, chatId); } catch (e: any) { log.error({ err: e }, "morning greeting games failed"); }
-  try { await messenger.sendText(chatId, morningCallToAction); } catch (e: any) { log.error({ err: e }, "morning greeting call to action failed"); }
-  try {
-    const gifUrl = await deps.giphy.searchGif(giphySearchWords[getRandom(giphySearchWords.length)]);
-    if (gifUrl) await messenger.sendVideo(chatId, gifUrl);
-  } catch (e: any) { log.error({ err: e }, "morning greeting gif failed"); }
+  const facts = buildGreetingFacts({ ...inputs, todaysPlans: todaysPlans(inputs) });
+  const greeting = await writeGreeting(deps.ollama, facts, deps.llmEnabled);
+
+  await sendPart("text", () => sendGreetingText(deps, chatId, greeting, inputs));
+  await sendPart("weather", () => sendFallbackWeather(deps, chatId, greeting, inputs));
+  await sendPart("games", () => sendPlannedGames(deps, chatId, inputs));
+  await sendPart("gif", () => sendGif(deps, chatId, gifWord(greeting)));
 }
 
 /** Greets `chatId` every day at 09:00; without a chat id there is no greeting. */
@@ -52,31 +62,101 @@ export function startMorningGreeter(deps: MorningGreetingDependencies, chatId: n
     return;
   }
 
-  const now = new Date();
-  let millisTill09 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), GREETING_HOUR, 0, 0, 0).getTime() - now.getTime();
-  if (millisTill09 < 0) millisTill09 += MS_PER_DAY;
-
-  log.info({ delayMs: millisTill09 }, "next morning greeting scheduled");
+  const delayMs = msUntilNextGreeting(new Date());
+  log.info({ delayMs }, "next morning greeting scheduled");
 
   setTimeout(async () => {
-    await sendMorningGreeting(deps, chatId);
-    startMorningGreeter(deps, chatId);
-  }, millisTill09);
+    try {
+      await sendMorningGreeting(deps, chatId);
+    } catch (error) {
+      log.error({ err: error }, "morning greeting failed");
+    } finally {
+      startMorningGreeter(deps, chatId);
+    }
+  }, delayMs);
 }
 
-/** The planning group's games for the coming week; nothing when there are none, or no group is set. */
-async function sendPlannedGames(deps: MorningGreetingDependencies, chatId: number): Promise<void> {
-  if (deps.gamesChatId === undefined) return;
-
+async function gatherInputs(deps: MorningGreetingDependencies): Promise<GreetingInputs> {
   const now = new Date();
-  const plans = await listPlansForDays(deps.gamesChatId, GAMES_DAYS, now);
-  if (plans.length === 0) return;
+  const mood = randomGoodMorning[getRandom(randomGoodMorning.length)];
 
-  await deps.messenger.sendText(chatId, formatGamesPart(plans, dayInTimeZone(now, PLAN_TIME_ZONE)));
+  const [weather, plans] = await Promise.all([fetchWeather(deps), fetchPlans(deps, now)]);
+
+  return { now, mood, weather, plans };
 }
 
-async function sendCityWeather(deps: MorningGreetingDependencies, chatId: number, city: string): Promise<void> {
-  const report = await buildCityWeatherReport(deps.openWeather, city);
-  if (report.kind === "found") await deps.messenger.sendHtml(chatId, report.html);
-  else await deps.messenger.sendText(chatId, report.text);
+async function sendGreetingText(
+  deps: MorningGreetingDependencies, chatId: number, greeting: GreetingResult, inputs: GreetingInputs,
+): Promise<void> {
+  if (greeting.kind === "generated") return deps.messenger.sendText(chatId, greeting.reply.text);
+
+  log.info({ reason: greeting.reason }, "canned morning greeting");
+  await deps.messenger.sendHtml(chatId, formatFallbackGreeting(inputs.mood, clockTimeInTimeZone(inputs.now, GREETING_TIME_ZONE)));
+}
+
+/** The canned greeting is followed by the weather card; Sakke's own greeting already tells the weather. */
+async function sendFallbackWeather(
+  deps: MorningGreetingDependencies, chatId: number, greeting: GreetingResult, inputs: GreetingInputs,
+): Promise<void> {
+  if (greeting.kind === "generated" || !inputs.weather) return;
+
+  await deps.messenger.sendHtml(chatId, formatCityWeather(inputs.weather));
+}
+
+/** The coming week's games, with their numbers for `/mukaan`; nothing when none are planned. */
+async function sendPlannedGames(deps: MorningGreetingDependencies, chatId: number, inputs: GreetingInputs): Promise<void> {
+  if (inputs.plans.length === 0) return;
+
+  await deps.messenger.sendText(chatId, formatGamesPart(inputs.plans, dayInTimeZone(inputs.now, PLAN_TIME_ZONE)));
+}
+
+async function sendGif(deps: MorningGreetingDependencies, chatId: number, word: GifSearchWord): Promise<void> {
+  const gifUrl = await deps.giphy.searchGif(word);
+  if (gifUrl) await deps.messenger.sendAnimation(chatId, gifUrl);
+}
+
+/** The model's word, or a random one when the greeting is the canned one. */
+function gifWord(greeting: GreetingResult): GifSearchWord {
+  if (greeting.kind === "generated") return greeting.reply.gifQuery;
+
+  return giphySearchWords[getRandom(giphySearchWords.length)];
+}
+
+function todaysPlans(inputs: GreetingInputs): GamePlan[] {
+  const today = dayInTimeZone(inputs.now, PLAN_TIME_ZONE);
+  return inputs.plans.filter(plan => plan.day === today);
+}
+
+/** A random town's weather; null when it can't be had, and the greeting goes without. */
+async function fetchWeather(deps: MorningGreetingDependencies): Promise<CityWeather | null> {
+  try {
+    const result = await deps.openWeather.getCityWeather(randomTown());
+    if (result.kind === "observed") return result.weather;
+
+    log.warn({ reason: result.reason }, "morning greeting weather unavailable");
+  } catch (error) {
+    log.error({ err: error }, "morning greeting weather failed");
+  }
+  return null;
+}
+
+/** The planning group's games for the coming week; none without a group, or when they can't be read. */
+async function fetchPlans(deps: MorningGreetingDependencies, now: Date): Promise<GamePlan[]> {
+  if (deps.gamesChatId === undefined) return [];
+
+  try {
+    return await listPlansForDays(deps.gamesChatId, GAMES_DAYS, now);
+  } catch (error) {
+    log.error({ err: error }, "morning greeting games failed");
+    return [];
+  }
+}
+
+/** Sends one part of the greeting; a failure is logged and the next part still goes. */
+async function sendPart(part: string, send: () => Promise<void>): Promise<void> {
+  try {
+    await send();
+  } catch (error) {
+    log.error({ err: error, part }, "morning greeting part failed");
+  }
 }

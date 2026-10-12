@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, dayInTimeZone, daysBetween, weekdayOf, zonedTimeToInstant } from "../time";
+import { addDays, clockTimeInTimeZone, dayInTimeZone, daysBetween, weekdayOf, zonedTimeToInstant } from "../time";
 
 const HELSINKI = "Europe/Helsinki";
 
@@ -44,5 +44,15 @@ describe("day helpers", () => {
   it("gives the weekday, Sunday as 0", () => {
     expect(weekdayOf("2026-10-11")).toBe(0);
     expect(weekdayOf("2026-10-10")).toBe(6);
+  });
+});
+
+describe("clockTimeInTimeZone", () => {
+  it.each([
+    ["in summer time", "2026-10-10T06:05:00Z", "9:05"],
+    ["in winter time", "2026-12-01T07:00:00Z", "9:00"],
+    ["just after midnight, the day before in UTC", "2026-10-10T21:30:00Z", "0:30"],
+  ])("gives the wall-clock time in Helsinki %s", (_case, instant, clock) => {
+    expect(clockTimeInTimeZone(new Date(instant), HELSINKI)).toBe(clock);
   });
 });

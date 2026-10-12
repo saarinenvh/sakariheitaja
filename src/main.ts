@@ -11,6 +11,7 @@ import { registerCommands } from "./telegram/commands/registry";
 import { CommandDependencies } from "./telegram/commands/types";
 import { createMetrixClient } from "./integrations/metrix/client";
 import { createOpenWeatherClient } from "./integrations/openweather/client";
+import { createOpenWeatherApi } from "./integrations/openweather/api";
 import { createOllamaClient } from "./integrations/ollama/client";
 import { createChallongeClient } from "./integrations/challonge/client";
 import { createGiphyClient } from "./integrations/giphy/client";
@@ -27,7 +28,7 @@ const bot = createBot(config.telegram.token);
 const dependencies: CommandDependencies = {
   messenger: createTelegramMessenger(bot.api),
   metrix: createMetrixClient(config.metrix),
-  openWeather: createOpenWeatherClient({ apiKey: config.openWeatherMapApiKey }),
+  openWeather: createOpenWeatherApi(createOpenWeatherClient({ apiKey: config.openWeatherMapApiKey })),
   ollama: createOllamaClient(config.ollama),
   challonge: createChallongeClient(config.challonge),
   giphy: createGiphyClient({ apiKey: config.giphyApiKey }),

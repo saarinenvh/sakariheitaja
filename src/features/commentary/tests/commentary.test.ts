@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { WeatherObservation } from "../../../integrations/openweather/client";
+import { WeatherObservation } from "../../../integrations/openweather/api";
 import { BatchCommentaryContext } from "../facts/commentaryContext";
 import { BatchCommentaryResult, writeBatchCommentary } from "../write/commentaryWriter";
 import { CommentaryDelivery, RoundCommentary } from "../commentary";
