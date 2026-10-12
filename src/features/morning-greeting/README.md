@@ -4,9 +4,12 @@ Every morning at 09:00 Helsinki time (`policy.ts`, independent of the container'
 `MORNING_CHAT_ID`; nothing when it is unset. Each part is sent even if another fails:
 
 1. **Sakke's greeting**, written by the bot's model (`greetingWriter.ts`) from the day's facts, as
-   plain text. When the model is off (`LLM_ENABLED`), fails, or replies with something unusable, the
-   canned greeting goes out instead: a random opening line with the time (HTML). Sakke's own
-   greeting is saved once it's sent, so the next ones can differ from it; the canned one isn't.
+   plain text in three paragraphs with a blank line between: a greeting to the club, one joke about
+   the weather (left out when there's no weather), and a comment on today's games, or a jab at the
+   lazy ones when there are none. When the model is off (`LLM_ENABLED`), fails, or replies with
+   something unusable, the canned greeting goes out instead: a random opening line with the time
+   (HTML). Sakke's own greeting is saved once it's sent, so the next ones can differ from it; the
+   canned one isn't.
 2. **The weather card** of the random town (`../weather-report/`), with its emojis; left out when the
    weather can't be read.
 3. **The coming week's games** of `GAMES_CHAT_ID`, the planning group: "Tänään pelataan" and
@@ -18,7 +21,7 @@ Every morning at 09:00 Helsinki time (`policy.ts`, independent of the container'
 ```mermaid
 flowchart LR
     Gather["a random town's weather,<br/>the week's plans,<br/>the last 5 greetings"] --> Facts["facts.ts:<br/>weekday, date, weather,<br/>today's player counts,<br/>recent greetings"]
-    Facts --> Writer["greetingWriter.ts:<br/>model reply { text, gifQuery }"]
+    Facts --> Writer["greetingWriter.ts:<br/>model reply { greeting, weather,<br/>games, gifQuery }, joined<br/>with blank lines"]
     Writer -->|generated| Text["Sakke's text,<br/>saved once sent"]
     Writer -->|fallback| Canned["canned greeting"]
     Text --> Weather["the weather card"]
@@ -38,9 +41,13 @@ flowchart LR
   told to open differently and not reuse their jokes or phrases. Without them, q4 opened 8 times
   in 12 with the same "Huomenta porukka". If they can't be read, the greeting goes without.
 - **The prompt** is `src/prompts/persona.md` plus `src/prompts/morning_greeting.md`: the group's
-  running jokes (Jallu, hangovers, Tali or work), the rules, and example greetings.
-- **The reply** (`schema.ts`) is JSON constrained by Ollama to `{ text, gifQuery }`, where
-  `gifQuery` is one of `giphySearchWords`. Stray quote marks around the text are removed.
+  running jokes (Jallu, hangovers, Tali or work), each part's own rules, and example greetings in
+  parts. Like the commentary, the model writes the parts and the code puts the message together,
+  so the blank lines don't depend on the model.
+- **The reply** (`schema.ts`) is JSON constrained by Ollama to `{ greeting, weather, games, gifQuery }`,
+  where `gifQuery` is one of `giphySearchWords`. Stray quote marks around each part are removed;
+  an empty greeting or games part makes the reply unusable, and the weather part is dropped when
+  there was no weather.
 - **Tuning the prompt:** `npm run eval:greeting` writes greetings for scenario days against a
   real model and checks them; see "Morning greeting eval harness" in the root README.
 

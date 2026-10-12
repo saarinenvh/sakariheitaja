@@ -149,14 +149,15 @@ npm run eval:greeting -- --model=... --runs=4 --scenario=rainy-monday-no-games,f
 ```
 
 - Scenarios are typed facts in `scripts/eval-greeting/scenarios.ts`: rain or sun, no games or
-  several, and a day without weather. All but one follow a "samey week" of real greetings, so the
-  eval shows whether the model varies from its recent ones. Add a scenario to test a new kind of day.
-- Checks separate failures (fallback, no morning greeting at the start, a clock time, letters
-  from another script) from heuristic warnings (weather as numbers, counts of games or players
-  not in the facts, cancelled games on a day with none, word loops, ball-golf words, letters
-  Finnish doesn't use, sentence count, emoji, the same opening as a recent greeting, five words in
-  a row copied from one). The summary also lists how the greetings open,
-  to see their variety. Humour and the Finnish itself still need a read of the report.
+  several, and a day without weather. Most follow a "samey week" of real greetings, and one a week
+  that all opened "Aamuja sankarit", so the eval shows whether the model varies from its recent
+  ones. Add a scenario to test a new kind of day.
+- Checks separate failures (fallback, a clock time, letters from another script) from heuristic
+  warnings (a greeting part that doesn't speak of the morning, weather as numbers, counts of games
+  or players not in the facts, cancelled games on a day with none, word loops, ball-golf words,
+  letters Finnish doesn't use, sentence count, emoji, the same opening as a recent greeting, five
+  words in a row copied from one). The summary also lists how the greetings open, to see their
+  variety. Humour and the Finnish itself still need a read of the report.
 
 ## Commands
 
