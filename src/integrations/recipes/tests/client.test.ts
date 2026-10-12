@@ -7,7 +7,7 @@ import { createRecipesClient } from "../client";
 
 const soup = {
   name: "Keitto", cookTime: 30, description: "Hyvää.", ingredients: [{ ingredientTitle: "Vesi" }],
-  steps: [{ body: "Keitä." }], media: [{ file: { url: "//kuva.jpg" } }],
+  steps: [{ body: "Keitä." }], media: [{ damAsset: { url: "https://cdn.example/keitto.webp" } }],
 };
 
 beforeEach(() => mocks.getData.mockReset());
@@ -17,13 +17,19 @@ describe("recipes client", () => {
 
   it("returns the recipes, leaving out ones the message can't show", async () => {
     mocks.getData.mockResolvedValue({ results: [
-      soup, { ...soup, name: "Kuvaton", media: [] }, { ...soup, name: "Tyhjä kuva", media: [{ file: { url: "" } }] }, { name: "Rikki" },
+      soup, { ...soup, name: "Kuvaton", media: [] }, { ...soup, name: "Tyhjä kuva", media: [{ damAsset: { url: "" } }] },
+      { ...soup, name: "Puolikas osoite", media: [{ damAsset: { url: "//cdn.example/keitto.webp" } }] }, { name: "Rikki" },
     ] });
     expect(await client.getRecipes()).toEqual([soup]);
   });
 
+  it("leaves out a recipe whose photo is in the API's old `file` shape", async () => {
+    mocks.getData.mockResolvedValue({ results: [soup, { ...soup, name: "Vanha", media: [{ file: { url: "//kuva.jpg" } }] }] });
+    expect(await client.getRecipes()).toEqual([soup]);
+  });
+
   it("checks only the first photo, the one the message sends", async () => {
-    const gallery = { ...soup, media: [{ file: { url: "//kuva.jpg" } }, { file: { url: "" } }] };
+    const gallery = { ...soup, media: [{ damAsset: { url: "https://cdn.example/keitto.webp" } }, { damAsset: { url: "" } }] };
     mocks.getData.mockResolvedValue({ results: [gallery] });
     expect(await client.getRecipes()).toEqual([gallery]);
   });

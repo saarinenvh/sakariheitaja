@@ -19,8 +19,18 @@ export const recipeExample = {
   _updatedAt: "2026-10-01T02:40:09.454Z", // ignored
   name: "Esimerkkikakku",
   description: "Helppo kakku, joka valmistuu sekoittamalla taikinan ainekset.",
-  // The live API now sends `damAsset: { url, … }` in place of `file`, which this schema rejects (Trello Q2zsQ8P3).
-  media: [{ file: { url: "//images.example.com/esimerkkikakku.jpg" } }],
+  media: [{
+    damAsset: {
+      url: "https://cdn.s-cloud.fi/v1/assets/dam-id/esimerkkikakku.webp?clientId=6548",
+      id: "esimerkkikakku", // ignored
+      title: "esimerkkikakku vaaka.jpg", // ignored
+      width: 4901, // ignored
+      height: 3590, // ignored
+      fileName: "esimerkkikakku vaaka.jpg", // ignored
+      blurDataUrl: "data:image/webp;base64,UklGRg==", // ignored
+    },
+    isAiGenerated: false, // ignored
+  }],
   categories: { foodType: ["Kakut"], preparation: ["Leivonta"] }, // ignored
   publisher: { id: "yhteishyva", _id: "publisher-1", _type: "publisher" }, // ignored
   cookTime: 60,
@@ -59,9 +69,10 @@ export const recipeSchema = z.object({
     ingredients: z.array(z.object({ ingredientTitle: z.string() })).optional(),
   })),
   steps: z.array(z.object({ body: z.string() })),
-  // The message sends the first photo, dropping its URL's first two characters; something must be left after them.
-  media: z.array(z.object({ file: z.object({ url: z.string() }) })).min(1)
-    .refine(media => (media[0]?.file.url ?? "").substring(2) !== "", "empty photo URL"),
+  // The message sends the first photo by its URL (a webp, which Telegram takes as a photo), so it
+  // must be absolute; the API's old URLs were protocol-relative ("//…").
+  media: z.array(z.object({ damAsset: z.object({ url: z.string() }) })).min(1)
+    .refine(media => URL.canParse(media[0]?.damAsset.url ?? ""), "no absolute photo URL"),
 });
 
 /** Each recipe is parsed on its own with `recipeSchema`, so one the message can't show is left out. */
