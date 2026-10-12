@@ -5,7 +5,8 @@ Every morning at 09:00 Helsinki time (`policy.ts`, independent of the container'
 
 1. **Sakke's greeting**, written by the bot's model (`greetingWriter.ts`) from the day's facts, as
    plain text. When the model is off (`LLM_ENABLED`), fails, or replies with something unusable, the
-   canned greeting goes out instead: a random opening line with the time (HTML).
+   canned greeting goes out instead: a random opening line with the time (HTML). Sakke's own
+   greeting is saved once it's sent, so the next ones can differ from it; the canned one isn't.
 2. **The weather card** of the random town (`../weather-report/`), with its emojis; left out when the
    weather can't be read.
 3. **The coming week's games** of `GAMES_CHAT_ID`, the planning group: "Tänään pelataan" and
@@ -16,9 +17,9 @@ Every morning at 09:00 Helsinki time (`policy.ts`, independent of the container'
 
 ```mermaid
 flowchart LR
-    Gather["a random town's weather,<br/>the week's plans"] --> Facts["facts.ts:<br/>weekday, date,<br/>weather, today's player counts"]
+    Gather["a random town's weather,<br/>the week's plans,<br/>the last 5 greetings"] --> Facts["facts.ts:<br/>weekday, date, weather,<br/>today's player counts,<br/>recent greetings"]
     Facts --> Writer["greetingWriter.ts:<br/>model reply { text, gifQuery }"]
-    Writer -->|generated| Text["Sakke's text"]
+    Writer -->|generated| Text["Sakke's text,<br/>saved once sent"]
     Writer -->|fallback| Canned["canned greeting"]
     Text --> Weather["the weather card"]
     Canned --> Weather
@@ -32,6 +33,10 @@ flowchart LR
   counts. No canned line: the model copied it word for word. Course names and times are left
   out: the games list follows with them exactly, and the model garbled them. The weather is material
   for a joke; the card that follows gives its numbers.
+- **Recent greetings:** each greeting is a separate model call, so the model can only vary from day
+  to day by seeing what it wrote before. It gets the chat's last 5 greetings (newest first) and is
+  told to open differently and not reuse their jokes or phrases. Without them, q4 opened 8 times
+  in 12 with the same "Huomenta porukka". If they can't be read, the greeting goes without.
 - **The prompt** is `src/prompts/persona.md` plus `src/prompts/morning_greeting.md`: the group's
   running jokes (Jallu, hangovers, Tali or work), the rules, and example greetings.
 - **The reply** (`schema.ts`) is JSON constrained by Ollama to `{ text, gifQuery }`, where
@@ -48,7 +53,10 @@ flowchart LR
 
 ## Data
 
-None.
+`morning_greetings` (`db/`): Sakke's sent greetings per chat, with the time; kept, never deleted.
+Saved as a background write with `withWriteRetry`; a failed save is logged and only costs the next
+greeting some variety. A stopgap: the long-term home for Sakke's own writing is the Obsidian vault,
+through gateway tools (Trello LXyiAGHC).
 
 ## Files
 
@@ -63,3 +71,4 @@ None.
 | `gamesPart.ts` | The games part's text, from the plans and today's date. |
 | `messages.ts` | The canned greeting text and the games invitation. |
 | `phrases.ts` | The canned opening lines and the GIF search words. |
+| `db/` | The `morning_greetings` entity and its repository: save a greeting, read a chat's last ones. |

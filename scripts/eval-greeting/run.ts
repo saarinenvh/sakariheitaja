@@ -124,7 +124,8 @@ function describeFacts(facts: GreetingFacts): string {
   const games = facts.todaysGames.length > 0
     ? `games: ${facts.todaysGames.map(game => `${game.players} players`).join(", ")}`
     : "no games";
-  return `${facts.weekday} ${facts.date} · ${weather} · ${games}`;
+  const history = facts.recentGreetings.length > 0 ? `${facts.recentGreetings.length} recent greetings` : "no history";
+  return `${facts.weekday} ${facts.date} · ${weather} · ${games} · ${history}`;
 }
 
 /** The hash covers the persona too, so a persona change shows as a different prompt. */
