@@ -18,5 +18,5 @@ export function formatRecipe(dish: Recipe): RecipeMessage {
   });
   message += "\n";
   dish.steps.forEach((n, i) => (message += `${i + 1}. ${n.body} \n`));
-  return { text: message, photoUrl: dish.media[0].file.url.substring(2) };
+  return { text: message, photoUrl: dish.media[0].damAsset.url };
 }
