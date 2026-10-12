@@ -20,10 +20,11 @@ in the migrations.
 | `aces`, `eagles`, `albatrosses` | `features/score-records/` | special scores, one row per competition, player and hole (`hole_number`; NULL on rows saved before 2026-10). Live scoring syncs a followed round's rows to each tracked player's card on every poll, so a corrected hole moves or removes its row; other rounds' rows are never touched. |
 | `game_plans` | `features/games/` | planned games (`/hep`): chat, creator (Telegram id and name), day, optional start time, courses (JSON list), the text as written. utf8mb4. Past plans stay as history. |
 | `game_plan_players` | `features/games/` | a plan's players: a name, with the Telegram id when known. Unique per plan by Telegram id, or by name ignoring case when there's no id (generated `name_without_id`). utf8mb4. |
+| `morning_greetings` | `features/morning-greeting/` | Sakke's sent morning greetings: chat, sent time, text. The chat's last 5 go to the model, so the next greeting differs. utf8mb4. No foreign key to `chats`: the greeting chat needn't have a row there. |
 
 `db/dataSource.ts` lists the entities: `Player`, `PlayerChat` (`player_to_chat`), `Chat`,
 `Competition`, `Course`, `Score`, `Ace`, `Eagle`, `Albatross` (one table each, sharing
-`SpecialScoreRecord`), `GamePlan` and `GamePlanPlayer`. BIGINT columns (the chat ids)
+`SpecialScoreRecord`), `GamePlan`, `GamePlanPlayer` and `MorningGreeting`. BIGINT columns (the chat ids)
 read as numbers: the data source sets `supportBigNumbers` and turns `bigNumberStrings` off. The
 schema isn't synchronized from the entities. Changes to it are TypeORM migrations in `db/migrations/`, which
 run when the bot starts (`migrationsRun`), before anything else uses the database. The bot's DB

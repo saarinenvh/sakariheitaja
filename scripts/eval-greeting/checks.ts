@@ -17,6 +17,8 @@ export const CHECK_DESCRIPTIONS = {
   "repeated-word": "The same word three or more times in a row (a model loop)",
   "invented-games": "Text says games were cancelled or people signed up on a day with no games",
   "wrong-count": "A number of games or players that isn't in the facts",
+  "repeats-opening": "Opens the same way as one of the recent greetings",
+  "copies-recent": "Repeats five or more words in a row from a recent greeting",
 } as const;
 
 export type CheckId = keyof typeof CHECK_DESCRIPTIONS;
@@ -29,6 +31,8 @@ export interface CheckFinding {
 
 const MIN_SENTENCES = 2;
 const MAX_SENTENCES = 4;
+/** Shorter runs of shared words are ordinary Finnish ("tänään ei oo sovittu"); five is a copied phrase. */
+const COPIED_PHRASE_WORDS = 5;
 
 // "HYVÄÄ HUOMENTA", "Huomenta porukka", "Aamua", "Huomenia"; not "Huomenna" or "Aamulla".
 const GREETING_OPENING = /^[\s"'“”„–-]*(?:hyvää\s+)?(?:huomenta|huomenia|huomentaa|aamua|aamuja|aamu)(?!\p{L})/iu;
@@ -87,6 +91,7 @@ export function runChecks(facts: GreetingFacts, result: GreetingResult): CheckFi
   }
 
   findings.push(...checkCounts(facts, text));
+  findings.push(...checkRecent(facts.recentGreetings, text));
   return findings;
 }
 
@@ -111,6 +116,36 @@ function countsNotIn(text: string, pattern: RegExp, allowed: readonly number[]):
   return [...text.matchAll(pattern)]
     .filter(match => !allowed.includes(toNumber(match[1])))
     .map(match => ({ check: "wrong-count", severity: "warn", detail: `"${match[0]}"` }));
+}
+
+/** The opening and phrases of the recent greetings, which the new one shouldn't repeat. */
+function checkRecent(recentGreetings: readonly string[], text: string): CheckFinding[] {
+  const findings: CheckFinding[] = [];
+
+  const sameOpening = recentGreetings.filter(recent => opening(recent) === opening(text)).length;
+  if (sameOpening > 0) {
+    findings.push({ check: "repeats-opening", severity: "warn", detail: `"${opening(text)}", as ${sameOpening} of the recent` });
+  }
+
+  const copied = copiedPhrase(recentGreetings, text);
+  if (copied) findings.push({ check: "copies-recent", severity: "warn", detail: `"${copied}"` });
+
+  return findings;
+}
+
+/** The first run of `COPIED_PHRASE_WORDS` words the text shares with a recent greeting, or null. */
+function copiedPhrase(recentGreetings: readonly string[], text: string): string | null {
+  const recentPhrases = new Set(recentGreetings.flatMap(recent => phrases(words(recent))));
+  return phrases(words(text)).find(phrase => recentPhrases.has(phrase)) ?? null;
+}
+
+function words(text: string): string[] {
+  return text.toLocaleLowerCase("fi").split(/[^\p{L}\d]+/u).filter(Boolean);
+}
+
+function phrases(textWords: readonly string[]): string[] {
+  return textWords.slice(0, Math.max(0, textWords.length - COPIED_PHRASE_WORDS + 1))
+    .map((_word, index) => textWords.slice(index, index + COPIED_PHRASE_WORDS).join(" "));
 }
 
 function toNumber(word: string): number {

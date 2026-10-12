@@ -7,6 +7,7 @@ import { OllamaClient } from "../../../integrations/ollama/client";
 const facts: GreetingFacts = {
   weekday: "maanantai", date: "2026-10-12",
   weather: { town: "Tampere", temperatureC: 4, windMs: 9, description: "kovaa sadetta" }, todaysGames: [],
+  recentGreetings: ["Aamuja, sankarit! Eilen satoi."],
 };
 
 function ollamaReplying(reply: string | Error) {

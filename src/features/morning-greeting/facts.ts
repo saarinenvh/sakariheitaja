@@ -11,6 +11,8 @@ export interface GreetingFacts {
   weather: GreetingWeather | null;
   /** Today's games, only how many are coming: the games list with courses and times follows the greeting. */
   todaysGames: { players: number }[];
+  /** Sakke's last greetings in this chat, newest first, so the new one opens and jokes differently. */
+  recentGreetings: string[];
 }
 
 export interface GreetingWeather {
@@ -24,14 +26,16 @@ export interface GreetingFactsInput {
   now: Date;
   weather: CityWeather | null;
   todaysPlans: readonly GamePlan[];
+  recentGreetings: readonly string[];
 }
 
-export function buildGreetingFacts({ now, weather, todaysPlans }: GreetingFactsInput): GreetingFacts {
+export function buildGreetingFacts({ now, weather, todaysPlans, recentGreetings }: GreetingFactsInput): GreetingFacts {
   return {
     weekday: finnishWeekday(now),
     date: dayInTimeZone(now, GREETING_TIME_ZONE),
     weather: weather ? describeWeather(weather) : null,
     todaysGames: todaysPlans.map(plan => ({ players: plan.players.length })),
+    recentGreetings: [...recentGreetings],
   };
 }
 

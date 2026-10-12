@@ -6,6 +6,7 @@ import { GreetingFacts } from "../../../src/features/morning-greeting/facts";
 const rainyNoGames: GreetingFacts = {
   weekday: "maanantai", date: "2026-10-12",
   weather: { town: "Jyväskylä", temperatureC: 3, windMs: 6, description: "kevyttä sadetta" }, todaysGames: [],
+  recentGreetings: [],
 };
 const twoGames: GreetingFacts = { ...rainyNoGames, todaysGames: [{ players: 4 }, { players: 2 }] };
 
@@ -82,6 +83,23 @@ describe("greeting checks", () => {
     expect(checksOf("Huomenta. Yks. Kaks. Kolme. Neljä.")).toContain("sentence-count");
     expect(checksOf("Huomenta ☀️ Sataa. Ei pelejä.")).toContain("emoji-or-hashtag");
     expect(checksOf("Huomenta. Sataa #frisbeegolf. Ei pelejä.")).toContain("emoji-or-hashtag");
+  });
+});
+
+describe("checks against the recent greetings", () => {
+  const afterYesterday: GreetingFacts = {
+    ...rainyNoGames,
+    recentGreetings: ["Huomenta porukka. Tänään ei oo sovittu yhtään peliä, joten voitte vaan istua talissa."],
+  };
+
+  it("warns about the same opening and a copied phrase", () => {
+    expect(checksOf("Huomenta porukka! Sataa, joten voitte vaan istua talissa ja kattoa seinää.", afterYesterday))
+      .toEqual(["repeats-opening", "copies-recent"]);
+  });
+
+  it("lets a new opening and a few shared everyday words through", () => {
+    expect(checksOf("Aamuja, sankarit! Jyväskylässä sataa. Tänään ei oo sovittu mitään, eli sohva kutsuu.", afterYesterday))
+      .toEqual([]);
   });
 });
 

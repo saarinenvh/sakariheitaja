@@ -6,21 +6,23 @@ import { buildCityWeather } from "../../../tests/fixtures/weather";
 const weather = buildCityWeather();
 
 describe("buildGreetingFacts", () => {
-  it("gives the weekday and date in Helsinki, the weather and today's player counts", () => {
+  it("gives the weekday and date in Helsinki, the weather, today's player counts and the recent greetings", () => {
     const facts = buildGreetingFacts({
       now: new Date("2026-10-10T06:00:00Z"), weather,
       todaysPlans: [buildGamePlan({}, ["Ville", "Wiltzu", "Matti", "Jori"]), buildGamePlan({ id: 13 }, ["Sami", "Jallu"])],
+      recentGreetings: ["Aamuja, sankarit! Eilinen.", "Huomenta. Toissapäiväinen."],
     });
 
     expect(facts).toEqual({
       weekday: "lauantai", date: "2026-10-10",
       weather: { town: "Helsinki", temperatureC: 9, windMs: 3, description: "pilvistä" },
       todaysGames: [{ players: 4 }, { players: 2 }],
+      recentGreetings: ["Aamuja, sankarit! Eilinen.", "Huomenta. Toissapäiväinen."],
     });
   });
 
   it("uses Helsinki's day just after midnight, while it's still the day before in UTC", () => {
-    const facts = buildGreetingFacts({ now: new Date("2026-10-10T21:30:00Z"), weather: null, todaysPlans: [] });
+    const facts = buildGreetingFacts({ now: new Date("2026-10-10T21:30:00Z"), weather: null, todaysPlans: [], recentGreetings: [] });
 
     expect(facts).toMatchObject({ weekday: "sunnuntai", date: "2026-10-11", weather: null, todaysGames: [] });
   });

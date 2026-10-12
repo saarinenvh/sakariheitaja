@@ -13,11 +13,16 @@ import { formatGamesPart } from "./gamesPart";
 import { GREETING_TIME_ZONE, msUntilNextGreeting } from "./policy";
 import { buildGreetingFacts } from "./facts";
 import { GreetingResult, writeGreeting } from "./greetingWriter";
+import * as greetingRepo from "./db/morningGreetingRepository";
+import { withWriteRetry } from "../../db/writeRetry";
 
 const log = moduleLogger("morning-greeter");
 
 /** How many days of planned games the greeting lists, today included. */
 const GAMES_DAYS = 7;
+
+/** How many of Sakke's last greetings the model sees: about a working week. */
+const RECENT_GREETINGS = 5;
 
 export interface MorningGreetingDependencies {
   messenger: ChatMessenger;
@@ -35,23 +40,27 @@ interface GreetingInputs {
   weather: CityWeather | null;
   /** The planning group's games for the coming week. */
   plans: GamePlan[];
+  /** Sakke's last greetings in this chat, newest first. */
+  recentGreetings: string[];
 }
 
 /**
  * Sakke's greeting, written by the model from the day's facts (or the canned greeting when it can't
  * be), then the weather card, the coming week's games and a gif; each part is sent even if another
- * fails.
+ * fails. Sakke's own greeting is saved last, so a slow database never holds back the other parts.
  */
 export async function sendMorningGreeting(deps: MorningGreetingDependencies, chatId: number): Promise<void> {
-  const inputs = await gatherInputs(deps);
+  const inputs = await gatherInputs(deps, chatId);
 
   const facts = buildGreetingFacts({ ...inputs, todaysPlans: todaysPlans(inputs) });
   const greeting = await writeGreeting(deps.ollama, facts, deps.llmEnabled);
 
-  await sendPart("text", () => sendGreetingText(deps, chatId, greeting, inputs));
+  const textSent = await sendPart("text", () => sendGreetingText(deps, chatId, greeting, inputs));
   await sendPart("weather", () => sendWeather(deps, chatId, inputs));
   await sendPart("games", () => sendPlannedGames(deps, chatId, inputs));
   await sendPart("gif", () => sendGif(deps, chatId, gifWord(greeting)));
+
+  if (greeting.kind === "generated" && textSent) await saveGreeting(chatId, greeting.reply.text);
 }
 
 /** Greets `chatId` every day at 09:00; without a chat id there is no greeting. */
@@ -75,12 +84,14 @@ export function startMorningGreeter(deps: MorningGreetingDependencies, chatId: n
   }, delayMs);
 }
 
-async function gatherInputs(deps: MorningGreetingDependencies): Promise<GreetingInputs> {
+async function gatherInputs(deps: MorningGreetingDependencies, chatId: number): Promise<GreetingInputs> {
   const now = new Date();
 
-  const [weather, plans] = await Promise.all([fetchWeather(deps), fetchPlans(deps, now)]);
+  const [weather, plans, recentGreetings] = await Promise.all([
+    fetchWeather(deps), fetchPlans(deps, now), fetchRecentGreetings(chatId),
+  ]);
 
-  return { now, weather, plans };
+  return { now, weather, plans, recentGreetings };
 }
 
 async function sendGreetingText(
@@ -149,11 +160,32 @@ async function fetchPlans(deps: MorningGreetingDependencies, now: Date): Promise
   }
 }
 
-/** Sends one part of the greeting; a failure is logged and the next part still goes. */
-async function sendPart(part: string, send: () => Promise<void>): Promise<void> {
+/** Sakke's last greetings in the chat; none when they can't be read, and the greeting goes without. */
+async function fetchRecentGreetings(chatId: number): Promise<string[]> {
+  try {
+    return await greetingRepo.findRecentTexts(chatId, RECENT_GREETINGS);
+  } catch (error) {
+    log.error({ err: error }, "morning greeting history failed");
+    return [];
+  }
+}
+
+/** Saves a sent greeting for the next ones; losing it only costs tomorrow's greeting some variety. */
+async function saveGreeting(chatId: number, text: string): Promise<void> {
+  try {
+    await withWriteRetry("save the morning greeting", () => greetingRepo.save(chatId, text));
+  } catch (error) {
+    log.error({ err: error }, "morning greeting could not be saved");
+  }
+}
+
+/** Sends one part of the greeting and says whether it went; a failure is logged and the next part still goes. */
+async function sendPart(part: string, send: () => Promise<void>): Promise<boolean> {
   try {
     await send();
+    return true;
   } catch (error) {
     log.error({ err: error, part }, "morning greeting part failed");
+    return false;
   }
 }

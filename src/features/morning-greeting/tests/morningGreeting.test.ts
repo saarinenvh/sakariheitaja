@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ listPlansForDays: vi.fn() }));
+const mocks = vi.hoisted(() => ({ listPlansForDays: vi.fn(), findRecentTexts: vi.fn(), save: vi.fn() }));
 vi.mock("../../games", async () => ({
   listPlansForDays: mocks.listPlansForDays,
   PLAN_TIME_ZONE: "Europe/Helsinki",
   formatPlanSummary: (await import("../../games/planSummary")).formatPlanSummary,
 }));
+vi.mock("../db/morningGreetingRepository", () => ({ findRecentTexts: mocks.findRecentTexts, save: mocks.save }));
 
 import { MorningGreetingDependencies, sendMorningGreeting, startMorningGreeter } from "../morningGreeting";
 import { giphySearchWords } from "../phrases";
@@ -24,6 +25,7 @@ const NOW = new Date("2026-10-10T06:00:00Z");
 const weather = buildCityWeather();
 const todaysGame = buildGamePlan({ id: 12, day: "2026-10-10", startTime: "11:00:00" }, ["Ville", "Wiltzu"]);
 const sundaysGame = buildGamePlan({ id: 13, day: "2026-10-11", startTime: null, courses: ["Karjaa"] }, ["Matti"]);
+const yesterdays = ["Aamuja, sankarit! Eilen satoi.", "Huomenta. Toissapäivänä tuuli."];
 
 type Sent = [kind: "text" | "html" | "animation", content: string];
 
@@ -64,6 +66,8 @@ function factsSent(generateStructured: GenerateStructured): Record<string, unkno
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"], now: NOW });
   mocks.listPlansForDays.mockReset().mockResolvedValue([todaysGame, sundaysGame]);
+  mocks.findRecentTexts.mockReset().mockResolvedValue(yesterdays);
+  mocks.save.mockReset().mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -158,6 +162,46 @@ describe("the morning greeting", () => {
 
     expect(sent.map(([kind]) => kind)).toEqual(["html", "text", "animation"]);
     expect(sent[0][1]).toContain("Helsinki");
+  });
+
+  it("gives the model the chat's last five greetings, and keeps the new one once it's sent", async () => {
+    const { deps, generateStructured } = fakes();
+
+    await sendMorningGreeting(deps, MAIN_CHAT);
+
+    expect(mocks.findRecentTexts).toHaveBeenCalledWith(MAIN_CHAT, 5);
+    expect(factsSent(generateStructured)).toMatchObject({ recentGreetings: yesterdays });
+    expect(mocks.save).toHaveBeenCalledWith(MAIN_CHAT, "Kaks pelaa tänään, muut lintsaa.");
+  });
+
+  it("doesn't keep the canned greeting, or a greeting Telegram refused", async () => {
+    await sendMorningGreeting(fakes({ llmEnabled: false }).deps, MAIN_CHAT);
+    await sendMorningGreeting(fakes({}, ["text"]).deps, MAIN_CHAT);
+
+    expect(mocks.save).not.toHaveBeenCalled();
+  });
+
+  it("greets without the history when it can't be read, and sends every part when it can't be saved", async () => {
+    mocks.findRecentTexts.mockRejectedValue(new Error("database offline"));
+    mocks.save.mockRejectedValue(new Error("database offline"));
+    const { deps, sent, generateStructured } = fakes();
+
+    await expect(sendMorningGreeting(deps, MAIN_CHAT)).resolves.toBeUndefined();
+
+    expect(factsSent(generateStructured)).toMatchObject({ recentGreetings: [] });
+    expect(sent.map(([kind]) => kind)).toEqual(["text", "html", "text", "animation"]);
+    expect(mocks.save).toHaveBeenCalled();
+  });
+
+  it("saves the greeting only after every part is sent, so a slow save holds nothing back", async () => {
+    const { deps, sent } = fakes();
+    mocks.save.mockImplementation(async () => {
+      expect(sent.map(([kind]) => kind)).toEqual(["text", "html", "text", "animation"]);
+    });
+
+    await sendMorningGreeting(deps, MAIN_CHAT);
+
+    expect(mocks.save).toHaveBeenCalledOnce();
   });
 
   it("still greets when the weather client throws", async () => {
