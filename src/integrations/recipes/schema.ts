@@ -69,10 +69,10 @@ export const recipeSchema = z.object({
     ingredients: z.array(z.object({ ingredientTitle: z.string() })).optional(),
   })),
   steps: z.array(z.object({ body: z.string() })),
-  // The message sends the first photo by its URL (a webp, which Telegram takes as a photo), so it
-  // must be absolute; the API's old URLs were protocol-relative ("//…").
+  // The message sends the first photo by its URL (a webp, which Telegram takes as a photo), and
+  // Telegram fetches only http(s); the API's old URLs were protocol-relative ("//…").
   media: z.array(z.object({ damAsset: z.object({ url: z.string() }) })).min(1)
-    .refine(media => URL.canParse(media[0]?.damAsset.url ?? ""), "no absolute photo URL"),
+    .refine(media => /^https?:\/\/./i.test(media[0]?.damAsset.url ?? ""), "no http(s) photo URL"),
 });
 
 /** Each recipe is parsed on its own with `recipeSchema`, so one the message can't show is left out. */

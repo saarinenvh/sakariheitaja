@@ -18,7 +18,8 @@ describe("recipes client", () => {
   it("returns the recipes, leaving out ones the message can't show", async () => {
     mocks.getData.mockResolvedValue({ results: [
       soup, { ...soup, name: "Kuvaton", media: [] }, { ...soup, name: "Tyhjä kuva", media: [{ damAsset: { url: "" } }] },
-      { ...soup, name: "Puolikas osoite", media: [{ damAsset: { url: "//cdn.example/keitto.webp" } }] }, { name: "Rikki" },
+      { ...soup, name: "Puolikas osoite", media: [{ damAsset: { url: "//cdn.example/keitto.webp" } }] },
+      { ...soup, name: "FTP-kuva", media: [{ damAsset: { url: "ftp://cdn.example/keitto.webp" } }] }, { name: "Rikki" },
     ] });
     expect(await client.getRecipes()).toEqual([soup]);
   });
