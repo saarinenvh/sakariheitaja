@@ -5,34 +5,39 @@ Every morning at 09:00 Helsinki time (`policy.ts`, independent of the container'
 
 1. **Sakke's greeting**, written by the bot's model (`greetingWriter.ts`) from the day's facts, as
    plain text. When the model is off (`LLM_ENABLED`), fails, or replies with something unusable, the
-   canned greeting goes out instead: a random opening line with the time (HTML), then the weather card
-   from `../weather-report/`.
-2. **The coming week's games** of `GAMES_CHAT_ID`, the planning group: "Tänään pelataan" and
+   canned greeting goes out instead: a random opening line with the time (HTML).
+2. **The weather card** of the random town (`../weather-report/`), with its emojis; left out when the
+   weather can't be read.
+3. **The coming week's games** of `GAMES_CHAT_ID`, the planning group: "Tänään pelataan" and
    "Tulossa" with the plan numbers for `/mukaan`, then an invitation to join in SakariPelit. Left out
    when `GAMES_CHAT_ID` is unset or nothing is planned. This is the one place a plan is read outside
    the chat it was made in.
-3. **A GIF**, sent as an animation, found on Giphy with the word the model picked, or a random one.
+4. **A GIF**, sent as an animation, found on Giphy with the word the model picked, or a random one.
 
 ```mermaid
 flowchart LR
-    Gather["mood line, a random town's weather,<br/>the week's plans"] --> Facts["facts.ts:<br/>weekday, date, mood,<br/>weather, today's player counts"]
+    Gather["a random town's weather,<br/>the week's plans"] --> Facts["facts.ts:<br/>weekday, date,<br/>weather, today's player counts"]
     Facts --> Writer["greetingWriter.ts:<br/>model reply { text, gifQuery }"]
     Writer -->|generated| Text["Sakke's text"]
-    Writer -->|fallback| Canned["canned greeting<br/>+ weather card"]
-    Text --> Games["the week's games"]
-    Canned --> Games
+    Writer -->|fallback| Canned["canned greeting"]
+    Text --> Weather["the weather card"]
+    Canned --> Weather
+    Weather --> Games["the week's games"]
     Games --> Gif["GIF: the model's word,<br/>or a random one"]
 ```
 
 ## The model's part
 
-- **Facts only** (`facts.ts`): the weekday and date, one of the canned lines as the day's mood
-  (`phrases.ts`), the weather, and today's games as player counts. Course names and times are left
-  out: the games list follows with them exactly, and the model garbled them.
+- **Facts only** (`facts.ts`): the weekday and date, the weather, and today's games as player
+  counts. No canned line: the model copied it word for word. Course names and times are left
+  out: the games list follows with them exactly, and the model garbled them. The weather is material
+  for a joke; the card that follows gives its numbers.
 - **The prompt** is `src/prompts/persona.md` plus `src/prompts/morning_greeting.md`: the group's
   running jokes (Jallu, hangovers, Tali or work), the rules, and example greetings.
 - **The reply** (`schema.ts`) is JSON constrained by Ollama to `{ text, gifQuery }`, where
   `gifQuery` is one of `giphySearchWords`. Stray quote marks around the text are removed.
+- **Tuning the prompt:** `npm run eval:greeting` writes greetings for scenario days against a
+  real model and checks them; see "Morning greeting eval harness" in the root README.
 
 ## Entry points
 
@@ -52,9 +57,9 @@ None.
 | `morningGreeting.ts` | The daily timer and the greeting's parts, in order. |
 | `policy.ts` | When the next greeting is: 09:00 in Helsinki, with that day's DST. |
 | `facts.ts` | The facts the model writes from. |
-| `prompts.ts` | The system prompt (persona and greeting prompt) and the request with the facts. |
+| `prompts.ts` | The system prompt (persona and greeting prompt, or a variant from the eval) and the request with the facts. |
 | `greetingWriter.ts` | Asks the model; returns its greeting, or why the canned one is used. Never throws. |
 | `schema.ts` | The model's reply: its example, the Zod schema and the JSON schema Ollama constrains to. |
 | `gamesPart.ts` | The games part's text, from the plans and today's date. |
 | `messages.ts` | The canned greeting text and the games invitation. |
-| `phrases.ts` | The canned opening lines (also the model's mood lines) and the GIF search words. |
+| `phrases.ts` | The canned opening lines and the GIF search words. |

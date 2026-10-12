@@ -6,7 +6,7 @@ import { buildAnonymizedFixture, readCourseId } from "./anonymize";
 import { FixtureCourse, saveFixture } from "./fixtureFile";
 import { parseCourseDetails } from "../../src/integrations/metrix/course/courseDetails";
 import { fetchCourseStatistics } from "../../src/integrations/metrix/statistics/courseStatistics";
-import { parseFlags, requireFlag } from "./cliFlags";
+import { parseFlags, requireFlag } from "../eval-shared/cliFlags";
 
 const METRIX_RESULT_URL = "https://discgolfmetrix.com/api.php?content=result&id=";
 const METRIX_COURSE_URL = "https://discgolfmetrix.com/api.php?content=course&id=";

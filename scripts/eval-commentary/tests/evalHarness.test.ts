@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { parseMetrixRound } from "../../../src/integrations/metrix/round/normalize";
 import { buildAnonymizedFixture, buildFakeNames } from "../anonymize";
-import { countSentences, runChecks } from "../checks";
-import { parseHoleRange } from "../cliFlags";
+import { runChecks } from "../checks";
+import { countSentences } from "../../eval-shared/sentences";
+import { parseHoleRange } from "../../eval-shared/cliFlags";
 import { CommentaryFixture } from "../fixtureFile";
 import { buildReplaySteps, REPLAY_ROUND_ID } from "../replay";
 import { BatchCommentaryContext } from "../../../src/features/commentary/facts/commentaryContext";

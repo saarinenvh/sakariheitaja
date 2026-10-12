@@ -32,16 +32,15 @@ export interface MorningGreetingDependencies {
 /** What the greeting is written from; a part that can't be read is left out. */
 interface GreetingInputs {
   now: Date;
-  mood: string;
   weather: CityWeather | null;
   /** The planning group's games for the coming week. */
   plans: GamePlan[];
 }
 
 /**
- * Sakke's greeting, written by the model from the day's facts (or the canned greeting with the
- * weather card when it can't be), then the coming week's games and a gif; each part is sent even if
- * another fails.
+ * Sakke's greeting, written by the model from the day's facts (or the canned greeting when it can't
+ * be), then the weather card, the coming week's games and a gif; each part is sent even if another
+ * fails.
  */
 export async function sendMorningGreeting(deps: MorningGreetingDependencies, chatId: number): Promise<void> {
   const inputs = await gatherInputs(deps);
@@ -50,7 +49,7 @@ export async function sendMorningGreeting(deps: MorningGreetingDependencies, cha
   const greeting = await writeGreeting(deps.ollama, facts, deps.llmEnabled);
 
   await sendPart("text", () => sendGreetingText(deps, chatId, greeting, inputs));
-  await sendPart("weather", () => sendFallbackWeather(deps, chatId, greeting, inputs));
+  await sendPart("weather", () => sendWeather(deps, chatId, inputs));
   await sendPart("games", () => sendPlannedGames(deps, chatId, inputs));
   await sendPart("gif", () => sendGif(deps, chatId, gifWord(greeting)));
 }
@@ -78,11 +77,10 @@ export function startMorningGreeter(deps: MorningGreetingDependencies, chatId: n
 
 async function gatherInputs(deps: MorningGreetingDependencies): Promise<GreetingInputs> {
   const now = new Date();
-  const mood = randomGoodMorning[getRandom(randomGoodMorning.length)];
 
   const [weather, plans] = await Promise.all([fetchWeather(deps), fetchPlans(deps, now)]);
 
-  return { now, mood, weather, plans };
+  return { now, weather, plans };
 }
 
 async function sendGreetingText(
@@ -91,14 +89,13 @@ async function sendGreetingText(
   if (greeting.kind === "generated") return deps.messenger.sendText(chatId, greeting.reply.text);
 
   log.info({ reason: greeting.reason }, "canned morning greeting");
-  await deps.messenger.sendHtml(chatId, formatFallbackGreeting(inputs.mood, clockTimeInTimeZone(inputs.now, GREETING_TIME_ZONE)));
+  const openingLine = randomGoodMorning[getRandom(randomGoodMorning.length)];
+  await deps.messenger.sendHtml(chatId, formatFallbackGreeting(openingLine, clockTimeInTimeZone(inputs.now, GREETING_TIME_ZONE)));
 }
 
-/** The canned greeting is followed by the weather card; Sakke's own greeting already tells the weather. */
-async function sendFallbackWeather(
-  deps: MorningGreetingDependencies, chatId: number, greeting: GreetingResult, inputs: GreetingInputs,
-): Promise<void> {
-  if (greeting.kind === "generated" || !inputs.weather) return;
+/** The random town's weather card; nothing when the weather couldn't be read. */
+async function sendWeather(deps: MorningGreetingDependencies, chatId: number, inputs: GreetingInputs): Promise<void> {
+  if (!inputs.weather) return;
 
   await deps.messenger.sendHtml(chatId, formatCityWeather(inputs.weather));
 }

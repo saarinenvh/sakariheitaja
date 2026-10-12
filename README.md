@@ -133,6 +133,29 @@ npm run eval:commentary -- --model=... --holes=1-6 --runs=3 --fixture=my-round -
 - `npm run typecheck:eval` type-checks the harness, which `npx tsc --noEmit` doesn't cover. CI
   runs it too, so a change to the app's types can't silently break the harness.
 
+## Morning greeting eval harness
+
+The same kind of tool for the morning greeting's prompt: it writes the greeting for a set of
+scenario days through the real greeting writer (persona, prompt, schema and model options)
+against a real Ollama, checks every greeting and writes a report. Not part of `npm test` or CI.
+
+```bash
+# Every scenario twice; each invocation writes .eval-results/greeting/runN/ (Git-ignored)
+# with report.md, results.json and prompt.md (the exact greeting prompt used)
+npm run eval:greeting -- --model=gemma4:26b-a4b-q3 --baseUrl=http://<ollama-host>:11434
+
+# More runs of some scenarios, with a variant of src/prompts/morning_greeting.md
+npm run eval:greeting -- --model=... --runs=4 --scenario=rainy-monday-no-games,friday-no-weather --prompt=/tmp/variant.md
+```
+
+- Scenarios are typed facts in `scripts/eval-greeting/scenarios.ts`: rain or sun, no games or
+  several, and a day without weather. Add one there to test a new kind of day.
+- Checks separate failures (fallback, no morning greeting at the start, a clock time, letters
+  from another script) from heuristic warnings (weather as numbers, counts of games or players
+  not in the facts, cancelled games on a day with none, word loops, ball-golf words, letters
+  Finnish doesn't use, sentence count, emoji). The summary also lists how the greetings open,
+  to see their variety. Humour and the Finnish itself still need a read of the report.
+
 ## Commands
 
 ### Competition
@@ -236,6 +259,8 @@ src/
 ├── prompts/                 # the model prompts and context notes
 └── data/                    # fallback copies of the JSON stores (production uses DATA_DIR)
 scripts/eval-commentary/     # commentary eval harness and its fixtures
+scripts/eval-greeting/       # morning greeting eval harness and its scenarios
+scripts/eval-shared/         # what both harnesses use: flags, run folders, sentences
 docs/architecture/           # layers, entry points, live-scoring flow, data
 ```
 

@@ -5,14 +5,15 @@
 //   npm run eval:commentary -- --model=... --runs=3 --holes=1-6 --fixture=harkalinna-top4 --prompt=/tmp/variant.md
 //   --reverse-players sends the update's players to the model in reverse order (to test position effects)
 import { createHash } from "crypto";
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import type { OllamaMessage, OllamaOptions } from "../../src/integrations/ollama/client";
 import type { BatchCommentaryContext } from "../../src/features/commentary/facts/commentaryContext";
 import type { BatchCommentaryResult } from "../../src/features/commentary/write/commentaryWriter";
 import type { WeatherObservation } from "../../src/integrations/openweather/api";
 import type { CourseInfo } from "../../src/features/commentary/facts/courseCommentaryFacts";
-import { HoleRange, parseFlags, parseHoleRange, parsePositiveIntegerFlag } from "./cliFlags";
+import { HoleRange, parseFlags, parseHoleRange, parsePositiveIntegerFlag } from "../eval-shared/cliFlags";
+import { createRunDirectory } from "../eval-shared/runDirectory";
 import { CommentaryFixture, FixtureWeather, loadFixtures } from "./fixtureFile";
 import { EvalMeta, EvalRecord, renderConsoleSummary, renderMarkdownReport } from "./report";
 import { buildReplaySteps, REPLAY_ROUND_ID } from "./replay";
@@ -26,7 +27,6 @@ const DEFAULT_PROMPT_PATH = join("src", "prompts", "batch_commentator.md");
 const DEFAULT_OUT_DIR = ".eval-results";
 const EVAL_CHAT_ID = -1;
 const PROMPT_HASH_LENGTH = 8;
-const RUN_DIR_PREFIX = "run";
 
 interface EvalOptions {
   model: string;
@@ -253,22 +253,12 @@ interface ResultPaths {
 
 /** Each eval invocation gets the next free `runN/` folder with its report, data and the exact prompt used. */
 function writeResults(outDir: string, meta: EvalMeta, records: readonly EvalRecord[], prompt: string): ResultPaths {
-  mkdirSync(outDir, { recursive: true });
-  const directory = join(outDir, `${RUN_DIR_PREFIX}${nextRunNumber(outDir)}`);
-  mkdirSync(directory);
+  const directory = createRunDirectory(outDir);
   const paths = { directory, markdown: join(directory, "report.md"), json: join(directory, "results.json") };
   writeFileSync(paths.markdown, renderMarkdownReport(meta, records));
   writeFileSync(paths.json, `${JSON.stringify({ meta, records }, null, 2)}\n`);
   writeFileSync(join(directory, "prompt.md"), `${prompt}\n`);
   return paths;
-}
-
-function nextRunNumber(outDir: string): number {
-  const numbers = readdirSync(outDir)
-    .map(entry => new RegExp(`^${RUN_DIR_PREFIX}(\\d+)$`).exec(entry))
-    .filter((match): match is RegExpExecArray => match !== null)
-    .map(match => Number(match[1]));
-  return Math.max(0, ...numbers) + 1;
 }
 
 function signed(value: number): string {

@@ -18,13 +18,18 @@ export type GreetingResult =
   | { kind: "generated"; reply: GreetingReply }
   | { kind: "fallback"; reason: GreetingFallbackReason };
 
-/** Sakke's greeting from the facts, or why the canned one is used instead. Never throws. */
-export async function writeGreeting(ollama: OllamaClient, facts: GreetingFacts, llmEnabled: boolean): Promise<GreetingResult> {
+/**
+ * Sakke's greeting from the facts, or why the canned one is used instead. Never throws.
+ * `systemPrompt` replaces the real one; only the eval harness passes it.
+ */
+export async function writeGreeting(
+  ollama: OllamaClient, facts: GreetingFacts, llmEnabled: boolean, systemPrompt?: string,
+): Promise<GreetingResult> {
   if (!llmEnabled) return { kind: "fallback", reason: "disabled" };
 
   let raw: string;
   try {
-    raw = await ollama.generateStructured(buildMessages(facts), greetingReplyJsonSchema, GREETING_MODEL_OPTIONS);
+    raw = await ollama.generateStructured(buildMessages(systemPrompt ?? greetingSystemPrompt(), facts), greetingReplyJsonSchema, GREETING_MODEL_OPTIONS);
   } catch (error) {
     log.error({ err: error }, "morning greeting generation failed");
     return { kind: "fallback", reason: "generation-failed" };
@@ -39,9 +44,9 @@ export async function writeGreeting(ollama: OllamaClient, facts: GreetingFacts, 
   return { kind: "generated", reply };
 }
 
-function buildMessages(facts: GreetingFacts): OllamaMessage[] {
+function buildMessages(systemPrompt: string, facts: GreetingFacts): OllamaMessage[] {
   return [
-    { role: "system", content: greetingSystemPrompt() },
+    { role: "system", content: systemPrompt },
     { role: "user", content: buildGreetingRequest(facts) },
   ];
 }

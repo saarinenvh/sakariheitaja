@@ -8,7 +8,7 @@ with an emoji per condition.
 | Entry point | Called by |
 | --- | --- |
 | `buildCityWeatherReport` | `/saa <city>` and `/randomsaa` (`telegram/commands/weather-report/`) |
-| `formatCityWeather` | the morning greeting's canned fallback, as its weather card |
+| `formatCityWeather` | the morning greeting, as its weather card |
 | `randomTown` | `/randomsaa` and the morning greeting |
 | `cities` | the towns `randomTown` picks from |
 

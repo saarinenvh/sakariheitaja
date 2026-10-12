@@ -5,12 +5,13 @@ let systemPrompt: string | null = null;
 
 /** The persona and the greeting prompt; read once. */
 export function greetingSystemPrompt(): string {
-  if (!systemPrompt) {
-    const persona = loadPrompt("persona.md");
-    const base = loadPrompt("morning_greeting.md");
-    systemPrompt = `${persona}\n\n---\n\n${base}`;
-  }
+  systemPrompt ??= buildGreetingSystemPrompt(loadPrompt("morning_greeting.md"));
   return systemPrompt;
+}
+
+/** The persona followed by `greetingPrompt`; the eval harness passes a variant here. */
+export function buildGreetingSystemPrompt(greetingPrompt: string): string {
+  return `${loadPrompt("persona.md")}\n\n---\n\n${greetingPrompt}`;
 }
 
 /** The user message: the facts as JSON, as the prompt describes them. */
