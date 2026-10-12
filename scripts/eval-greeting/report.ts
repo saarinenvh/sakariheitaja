@@ -100,7 +100,7 @@ function renderGreetings(records: readonly GreetingRecord[]): string[] {
     const details = marks.length > 0 ? ` · ${marks.join(" · ")}` : "";
     lines.push(`**Run ${record.run}** · ${seconds(record.durationMs)} · ${record.outcome}${gif}${details}`, "");
 
-    if (record.text) lines.push(`> ${record.text}`, "");
+    if (record.text) lines.push(...record.text.split("\n").map(line => `> ${line}`.trimEnd()), "");
 
     if (record.rejectedReply !== null) {
       lines.push("<details><summary>Rejected model reply</summary>", "", "```json", record.rejectedReply, "```", "", "</details>", "");

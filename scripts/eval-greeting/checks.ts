@@ -6,13 +6,13 @@ export type CheckSeverity = "fail" | "warn";
 
 export const CHECK_DESCRIPTIONS = {
   "fallback": "Model reply unusable or failed; the canned greeting would go out",
-  "no-greeting": "Text doesn't open with a morning greeting (huomenta, aamua, …)",
+  "no-greeting": "The greeting part doesn't speak of the morning (huomenta, aamu, herätys, …)",
   "clock-time": "Text names a time, which the games list gives",
   "foreign-script": "Text has letters outside the Latin alphabet (a model glitch)",
   "odd-letter": "Text has a Latin letter Finnish doesn't use, such as é (a model glitch)",
   "ball-word": "Ball-golf word (pallo) instead of kiekko",
   "weather-numbers": "Text gives a temperature or wind speed as a number, which the weather card gives",
-  "sentence-count": "Text isn't 2–4 sentences",
+  "sentence-count": "Text isn't 2–5 sentences",
   "emoji-or-hashtag": "Text has an emoji or a hashtag",
   "repeated-word": "The same word three or more times in a row (a model loop)",
   "invented-games": "Text says games were cancelled or people signed up on a day with no games",
@@ -30,12 +30,12 @@ export interface CheckFinding {
 }
 
 const MIN_SENTENCES = 2;
-const MAX_SENTENCES = 4;
+const MAX_SENTENCES = 5;
 /** Shorter runs of shared words are ordinary Finnish ("tänään ei oo sovittu"); five is a copied phrase. */
 const COPIED_PHRASE_WORDS = 5;
 
-// "HYVÄÄ HUOMENTA", "Huomenta porukka", "Aamua", "Huomenia"; not "Huomenna" or "Aamulla".
-const GREETING_OPENING = /^[\s"'“”„–-]*(?:hyvää\s+)?(?:huomenta|huomenia|huomentaa|aamua|aamuja|aamu)(?!\p{L})/iu;
+// Anywhere in the greeting part: "HUOMENTA SANKARIT!!", "Herätys, sankarit!", "Nyt on se aamu…"; not "huomenna".
+const MORNING_WORD = /(?<!\p{L})(?:huomen(?!n)|aamu|herätys|herää)/iu;
 // "klo 18", "kello 9", "18.00"; a date like "10.10." (a month after the dot) is not a time.
 const CLOCK_TIME = /(?<!\p{L})(?:klo|kello)(?!\p{L})|(?<!\d)\d{1,2}(?::\d{2}|\.(?!(?:0[1-9]|1[0-2])\.)\d{2})(?!\d)/iu;
 const FOREIGN_LETTER = /[^\p{Script=Latin}\p{Script=Common}\p{Script=Inherited}]/u;
@@ -75,7 +75,9 @@ export function runChecks(facts: GreetingFacts, result: GreetingResult): CheckFi
     if (match) findings.push({ check, severity, detail: `"${match[0]}"` });
   };
 
-  if (!GREETING_OPENING.test(text)) findings.push({ check: "no-greeting", severity: "fail", detail: `opens "${opening(text)}"` });
+  if (!MORNING_WORD.test(result.reply.greeting)) {
+    findings.push({ check: "no-greeting", severity: "warn", detail: `"${result.reply.greeting}"` });
+  }
   add("clock-time", "fail", CLOCK_TIME);
   add("foreign-script", "fail", FOREIGN_LETTER);
   add("odd-letter", "warn", ODD_LETTER);

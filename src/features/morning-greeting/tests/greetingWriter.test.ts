@@ -10,6 +10,14 @@ const facts: GreetingFacts = {
   recentGreetings: ["Aamuja, sankarit! Eilen satoi."],
 };
 
+/** A model reply with the three parts; `parts` overrides them. */
+function replyJson(parts: Record<string, string> = {}): string {
+  return JSON.stringify({
+    greeting: "Aamuja, sankarit!", weather: "Tampereella sataa vaakatasossa.", games: "Ei pelejä, laiskurit.", gifQuery: "rain",
+    ...parts,
+  });
+}
+
 function ollamaReplying(reply: string | Error) {
   const generateStructured = vi.fn<OllamaClient["generateStructured"]>();
   if (reply instanceof Error) generateStructured.mockRejectedValue(reply);
@@ -19,12 +27,15 @@ function ollamaReplying(reply: string | Error) {
 }
 
 describe("writeGreeting", () => {
-  it("returns Sakke's greeting and gif word, asking with the facts, the schema and the greeting's options", async () => {
-    const ollama = ollamaReplying(JSON.stringify({ text: "Tampereella sataa vaakatasossa.", gifQuery: "rain" }));
+  it("returns Sakke's greeting as three paragraphs and the gif word, asking with the facts, the schema and the options", async () => {
+    const ollama = ollamaReplying(replyJson());
 
     const result = await writeGreeting(ollama, facts, true);
 
-    expect(result).toEqual({ kind: "generated", reply: { text: "Tampereella sataa vaakatasossa.", gifQuery: "rain" } });
+    expect(result).toEqual({ kind: "generated", reply: {
+      greeting: "Aamuja, sankarit!", weather: "Tampereella sataa vaakatasossa.", games: "Ei pelejä, laiskurit.", gifQuery: "rain",
+      text: "Aamuja, sankarit!\n\nTampereella sataa vaakatasossa.\n\nEi pelejä, laiskurit.",
+    } });
     const [messages, jsonSchema, options] = ollama.generateStructured.mock.calls[0];
     expect(messages[0].content).toContain("Olet Sakke.");
     expect(messages[0].content).toContain("aamutervehdys");
@@ -34,19 +45,28 @@ describe("writeGreeting", () => {
   });
 
   it("asks with a given system prompt instead of the real one, for the eval harness", async () => {
-    const ollama = ollamaReplying(JSON.stringify({ text: "Huomenta.", gifQuery: "morning" }));
+    const ollama = ollamaReplying(replyJson());
 
     await writeGreeting(ollama, facts, true, "Variant prompt");
 
     expect(ollama.generateStructured.mock.calls[0][0][0].content).toBe("Variant prompt");
   });
 
-  it("removes stray quote marks around the text", async () => {
-    const ollama = ollamaReplying(JSON.stringify({ text: "“Huomenta vaan.” \n", gifQuery: "morning" }));
+  it("removes stray quote marks around each part", async () => {
+    const ollama = ollamaReplying(replyJson({ greeting: "“Huomenta vaan.” \n", weather: "„Sataa.“", games: "\"Ei pelejä.\"" }));
 
     const result = await writeGreeting(ollama, facts, true);
 
-    expect(result).toEqual({ kind: "generated", reply: { text: "Huomenta vaan.", gifQuery: "morning" } });
+    expect(result).toMatchObject({ kind: "generated", reply: { text: "Huomenta vaan.\n\nSataa.\n\nEi pelejä." } });
+  });
+
+  it("leaves the weather paragraph out when there was no weather, or the model left it empty", async () => {
+    const withoutWeather = await writeGreeting(ollamaReplying(replyJson()), { ...facts, weather: null }, true);
+    const emptyWeather = await writeGreeting(ollamaReplying(replyJson({ weather: " " })), facts, true);
+
+    for (const result of [withoutWeather, emptyWeather]) {
+      expect(result).toMatchObject({ kind: "generated", reply: { weather: null, text: "Aamuja, sankarit!\n\nEi pelejä, laiskurit." } });
+    }
   });
 
   it("doesn't call the model when it's off", async () => {
@@ -64,8 +84,10 @@ describe("writeGreeting", () => {
 
   it.each([
     ["not JSON", "Huomenta!"],
-    ["a gif word outside the list", JSON.stringify({ text: "Huomenta!", gifQuery: "tired person drinking coffee" })],
-    ["nothing but quote marks", JSON.stringify({ text: " ”” ", gifQuery: "rain" })],
+    ["a gif word outside the list", replyJson({ gifQuery: "tired person drinking coffee" })],
+    ["a greeting of nothing but quote marks", replyJson({ greeting: " ”” " })],
+    ["a games part of nothing but quote marks", replyJson({ games: " ”” " })],
+    ["without the games part", JSON.stringify({ greeting: "Huomenta!", weather: "Sataa.", gifQuery: "rain" })],
   ])("falls back on a reply that is %s", async (_case, reply) => {
     await expect(writeGreeting(ollamaReplying(reply), facts, true)).resolves.toEqual({ kind: "fallback", reason: "unusable-response" });
   });

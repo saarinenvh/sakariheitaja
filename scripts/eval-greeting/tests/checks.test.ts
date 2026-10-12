@@ -10,8 +10,11 @@ const rainyNoGames: GreetingFacts = {
 };
 const twoGames: GreetingFacts = { ...rainyNoGames, todaysGames: [{ players: 4 }, { players: 2 }] };
 
+/** The checks on `text` as Sakke's greeting: its first sentence is the greeting part, the rest the games part. */
 function checksOf(text: string, facts: GreetingFacts = rainyNoGames): CheckId[] {
-  return runChecks(facts, { kind: "generated", reply: { text, gifQuery: "rain" } }).map(finding => finding.check);
+  const [greeting, ...rest] = text.split(/(?<=[.!?])\s+/u);
+  const reply = { greeting, weather: null, games: rest.join(" "), gifQuery: "rain" as const, text };
+  return runChecks(facts, { kind: "generated", reply }).map(finding => finding.check);
 }
 
 describe("greeting checks", () => {
@@ -25,13 +28,17 @@ describe("greeting checks", () => {
       .toEqual([{ check: "fallback", severity: "fail", detail: "unusable-response" }]);
   });
 
-  it.each(["Huomenta.", "HYVÄÄ HUOMENTA SANKARIT!", "Aamua porukka.", "“Huomenia vaan."])("accepts %s as a morning greeting", greeting => {
-    expect(checksOf(`${greeting} Jyväskylässä sataa. Tänään ei pelata.`)).not.toContain("no-greeting");
-  });
+  it.each(["Huomenta.", "HYVÄÄ HUOMENTA SANKARIT!", "Aamuja porukka.", "Herätys, sankarit!", "Nyt on se aamu, kun ei jaksa."])(
+    "accepts %s as a morning greeting", greeting => {
+      expect(checksOf(`${greeting} Jyväskylässä sataa. Tänään ei pelata.`)).not.toContain("no-greeting");
+    },
+  );
 
-  it.each(["Jyväskylässä sataa kevyttä vettä.", "Huomenna sataa taas.", "Aamulla Oulussa satoi."])("fails %s as not a greeting", start => {
-    expect(checksOf(`${start} Tänään ei oo pelejä.`)).toContain("no-greeting");
-  });
+  it.each(["Jyväskylässä sataa kevyttä vettä.", "Huomenna sataa taas.", "Sataa. Huomenta muille."])(
+    "fails %s as not a greeting", start => {
+      expect(checksOf(`${start} Tänään ei oo pelejä.`)).toContain("no-greeting");
+    },
+  );
 
   it("fails clock times but not a date", () => {
     expect(checksOf("Huomenta. Peli alkaa klo 18. Tulkaa.")).toContain("clock-time");
@@ -80,7 +87,7 @@ describe("greeting checks", () => {
 
   it("warns about too few or too many sentences, emojis and hashtags", () => {
     expect(checksOf("Huomenta vaan.")).toContain("sentence-count");
-    expect(checksOf("Huomenta. Yks. Kaks. Kolme. Neljä.")).toContain("sentence-count");
+    expect(checksOf("Huomenta. Yks. Kaks. Kolme. Neljä. Viis.")).toContain("sentence-count");
     expect(checksOf("Huomenta ☀️ Sataa. Ei pelejä.")).toContain("emoji-or-hashtag");
     expect(checksOf("Huomenta. Sataa #frisbeegolf. Ei pelejä.")).toContain("emoji-or-hashtag");
   });

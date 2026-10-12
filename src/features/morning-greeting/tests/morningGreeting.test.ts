@@ -44,7 +44,7 @@ function recordingMessenger(sent: Sent[], failing: readonly Sent[0][] = []): Cha
 function fakes(overrides: Partial<MorningGreetingDependencies> = {}, failing: readonly Sent[0][] = []) {
   const sent: Sent[] = [];
   const generateStructured: GenerateStructured = vi.fn<OllamaClient["generateStructured"]>()
-    .mockResolvedValue(JSON.stringify({ text: "Kaks pelaa tänään, muut lintsaa.", gifQuery: "party" }));
+    .mockResolvedValue(JSON.stringify({ greeting: "Aamuja!", weather: "Sataa.", games: "Kaks pelaa tänään, muut lintsaa.", gifQuery: "party" }));
   const searchGif = vi.fn<GiphyClient["searchGif"]>(async word => `https://media.giphy.test/${word}.mp4`);
   const getCityWeather = vi.fn<OpenWeatherApi["getCityWeather"]>().mockResolvedValue({ kind: "observed", weather });
   const deps: MorningGreetingDependencies = {
@@ -80,7 +80,7 @@ describe("the morning greeting", () => {
 
     await sendMorningGreeting(deps, MAIN_CHAT);
 
-    expect(sent[0]).toEqual(["text", "Kaks pelaa tänään, muut lintsaa."]);
+    expect(sent[0]).toEqual(["text", "Aamuja!\n\nSataa.\n\nKaks pelaa tänään, muut lintsaa."]);
     expect(sent[1][0]).toBe("html");
     expect(sent[1][1]).toContain("Helsinki");
     expect(sent[2][0]).toBe("text");
@@ -171,7 +171,7 @@ describe("the morning greeting", () => {
 
     expect(mocks.findRecentTexts).toHaveBeenCalledWith(MAIN_CHAT, 5);
     expect(factsSent(generateStructured)).toMatchObject({ recentGreetings: yesterdays });
-    expect(mocks.save).toHaveBeenCalledWith(MAIN_CHAT, "Kaks pelaa tänään, muut lintsaa.");
+    expect(mocks.save).toHaveBeenCalledWith(MAIN_CHAT, "Aamuja!\n\nSataa.\n\nKaks pelaa tänään, muut lintsaa.");
   });
 
   it("doesn't keep the canned greeting, or a greeting Telegram refused", async () => {
@@ -210,7 +210,7 @@ describe("the morning greeting", () => {
 
     await sendMorningGreeting(deps, MAIN_CHAT);
 
-    expect(sent[0]).toEqual(["text", "Kaks pelaa tänään, muut lintsaa."]);
+    expect(sent[0]).toEqual(["text", "Aamuja!\n\nKaks pelaa tänään, muut lintsaa."]);
     expect(factsSent(generateStructured)).toMatchObject({ weather: null });
   });
 });

@@ -19,6 +19,18 @@ const SAMEY_WEEK = [
 ];
 
 /**
+ * Five three-part greetings q4 wrote on 2026-10-12, newest first, all opening "Aamuja sankarit":
+ * the new shape's own rut, which the history should push the next greeting out of.
+ */
+const AAMUJA_WEEK = [
+  "Aamuja sankarit, toivottavasti teillä on parempi olo kuin mulla.\n\nOulussa on hajanaisia pilviä, eli taivas on yhtä epämääräinen kuin teidän suunnitelmat tästä päivästä.\n\nEi yhtään peliä sovittu. Ootteko taas päättäneet istua talissa ja odottaa, että joku keksis jotain tekemistä?",
+  "Aamuja, sankarit. Toivottavasti jallu on jo laskenut tasoa.\n\nTurussa taivas on ihan selkeä, eli mikään ei estä kiekkoa karkaamasta suoraan naapurin puuhun.\n\nKolme porukkaa on jo ilmoittautunu. Tilaa on vielä niillekin, jotka haluaa näyttää miten huonosti heitetään.",
+  "Aamuja sankarit, herätys!\n\nYksi porukka on jo lähdössä radalle viiden hengen joukolla. Muut taitaa olla jumissa sähköpostien luku-sessioissa.",
+  "Aamuja sankarit, tai no, yritys on.\n\nKuopiossa sataa lunta ja tuulee niin, että kiekko on matkalla suoraan naapurin puutarhakalusteisiin.\n\nKaksi peliä on jo sovittu, eli kuusi ihmistä on päättänyt kärsiä vapaaehtoisesti.",
+  "Aamuja sankarit, yritetään pitää kämmenet erillään kasvoista.\n\nVantaalla on niin selkeää, että saattaa olla jopa vaarallista nähdä omat virheet suoraan.\n\nKolme sankaria on jo tosissaan ja lähtee tänään radalle.",
+];
+
+/**
  * Days that pull the prompt different ways: rain or sun, no games or many, and no weather at all.
  * All but Friday (the first greeting, no history yet) follow the samey week, as production will.
  */
@@ -70,6 +82,15 @@ export const scenarios: readonly GreetingScenario[] = [
       weather: { town: "Oulu", temperatureC: 7, windMs: 14, description: "hajanaisia pilviä" },
       todaysGames: [],
       recentGreetings: SAMEY_WEEK,
+    },
+  },
+  {
+    name: "rainy-thursday-after-aamuja-week",
+    facts: {
+      weekday: "torstai", date: "2026-10-15",
+      weather: { town: "Lahti", temperatureC: 6, windMs: 8, description: "kohtalaista sadetta" },
+      todaysGames: [{ players: 2 }],
+      recentGreetings: AAMUJA_WEEK,
     },
   },
 ];
