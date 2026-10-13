@@ -76,3 +76,6 @@ sakke-venv/
 # Eval harness build output and reports
 .eval-dist/
 .eval-results/
+
+# IDE settings
+.idea/

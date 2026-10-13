@@ -3,4 +3,10 @@ npm-debug.log
 logs
 .env
 .env.*
+prod.env
 .git
+dist
+coverage
+.eval-dist
+.eval-results
+.idea
