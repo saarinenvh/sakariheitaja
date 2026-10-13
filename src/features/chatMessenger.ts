@@ -1,3 +1,6 @@
+/** Telegram refuses a message longer than this; the bot's message length guard sends a longer one in parts. */
+export const TELEGRAM_MESSAGE_LIMIT = 4096;
+
 /** How features send to a Telegram chat. bot/ implements it, so features never depend on the bot. */
 export interface ChatMessenger {
   sendText(chatId: number, text: string): Promise<void>;

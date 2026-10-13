@@ -2,7 +2,7 @@ import { FactualCommentaryBrief } from "../facts/playerBrief";
 import { formatHoleScore, formatSigned } from "../facts/holeResults";
 import { truncateCourseName } from "./courseName";
 import { escapeHtml } from "../../../shared/html";
-import { TELEGRAM_MESSAGE_LIMIT } from "../../../shared/telegramText";
+import { TELEGRAM_MESSAGE_LIMIT } from "../../chatMessenger";
 import { ScoreChange } from "../detect/scorecardChanges";
 
 const BLOCK_SEPARATOR = "\n\n";
