@@ -2,7 +2,6 @@ import { GamePlan, formatPlanSummary, listPlans, PLAN_TIME_ZONE } from "../../..
 import { listChatsWithBotPin } from "../../../features/chats";
 import { withWriteRetry } from "../../../db/writeRetry";
 import { moduleLogger } from "../../../shared/logger";
-import { packLines } from "../../../shared/telegramText";
 import { addDays, dayInTimeZone, zonedTimeToInstant } from "../../../shared/time";
 import { editBotPin, PinApi, removeBotPin } from "../../botPin";
 import { planningMessages as MSG } from "./messages";
@@ -30,16 +29,14 @@ export async function refreshPinnedList(api: PinApi, chatId: number): Promise<vo
   const plans = await listPlans(chatId);
   if (plans.length === 0) return removeBotPin(api, chatId);
 
-  const [firstPart] = packLines(formatPlanList(plans));
-
-  await editBotPin(api, chatId, firstPart);
+  await editBotPin(api, chatId, formatPlanList(plans));
 }
 
 /** The `/hepit` list: a header, a line per plan with its number, and how to join. */
-export function formatPlanList(plans: readonly GamePlan[]): string[] {
+export function formatPlanList(plans: readonly GamePlan[]): string {
   const planLines = plans.map(plan => `${plan.id}. ${formatPlanSummary(plan)}`);
 
-  return [MSG.hepitHeader, "", ...planLines, "", MSG.hepitFooter];
+  return [MSG.hepitHeader, "", ...planLines, "", MSG.hepitFooter].join("\n");
 }
 
 /** How long until the next daily refresh: tomorrow's 00:01 in Helsinki, with that day's DST. */

@@ -247,7 +247,7 @@ is stored.
 src/
 ├── main.ts                  # composition root: config, clients, commands, resumed rounds, the bot
 ├── config.ts                # the only reader of environment variables
-├── telegram/                # grammY: the bot, the messenger, chat tracking
+├── telegram/                # grammY: the bot, the messenger, chat tracking, the message length guard
 │   └── commands/<feature>/  # command.ts (names, /apua help) and its handler; registry.ts registers them all
 ├── features/                # one folder per capability, each with a README
 │   ├── live-scoring/        # following a round: tracker, poller, course data, round end

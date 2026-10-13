@@ -1,5 +1,9 @@
 import { Bot } from "grammy";
+import { messageLengthGuard } from "./messageLimit";
 
 export function createBot(token: string): Bot {
-  return new Bot(token);
+  const bot = new Bot(token);
+  bot.api.config.use(messageLengthGuard);
+
+  return bot;
 }

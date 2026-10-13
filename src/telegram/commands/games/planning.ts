@@ -1,10 +1,8 @@
 import { CommandContext, Context } from "grammy";
-import type { Message } from "grammy/types";
 import {
   CancelResult, cancelPlan, formatPlanSummary, JoinResult, joinPlan, Leaver, LeaveResult, leavePlan, listPlans, makePlan,
   MakePlanResult, Member, PlanPlayer,
 } from "../../../features/games";
-import { packLines } from "../../../shared/telegramText";
 import { replaceBotPin } from "../../botPin";
 import { planningMessages as MSG } from "./messages";
 import { formatPlanList, refreshPinnedList } from "./pinnedList";
@@ -26,16 +24,16 @@ export async function makeGamePlan(ctx: Command): Promise<unknown> {
 
   const plans = await listPlans(ctx.chat.id);
 
-  const [listMessage] = await replyInParts(ctx, [MSG.hepSaved(result.plan.id, formatPlanSummary(result.plan)), "", ...formatPlanList(plans)]);
+  const listMessage = await ctx.reply(`${MSG.hepSaved(result.plan.id, formatPlanSummary(result.plan))}\n\n${formatPlanList(plans)}`);
   await replaceBotPin(ctx.api, ctx.chat.id, listMessage.message_id);
 }
 
-/** `/hepit`: the chat's plans from today on, in as many replies as Telegram's length limit needs. */
+/** `/hepit`: the chat's plans from today on. */
 export async function listGamePlans(ctx: Command): Promise<unknown> {
   const plans = await listPlans(ctx.chat.id);
   if (plans.length === 0) return ctx.reply(MSG.hepitNone);
 
-  return replyInParts(ctx, formatPlanList(plans));
+  return ctx.reply(formatPlanList(plans));
 }
 
 /** `/mukaan <nr> [name]`: you, by your Telegram id, or any name. */
@@ -78,14 +76,6 @@ export async function cancelGamePlan(ctx: Command): Promise<unknown> {
 
   await ctx.reply(formatCancelResult(result, args.planId));
   if (result.kind === "cancelled") await refreshPinnedList(ctx.api, ctx.chat.id);
-}
-
-/** The lines in as few replies as fit, in order; a line too long for one reply is cut short. */
-async function replyInParts(ctx: Command, lines: readonly string[]): Promise<Message[]> {
-  const sent: Message[] = [];
-  for (const text of packLines(lines)) sent.push(await ctx.reply(text));
-
-  return sent;
 }
 
 function formatRejectedPlan(result: Exclude<MakePlanResult, { kind: "saved" }>): string {
