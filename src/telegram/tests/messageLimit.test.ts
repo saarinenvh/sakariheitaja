@@ -80,6 +80,29 @@ describe("the message length guard", () => {
     expect(calls.map(call => call.payload.reply_markup)).toEqual([...calls.slice(1).map(() => undefined), KEYBOARD]);
   });
 
+  it("quotes the user's message and plays an effect with the first part only", async () => {
+    const { api, calls } = guardedBot();
+
+    await api.sendMessage(CHAT_ID, lines(100, 99), { reply_parameters: { message_id: 7 }, message_effect_id: "5104841245755180586" });
+
+    expect(calls.length).toBeGreaterThan(1);
+    expect(calls[0].payload).toMatchObject({ reply_parameters: { message_id: 7 }, message_effect_id: "5104841245755180586" });
+    expect(calls.slice(1).every(call => call.payload.reply_parameters === undefined && call.payload.message_effect_id === undefined)).toBe(true);
+  });
+
+  it.each([
+    ["Markdown", { parse_mode: "MarkdownV2" as const }],
+    ["entities", { entities: [{ type: "bold" as const, offset: 0, length: 5 }] }],
+  ])("sends %s formatting as it is, since a split would break it", async (_name, options) => {
+    const { api, calls } = guardedBot();
+    const text = lines(100, 99);
+
+    await api.sendMessage(CHAT_ID, text, options);
+    await api.editMessageText(CHAT_ID, 7, text, options);
+
+    expect(calls.map(call => call.payload.text)).toEqual([text, text]);
+  });
+
   it("splits HTML so each part's tags are whole", async () => {
     const { api, calls } = guardedBot();
 

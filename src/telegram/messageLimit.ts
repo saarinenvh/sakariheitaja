@@ -28,20 +28,27 @@ export const messageLengthGuard: Transformer = (prev, method, payload, signal) =
   return prev(method, payload, signal);
 };
 
-/** Sends the parts in order and stops at the first failure; any buttons go under the last part. */
+/**
+ * Sends the parts in order and stops at the first failure. The reply quote and any effect go with
+ * the first part, any buttons under the last.
+ */
 async function sendInParts(prev: ApiCallFn, payload: SendMessagePayload, signal: Signal): Promise<ApiResponse<Message.TextMessage>> {
-  const parts = splitMessage(payload.text, formatOf(payload));
+  const format = splittableFormat(payload);
+  if (format === null) return prev("sendMessage", payload, signal);
+
+  const parts = splitMessage(payload.text, format);
   if (parts.length === 1 && parts[0] === payload.text) return prev("sendMessage", payload, signal);
 
   log.info({ chatId: payload.chat_id, parts: parts.length }, "long message sent in parts");
 
-  const { reply_markup: replyMarkup, ...rest } = payload;
+  const { reply_markup: replyMarkup, reply_parameters: replyParameters, message_effect_id: messageEffectId, ...rest } = payload;
   const responses: ApiResponse<Message.TextMessage>[] = [];
 
   for (const [index, text] of parts.entries()) {
-    const isLast = index === parts.length - 1;
+    const firstOnly = index === 0 ? { reply_parameters: replyParameters, message_effect_id: messageEffectId } : {};
+    const lastOnly = index === parts.length - 1 ? { reply_markup: replyMarkup } : {};
 
-    const response = await prev("sendMessage", { ...rest, text, ...(isLast && { reply_markup: replyMarkup }) }, signal);
+    const response = await prev("sendMessage", { ...rest, ...firstOnly, ...lastOnly, text }, signal);
     if (!response.ok) return response;
 
     responses.push(response);
@@ -52,12 +59,22 @@ async function sendInParts(prev: ApiCallFn, payload: SendMessagePayload, signal:
 
 /** An edit can't become several messages, so it keeps the first part. */
 async function editWithFirstPart(prev: ApiCallFn, payload: EditMessageTextPayload, signal: Signal): Promise<ApiResponse<EditResult>> {
-  const [firstPart] = splitMessage(payload.text, formatOf(payload));
+  const format = splittableFormat(payload);
+  if (format === null) return prev("editMessageText", payload, signal);
+
+  const [firstPart] = splitMessage(payload.text, format);
   if (firstPart !== payload.text) log.warn({ chatId: payload.chat_id, messageId: payload.message_id }, "long edit cut to one message");
 
   return prev("editMessageText", { ...payload, text: firstPart }, signal);
 }
 
-function formatOf(payload: SendMessagePayload | EditMessageTextPayload): TextFormat {
-  return payload.parse_mode === "HTML" ? "html" : "plain";
+/**
+ * How the text can be split, or null when a split would break its formatting: Markdown spans can
+ * cross lines, and entity offsets point into the whole text. Those go to Telegram as they are.
+ */
+function splittableFormat(payload: SendMessagePayload | EditMessageTextPayload): TextFormat | null {
+  if (payload.entities !== undefined) return null;
+  if (payload.parse_mode === undefined) return "plain";
+
+  return payload.parse_mode === "HTML" ? "html" : null;
 }
