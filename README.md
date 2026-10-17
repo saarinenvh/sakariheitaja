@@ -74,9 +74,10 @@ Monitoring ends once every tracked player either has all layout slots recorded a
 known final total, or has DNF status. This does not certify the tournament results as
 final. A missing API total can be derived from a complete, validated card; otherwise
 monitoring continues. DNF players stay eligible under the existing bag-tag allocation
-rules, and the historical score tables are unchanged. Every poll syncs the special-score
-rows to the current cards, so a correction moves or removes a row and never duplicates
-an award ([`docs/architecture/data.md`](docs/architecture/data.md#mariadb)).
+rules, and the historical score tables are unchanged. Every poll syncs each tracked
+player's special-score rows for the followed round to their current card, so a
+correction moves or removes a row and never duplicates an award
+([`docs/architecture/data.md`](docs/architecture/data.md#mariadb)).
 
 See [implementation findings and the owner test checklist](docs/commentary-findings.md),
 and the [commentary eval harness](#commentary-eval-harness) for prompt and model work.
@@ -85,7 +86,7 @@ and the [commentary eval harness](#commentary-eval-harness) for prompt and model
 
 Set `BOT_OLLAMA_TRACE=true` in the standalone bot's environment and restart it.
 Every Ollama HTTP call then writes a readable JSON file under `logs/ollama/`, relative
-to the bot's working directory. The record is written before the request and updated
+to the bot's working directory. A pending record is written before the request and updated
 afterwards with the full response, timestamps, and the HTTP status or transport error
 type. The request part holds the exact model, options, system prompt and user content
 (for commentary, the factual brief and the full narrative history). The response keeps
