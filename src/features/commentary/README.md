@@ -15,7 +15,7 @@ fact; the model only writes the words.** The ScoreTracker (`../live-scoring/`) c
 
 Commentary owns no tables and saves nothing: live scoring syncs the special scores from the
 cards before it hands a round to commentary (`../live-scoring/specialScoreSync.ts`). Its state is
-in memory (see State).
+in memory (see [State](#state)).
 
 ```mermaid
 flowchart LR

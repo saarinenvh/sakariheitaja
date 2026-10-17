@@ -53,7 +53,7 @@ event or series throws `UnsupportedRoundError`.
 | hole `Diff` empty or missing | `relativeToPar: null`; totals that need it stay unknown | `schema.ts` |
 | hole `PEN` and/or `OB` | one `obCount`; when both are sent they must agree | `schema.ts` |
 | `DNF` as `"1"`, `1`, `true` or `"DNF"` (`"0"`, `0`, `false`, `""` or none: finished) | `round.status: "dnf"` and no place | `schema.ts`, `normalize.ts` |
-| no completion flag at all | a full card without DNF → `round.status: "complete"`, else `"active"` | `normalize.ts` `resolveRoundStatus` |
+| no completion flag at all | `round.status: "complete"` for a full card without DNF, else `"active"` | `normalize.ts` `resolveRoundStatus` |
 | `OrderNumber` 0 or missing (ties, and many players early in a round) | a shared place from recorded card totals, per division | `normalize.ts` `rankByRecordedTotals` |
 | `OrderNumber` larger than the division's field | no place | `normalize.ts` `resolvePosition` |
 | `PreviousRoundsSum`/`PreviousRoundsDiff`, or `ShowPreviousRoundsSum` | the standing is provisional: it includes earlier rounds | `normalize.ts` |
@@ -87,7 +87,7 @@ All three parts are optional: Metrix layouts are community-edited, and any field
 
 - **`CourseDetails`** (`course/courseDetails.ts`):
   - the layout's coordinates
-  - the rating anchors (`RatingValue1/2`, `RatingResult1/2`; rating = linear through them)
+  - the rating anchors (`RatingValue1/2`, `RatingResult1/2`); the rating is linear through them
   - per hole: label, par, length and tee/basket coordinates
 
   Feet are converted to metres. Coordinates at 0,0 or out of range count as missing. The
@@ -97,7 +97,7 @@ All three parts are optional: Metrix layouts are community-edited, and any field
   - par
   - average strokes
   - difficulty rank (1 = easiest)
-  - result counts (aces … worse)
+  - result counts, from aces to worse
 
   A page without that table is `not-found`. An unexpected table is `failed`, never a guess.
 - **`CourseLocation`** (`location/courseLocation.ts`): Metrix names layouts `Parent → Layout`, and a
