@@ -24,12 +24,14 @@ in the migrations.
 
 `db/dataSource.ts` lists the entities: `Player`, `PlayerChat` (`player_to_chat`), `Chat`,
 `Competition`, `Course`, `Score`, `Ace`, `Eagle`, `Albatross` (one table each, sharing
-`SpecialScoreRecord`), `GamePlan`, `GamePlanPlayer` and `MorningGreeting`. BIGINT columns (the chat ids)
-read as numbers: the data source sets `supportBigNumbers` and turns `bigNumberStrings` off. The
-schema isn't synchronized from the entities. Changes to it are TypeORM migrations in `db/migrations/`, which
-run when the bot starts (`migrationsRun`), before anything else uses the database. The bot's DB
-user therefore needs `ALTER`, `INDEX` and `CREATE`, the last for TypeORM's `migrations` table.
-A failed migration stops the start, and the log says why.
+`SpecialScoreRecord`), `GamePlan`, `GamePlanPlayer` and `MorningGreeting`. BIGINT columns (the
+chat ids) read as numbers, because the data source sets `supportBigNumbers` and turns
+`bigNumberStrings` off.
+
+The schema isn't synchronized from the entities. Changes to it are TypeORM migrations in
+`db/migrations/`, which run when the bot starts (`migrationsRun`), before anything else uses the
+database. So the bot's DB user needs `ALTER`, `INDEX` and `CREATE`, the last for TypeORM's
+`migrations` table. A failed migration stops the start, and the log says why.
 
 ### When a write fails
 
@@ -38,9 +40,8 @@ Who retries a failed write depends on whether someone is waiting for it:
 - **Background writes** go through `withWriteRetry` (`db/writeRetry.ts`): live scoring's special
   scores, the round's day, the round end's course, results and status, a resumed round's `error`
   mark, and each chat's nightly pinned-list refresh. Nobody would notice them fail, so they retry
-  themselves: up to five attempts over
-  about 15 seconds, on a transient error only (a deadlock, a lock wait timeout, a lost or refused
-  connection). Any other error fails at once.
+  themselves: up to five attempts over about 15 seconds, on a transient error only (a deadlock,
+  a lock wait timeout, a lost or refused connection). Any other error fails at once.
 - **Command writes** (`/follow`, `/hep`, `/lisaa` and the rest) aren't retried. The command
   replies with the error, and the user is the retry.
 
@@ -52,7 +53,8 @@ the `competitions` insert on `/follow`, can't be made a background write until i
 
 ## JSON stores
 
-Written with `shared/jsonStore.ts` (atomic replace, cached; this process is the only writer).
+Both are written with `shared/jsonStore.ts`, which replaces the file atomically and caches it;
+this process is the only writer.
 
 | File | Owner | Holds |
 | --- | --- | --- |
@@ -60,7 +62,8 @@ Written with `shared/jsonStore.ts` (atomic replace, cached; this process is the 
 | `player_profiles.json` | `features/player-profiles/` | per-player form (games played, average place, hot/cold), updated at each round end |
 
 Both live in `DATA_DIR`. Without it they fall back to `src/data/` (`dist/data/` when built),
-which only suits local runs: a container rebuild loses it. The copies in the repo are test data.
+which only suits local runs, because a container rebuild loses them. The copies in the repo are
+test data.
 Profiles are written but not yet read by anything. Where these two belong for good is ticket
 EfY0S63X.
 

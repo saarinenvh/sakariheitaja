@@ -5,7 +5,7 @@ A Telegram bot that follows and commentates disc golf competitions live from [Di
 ## Features
 
 - **Live commentary** — polls the Metrix API and sends hole-by-hole commentary as results come in
-- **LLM commentary** — commentary, heckling and replies to name mentions use the configured Ollama model with per-purpose prompts in `src/prompts/`. Round commentary writes one message per score update from facts computed in code (results, standings, lead history, course and hole facts, weather); `LLM_ENABLED=false` uses a deterministic factual fallback
+- **LLM commentary** — commentary, heckling and replies to name mentions use the configured Ollama model, with a prompt per purpose in `src/prompts/`. Round commentary writes one message per score update from facts computed in code (results, standings, lead history, course and hole facts, weather); see [Commentary flow](#commentary-flow). With `LLM_ENABLED=false` it uses a deterministic factual fallback
 - **Smart polling** — adaptive intervals (30s active → 60s idle → 120s dormant) with exponential backoff on errors
 - **Player tracking** — follow specific players per chat group
 - **Score history** — query best scores by course name or ID
@@ -22,8 +22,8 @@ Code computes every fact; the model only writes the message. Start reading at
 ([`src/features/live-scoring/README.md`](src/features/live-scoring/README.md)):
 
 1. `MetrixClient.getRound` (`src/integrations/metrix/`) fetches the round and
-   normalizes it; `trackRoundPlayers` matches the chat's players. Metrix reports
-   ties and early-round places as 0 or not at all; those players get a shared place
+   normalizes it, and `trackRoundPlayers` matches the chat's players. Metrix reports
+   ties and early-round places as 0 or not at all, so those players get a shared place
    derived from recorded totals. What Metrix sends and how each field is normalized
    is in [`src/integrations/metrix/README.md`](src/integrations/metrix/README.md).
 2. `commentary/` turns the changes into one message per division, stage by stage
@@ -37,65 +37,70 @@ Code computes every fact; the model only writes the message. Start reading at
 3. Only acknowledged sends advance rankings and the recent-message history.
 
 The prompt is `src/prompts/batch_commentator.md`. The model may invent
-throw imagery as comic colour; results, OB entries, places and gaps must match the
-facts. A code-derived `firstMessage` flag marks each division's first delivered
+throw imagery as comic colour, but results, OB entries, places and gaps must match the
+facts. A `firstMessage` flag, set in code, marks each division's first delivered
 message, so the opening welcomes the audience even when following starts mid-round.
 
-Course and hole facts are optional enrichment. Each part is present only when
-Metrix has it: layout data needs `BOT_METRIX_INTEGRATION_CODE` (see Environment
-variables), the course statistics are read from the public course page, and today's
-field average comes from the round itself. Course data is fetched once per round
-with timeouts; a failure, a hang or data that can't be composed drops those facts,
-never the message. Weather is fetched at the first update and rechecked once past
-halfway; a change is reported only when it's significant.
+Course and hole facts are optional enrichment, and each part is present only when
+Metrix has it: layout data needs `BOT_METRIX_INTEGRATION_CODE` (see
+[Environment variables](#environment-variables)), the course statistics come from the
+public course page, and today's field average comes from the round itself. Course data
+is fetched once per round, with timeouts. A failure, a hang or data that can't be
+composed drops those facts, never the message. Weather is fetched at the first update
+and rechecked once past halfway, and a change is reported only when it's significant.
 
 Only individual Metrix rounds are supported, including training rounds and a
 single round selected from a larger event. The adapter accepts missing or empty
-`SubCompetitions`, rejects children or a nonzero `HasSubcompetitions`, requires a
-nonempty `Tracks` layout, and verifies the requested ID. It does not guess
+`SubCompetitions`, but rejects child competitions or a nonzero `HasSubcompetitions`.
+It requires a nonempty `Tracks` layout, verifies the requested ID, and does not guess
 undocumented `Type` codes. The contract follows the
-[Metrix result API](https://discgolfmetrix.com/?u=rule&ID=38).
-Layout changes establish a fresh baseline. Short/missing cards stay unavailable.
-`PEN` and `OB` normalize to OB counts. Rankings with previous-round totals are
-treated conservatively as provisional. The published ranking survives temporary
-missing scorecards for the same player.
+[Metrix result API](https://discgolfmetrix.com/?u=rule&ID=38). Beyond that:
 
-State belongs to one chat and followed round, and is in memory. Restarting or
-following again seeds the current scorecard, with no replay or previous ranking
-claim. Failed sends are logged and not retried automatically; ambiguous Telegram
-timeouts can have delivered a message without acknowledgment. Score writes remain
-separate from ranking/history acknowledgment; a failed DB write cannot undo a
-successful publication.
+- A layout change establishes a fresh baseline.
+- A missing scorecard, or one whose length doesn't match the layout, stays unavailable.
+- `PEN` and `OB` both normalize to OB counts.
+- A ranking that includes previous-round totals is treated as provisional.
+- The published ranking survives a player's scorecard going missing temporarily.
 
-Monitoring ends once every tracked player has all layout slots recorded and
-known final totals, or has DNF status. This does not certify tournament results
-as final. Missing API totals can be derived from complete validated cards;
-otherwise monitoring continues. DNF players remain eligible for the existing
-bag-tag allocation rules. Historical score tables are unchanged. Every poll syncs
-a player's special-score rows for that competition to the current card, so a
-correction moves or removes its row; it never inserts duplicate awards.
+State belongs to one chat and followed round, and lives in memory. Restarting or
+following again seeds the current scorecard, with no replay and no claim against the
+previous ranking. Failed sends are logged and not retried; an ambiguous Telegram
+timeout may have delivered a message without acknowledging it. Score writes are
+separate from acknowledging the ranking and history, so a failed DB write cannot undo
+a successful publication. The restart and resume behaviour is in
+[`docs/architecture/live-scoring.md`](docs/architecture/live-scoring.md#lopeta-restarts).
+
+Monitoring ends once every tracked player either has all layout slots recorded and a
+known final total, or has DNF status. This does not certify the tournament results as
+final. A missing API total can be derived from a complete, validated card; otherwise
+monitoring continues. DNF players stay eligible under the existing bag-tag allocation
+rules, and the historical score tables are unchanged. Every poll syncs the special-score
+rows to the current cards, so a correction moves or removes a row and never duplicates
+an award ([`docs/architecture/data.md`](docs/architecture/data.md#mariadb)).
 
 See [implementation findings and the owner test checklist](docs/commentary-findings.md),
-and the commentary eval harness below for prompt and model work.
+and the [commentary eval harness](#commentary-eval-harness) for prompt and model work.
 
 ## Local Ollama diagnostics
 
 Set `BOT_OLLAMA_TRACE=true` in the standalone bot's environment and restart it.
-Every Ollama HTTP call writes a readable JSON file under `logs/ollama/`, relative
-to the bot's working directory. A pending record is written before the request,
-then updated with the full response, timestamps and HTTP status or transport
-error type. Requests include the exact model, options, system prompt and user
-content (including factual brief and full narrative history for commentary).
-Responses retain provider fields such as `prompt_eval_count`, `eval_count` and
-`done_reason` when supplied, before output cleanup. These counts alone do not
-prove whether the provider truncated context.
+Every Ollama HTTP call then writes a readable JSON file under `logs/ollama/`, relative
+to the bot's working directory. The record is written before the request and updated
+afterwards with the full response, timestamps, and the HTTP status or transport error
+type. The request part holds the exact model, options, system prompt and user content
+(for commentary, the factual brief and the full narrative history). The response keeps
+provider fields such as `prompt_eval_count`, `eval_count` and `done_reason` when
+supplied, before output cleanup. These counts alone do not prove whether the provider
+truncated the context.
 
-Tracing is disabled by default and covers all bot Ollama calls, not only
-commentary. Files contain private names and conversation text; do not publish
-them unredacted. `logs/` is Git-ignored; new files use owner-only permissions.
-Disable tracing after testing and delete the files when no longer needed.
-There is no automatic retention limit. Logging failures warn without stopping
-inference. No credentials, environment dump or endpoint URL are added to traces.
+Tracing is off by default and covers every Ollama call the bot makes, not only
+commentary. A failure to write a trace logs a warning and doesn't stop inference.
+Traces never get credentials, an environment dump or the endpoint URL.
+
+The files contain private names and conversation text, so don't publish them
+unredacted. `logs/` is Git-ignored and new files get owner-only permissions, but
+nothing deletes them automatically: turn tracing off after testing and delete the
+files when you no longer need them.
 
 ## Commentary eval harness
 
@@ -275,8 +280,8 @@ Each table belongs to one feature, which holds its entity and repository
 ### Environment variables
 
 The deployed values live in `sakke-workspace/.env`, and `sakke-workspace/.env.example`
-is the documented source of truth — the compose file passes each name through
-explicitly, so a variable that isn't listed there isn't reaching the container.
+is the documented source of truth. The compose file passes each variable through by name,
+so one that isn't listed there doesn't reach the container.
 
 For running the bot on its own:
 
@@ -313,8 +318,8 @@ the course's par-rating difficulty, round ratings at the finish, and exact cours
 the weather. Every finished round's rating is shown in its result row and in the TOP-5 list. Only
 exceptional ratings reach the model: 1000 or more, 980–999, and below 750; code keeps the rest out
 of its input. Without it, commentary still gets the public course statistics (historical hole
-averages and difficulty) and today's field average; nothing else depends on it. Course data is
-fetched once per round and is never allowed to delay commentary. `BOT_COMMENTARY_COUNTRY_CODE`
+averages and difficulty) and today's field average; nothing else depends on it. Course data
+never delays commentary ([Commentary flow](#commentary-flow)). `BOT_COMMENTARY_COUNTRY_CODE`
 (default `FI`) is only used to find the course for the weather when there's no integration code.
 
 `src/config.ts` is the only code that reads the environment. Blank values are
