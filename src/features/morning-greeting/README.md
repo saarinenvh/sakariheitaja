@@ -1,7 +1,8 @@
 # Morning greeting
 
-Every morning at 09:00 Helsinki time (`policy.ts`, independent of the container's time zone) to
-`MORNING_CHAT_ID`; nothing when it is unset. Each part is sent even if another fails:
+The bot greets `MORNING_CHAT_ID` every morning at 09:00 Helsinki time (`policy.ts`, independent of
+the container's time zone), and sends nothing when it is unset. Each part is sent even if another
+fails:
 
 1. **Sakke's greeting**, written by the bot's model (`greetingWriter.ts`) from the day's facts, as
    plain text in three paragraphs with a blank line between: a greeting to the club, one joke about
@@ -33,9 +34,9 @@ flowchart LR
 ## The model's part
 
 - **Facts only** (`facts.ts`): the weekday and date, the weather, and today's games as player
-  counts. No canned line: the model copied it word for word. Course names and times are left
-  out: the games list follows with them exactly, and the model garbled them. The weather is material
-  for a joke; the card that follows gives its numbers.
+  counts. They include no canned line, because the model copied it word for word. Course names and
+  times are left out because the model garbled them, and the games list that follows gives them
+  exactly. The weather is material for a joke; the card that follows gives its numbers.
 - **Recent greetings:** each greeting is a separate model call, so the model can only vary from day
   to day by seeing what it wrote before. It gets the chat's last 5 greetings (newest first) and is
   told to open differently and not reuse their jokes or phrases. Without them, q4 opened 8 times
@@ -49,7 +50,8 @@ flowchart LR
   an empty greeting or games part makes the reply unusable, and the weather part is dropped when
   there was no weather.
 - **Tuning the prompt:** `npm run eval:greeting` writes greetings for scenario days against a
-  real model and checks them; see "Morning greeting eval harness" in the root README.
+  real model and checks them; see
+  [Morning greeting eval harness](../../../README.md#morning-greeting-eval-harness).
 
 ## Entry points
 
@@ -62,7 +64,7 @@ flowchart LR
 
 `morning_greetings` (`db/`): Sakke's sent greetings per chat, with the time; kept, never deleted.
 Saved as a background write with `withWriteRetry`; a failed save is logged and only costs the next
-greeting some variety. A stopgap: the long-term home for Sakke's own writing is the Obsidian vault,
+greeting some variety. The table is a stopgap: the long-term home for Sakke's own writing is the Obsidian vault,
 through gateway tools (Trello LXyiAGHC).
 
 ## Files

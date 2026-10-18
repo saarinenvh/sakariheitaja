@@ -41,12 +41,12 @@ The rules are ESLint errors (`eslint.config.mjs`), so CI fails on a violation:
 - `integrations/` never imports `features/`, and `db/` imports only entities.
 - A feature, `telegram/` and `main.ts` reach a feature only through its `index.ts`
   (`../bagtags`, not `../bagtags/messages`). A feature nobody outside uses has none.
-- `fetch` and `shared/http` only in `integrations/`: features get clients injected.
-- `process.env` only in `config.ts`.
+- Only `integrations/` uses `fetch` and `shared/http`; features get clients injected.
+- Only `config.ts` reads `process.env`.
 
 Inside a module the layout is fixed where it can be: every feature has a
-`README.md`, its tables in `db/`, and its tests (and fakes) in a `tests/` folder, as
-does every other module. Reserved names like `route.ts`, `schema.ts`, `policy.ts`,
+`README.md` and keeps its tables in `db/`, and every module keeps its tests (and fakes)
+in a `tests/` folder. Reserved names like `route.ts`, `schema.ts`, `policy.ts`,
 `prompts.ts` and `messages.ts` mean the same everywhere. The convention is
 sakke-workspace `.agents/code-style.md`, "Folder structure". `src/tests/testLayout.test.ts`
 fails if a test sits outside a `tests/` folder.
@@ -72,12 +72,12 @@ flowchart LR
 
 1. **Commands.** `telegram/commands/registry.ts` registers every group from
    `buildCommandGroups`, in `/apua` order. `/apua` is generated from the same list, so a command
-   with `help` shows up there automatically; `heckle`, `aamuu` and `virheet` have none on purpose.
-   The dev group (`/heckle`, `/aamuu`, `/virheet`) exists only with `LLM_ENABLED=true`. Each command runs
-   through `runCommand`, which logs it and catches its failure.
+   with `help` shows up there automatically. The dev group (`/heckle`, `/aamuu`, `/virheet`) has
+   no `help` on purpose and exists only with `LLM_ENABLED=true`. Each command runs through
+   `runCommand`, which logs it and catches its failure.
 2. **The text listener**, registered last because it reacts to any text. It remembers the
-   message for the heckler, answers when Sakari is named (match-play answer from Challonge
-   and the model, else a heckle), and now and then replies to "jallu" or drops a random quote.
+   message for the heckler, answers when Sakari is named (a match-play answer from Challonge
+   and the model, otherwise a heckle), and now and then replies to "jallu" or drops a random quote.
 3. **Startup resume.** Every competition still `following` gets a new `ScoreTracker`, without a
    new player announcement. Each starts in the background and retries while Metrix doesn't
    answer, so startup doesn't wait for Metrix.

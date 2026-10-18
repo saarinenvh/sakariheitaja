@@ -46,8 +46,8 @@ sequenceDiagram
   `following`, `finished`, `error` or `stopped`. A round in `error` also has `errored_at` and
   `error_reason`; it isn't resumed and stays for manual handling (`/virheet` lists them). A
   `stopped` round (`/lopeta`) isn't resumed either, and keeps its special scores. A round leaves
-  `following` once: `finished`, `stopped` and `error` only change a round still `following`, so of
-  an overlapping `/lopeta` and round end, the first to reach the database wins.
+  `following` once: `finished`, `stopped` and `error` only change a round still `following`, so
+  when `/lopeta` and the round end overlap, the first to reach the database wins.
 - In memory: the rounds each chat follows or is still starting (`trackerRegistry.ts`), and
   each round's last snapshot and tracked players (`ScoreTracker`). A restart rebuilds them from
   the competitions still `following`.
@@ -63,11 +63,13 @@ sequenceDiagram
 - `/follow` and `/lopeta` change the registry and the table before they reply. A failed start
   deletes its competition. `/lopeta` marks it `stopped`; if that fails, the round keeps running.
 - A resumed round is in the registry from the start, so `/lopeta` can stop it. While Metrix
-  doesn't answer it retries with the poll error backoff; after six hours, or at once when
+  doesn't answer, it retries with the poll error backoff; after six hours, or at once when
   Metrix rejects the round, it is marked `error`. A second `following` row for a round the
   chat already follows is marked `error` as a duplicate instead of being resumed.
 - A player is tracked when the chat has added them (`/lisaa`) and exactly one round player has
-  that name, ignoring case. `/score <name>` matches the same way.
+  that name, ignoring case (`trackRoundPlayers`, see
+  [the Metrix integration](../../integrations/metrix/README.md#the-normalized-model-roundtypests)).
+  `/score <name>` matches the same way.
 - Polls are handled one at a time, in order; an unusable payload is logged and skipped, keeping
   the last good round.
 - On start and on every poll, before commentary, each tracked player's saved special scores are
@@ -80,8 +82,8 @@ sequenceDiagram
   through a transient database error (`db/writeRetry.ts`, see `docs/architecture/data.md`).
 - The round end syncs the special scores from the final cards and saves the results, profiles
   and bagtags before it marks the competition done, so a failure that outlasts the retries leaves
-  the round unfinished and the round end runs again after a restart; the saves are safe to repeat. The TOP-5 and bagtag messages after it are best
-  effort: a failed send isn't retried.
+  the round unfinished and the round end runs again after a restart; the saves are safe to
+  repeat. The TOP-5 and bagtag messages after it are best effort: a failed send isn't retried.
 
 ## Files
 
