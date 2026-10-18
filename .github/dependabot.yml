@@ -1,4 +1,5 @@
 version: 2
+# Every entry waits 7 days after a release before proposing it.
 updates:
   # Minor/patch bumps are grouped into one weekly PR. The 12 PRs just closed
   # on this repo were stale artifacts from before the TypeScript/TypeORM
@@ -8,6 +9,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     groups:
       npm-minor-and-patch:
         update-types:
@@ -19,3 +22,5 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
