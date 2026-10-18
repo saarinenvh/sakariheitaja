@@ -9,7 +9,7 @@ verification, and PR workflow; this file adds bot-specific constraints.
 
 For a standalone checkout, obtain the workspace instructions from the owner's
 sakke-workspace checkout before development rather than inventing a workflow.
-This repository's default branch is `master`; verify it before branching.
+This repository's default branch is `main`; verify it before branching.
 
 ## Compatibility and design
 
