@@ -49,8 +49,8 @@ sequenceDiagram
 - Polls are handled one at a time, in order. A failed request or an unusable payload is logged
   and skipped; the last good round stays.
 - Each poll first makes every tracked player's saved special scores what their card says
-  (`specialScoreSync.ts`), then hands the round to commentary. The sync is safe to repeat, so one
-  that fails is logged and made good by the next poll; an unavailable card leaves the rows alone.
+  (`specialScoreSync.ts`), then hands the round to commentary. The sync is safe to repeat, so a
+  failed one is logged and the next poll makes up for it. An unavailable card leaves the rows alone.
 - Course details, statistics and weather (`RoundCourseData`) are fetched with timeouts and never
   hold back a message.
 - Only an acknowledged send moves the published places and the recent-message history forward.
@@ -85,7 +85,7 @@ repeat. The TOP-5 and bagtag messages after it are best effort.
 
 ## `/lopeta`, restarts
 
-- `/lopeta <metrixId>` marks the competition `stopped`, then stops the tracker, then replies.
+- `/lopeta <metrixId>` marks the competition `stopped`, stops the tracker, and then replies.
   The competition and its special scores stay, and a stopped round isn't resumed. If marking it
   fails, the round goes on.
 - A restart loses the in-memory state. `main.ts` resumes each competition still `following`
