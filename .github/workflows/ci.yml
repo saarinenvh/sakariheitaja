@@ -4,11 +4,18 @@ on:
   push:
   pull_request:
 
+# Read-only by default; a job that needs more asks for it.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # CI never pushes to git, so the token needn't stay in .git/config.
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -47,6 +54,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # CI never pushes to git, so the token needn't stay in .git/config.
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -79,6 +89,9 @@ jobs:
       PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # CI never pushes to git, so the token needn't stay in .git/config.
+          persist-credentials: false
 
       - name: Work out the tags
         id: tags
