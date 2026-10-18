@@ -12,12 +12,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # CI never pushes to git, so the token needn't stay in .git/config.
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           # Matches the Dockerfile, so CI can't pass on a runtime the image
           # doesn't use.
@@ -53,12 +53,12 @@ jobs:
     # migrations on the prod schema, and the repositories' real queries.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # CI never pushes to git, so the token needn't stay in .git/config.
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
           cache: npm
@@ -71,6 +71,21 @@ jobs:
       - name: Integration tests
         run: npm run test:integration
 
+  zizmor:
+    # Audits the workflows and dependabot.yml; any finding fails the run.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # CI never pushes to git, so the token needn't stay in .git/config.
+          persist-credentials: false
+
+      - uses: zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e # v0.7.1
+        with:
+          # Fail the run on a finding. With Advanced Security the action only
+          # reports findings in the Security tab.
+          advanced-security: false
+
   image:
     # The artifact that actually gets deployed. Type-checking and tests both
     # pass against source that the image could still fail to produce.
@@ -79,7 +94,7 @@ jobs:
     # by the git tree it was built from, so the same files never build twice
     # and a release can reuse the image that already ran (sakke-workspace
     # docs/roadmap/kubernetes/README.md, Images).
-    needs: [test, integration]
+    needs: [test, integration, zizmor]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -88,7 +103,7 @@ jobs:
       IMAGE: ghcr.io/saarinenvh/sakariheitaja
       PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # CI never pushes to git, so the token needn't stay in .git/config.
           persist-credentials: false
