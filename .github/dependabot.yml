@@ -7,6 +7,8 @@ updates:
   # keeps a fresh setup from accumulating the same kind of clutter.
   - package-ecosystem: "npm"
     directory: "/"
+    # Updates run in dev first, like every change to what runs.
+    target-branch: "dev"
     schedule:
       interval: "weekly"
     cooldown:
@@ -20,6 +22,7 @@ updates:
 
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
     cooldown:
